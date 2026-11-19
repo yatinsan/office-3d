@@ -1,12 +1,13 @@
 import * as THREE from 'three';
-import { M, rand } from '../materials.js';
+import { M } from '../materials.js';
+import { buildLandscape } from './landscape.js';
 import { box } from '../props.js';
 import { buildTerrace, TX } from './terrace.js';
 import { windowWall, wall, H, W, D, MEET_Z1, MEET_DOOR, TERRACE_Z1, GAME_Z1, LOBBY_CEIL, CORNER_Z, CAB_X0, SHELF_Z, LOBBY_E } from './helpers.js';
 
 const FLOOR_DROP = 40; // the office is high up – ground is far below
 
-/** West window wall, terrace with pergola, and a hazy city/hill backdrop. */
+/** West window wall, terrace with pergola, and a the palm-canopy view from the balcony. */
 export function buildExterior(root) {
   // Corner cabin + lounge windows run up to the false ceiling; workspace windows stop at 2.8 m under a grooved fascia.
   // lounge balcony door opening z 4.9..6.5 (suggestion 10); the glass leaves themselves are in src/doors.js
@@ -48,47 +49,6 @@ export function buildExterior(root) {
   for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, GAME_Z1 + 1.3, TX - 0.01, -i * 3.4, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
   void LOBBY_E; void W;
 
-  // ---- Ground + city ----
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshStandardMaterial({ color: '#6f7a64', roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -FLOOR_DROP;
-  root.add(ground);
-
-  const tones = ['#c8ccca', '#b9bec0', '#d6d4cc', '#a9b0b3', '#ddd9d0'].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 }));
-  const winMat = new THREE.MeshStandardMaterial({ color: '#7d8a92', roughness: 0.4 });
-  const city = new THREE.Group();
-  root.add(city);
-  for (let i = 0; i < 220; i++) {
-    const ang = Math.PI * 0.45 + rand() * Math.PI * 1.15; // west half + north (seen from the windows)
-    const dist = 160 + Math.pow(rand(), 0.8) * 520;
-    const x = Math.cos(ang) * dist;
-    const z = D / 2 + Math.sin(ang) * dist;
-    const w = 12 + rand() * 22, d = 12 + rand() * 22;
-    const h = 10 + Math.pow(rand(), 2.2) * 110;
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), tones[Math.floor(rand() * tones.length)]);
-    b.position.set(x, -FLOOR_DROP + h / 2, z);
-    city.add(b);
-    if (h > 45) { // window bands on tall towers
-      for (let y = 6; y < h - 3; y += 6) {
-        const s = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 1.4, d + 0.2), winMat);
-        s.position.set(x, -FLOOR_DROP + y, z);
-        city.add(s);
-      }
-    }
-  }
-  // Green hills on the horizon
-  const hillMat = new THREE.MeshStandardMaterial({ color: '#5d6f55', roughness: 1 });
-  for (let i = 0; i < 9; i++) {
-    const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10), hillMat);
-    hill.scale.set(120, 70 + rand() * 60, 220 + rand() * 200);
-    hill.position.set(-760 - rand() * 160, -FLOOR_DROP - 10, -500 + i * 130 + rand() * 60);
-    root.add(hill);
-  }
-  // Trees near the base of the building
-  const treeMat = new THREE.MeshStandardMaterial({ color: '#4f6b3a', roughness: 1 });
-  for (let i = 0; i < 70; i++) {
-    const t = new THREE.Mesh(new THREE.SphereGeometry(3 + rand() * 3, 8, 6), treeMat);
-    t.position.set(-10 - rand() * 60, -FLOOR_DROP + 2, -50 + rand() * 120);
-    root.add(t);
-  }
+  // ---- Ground, palm canopy, hill and the one distant tower cluster (photo IMG_5660) ----
+  buildLandscape(root);
 }

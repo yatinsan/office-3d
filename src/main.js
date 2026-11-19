@@ -18,9 +18,9 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const HAZE = new THREE.Color('#d3d9da');
+const HAZE = new THREE.Color('#a8aaa4'); // warm evening haze (photo IMG_5660); sky dome lives in world/landscape.js
 scene.background = HAZE;
-scene.fog = new THREE.Fog(HAZE, 90, 1000);
+scene.fog = new THREE.Fog(HAZE, 40, 1100);
 
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
