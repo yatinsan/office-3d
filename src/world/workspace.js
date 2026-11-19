@@ -92,7 +92,18 @@ function shardDoor(root, x, z, facing, w = 0.85) {
  */
 export function buildWorkspace(root) {
   // ---- Shell ----
-  wall(root, 0, BACK_Z, W, BACK_Z, { h: H });
+  // back wall with a black-framed glass window into the meeting room (suggestion 14, photo IMG_5673)
+  const [wx0, wx1, wy0, wy1] = [0.45, 2.95, 0.5, 2.75];
+  wall(root, 0, BACK_Z, wx0, BACK_Z, { h: H });
+  wall(root, wx0, BACK_Z, wx1, BACK_Z, { h: wy0 });
+  wall(root, wx0, BACK_Z, wx1, BACK_Z, { h: H - wy1, y0: wy1, collide: false });
+  wall(root, wx1, BACK_Z, W, BACK_Z, { h: H });
+  { const g = new THREE.Group(); g.userData.label = 'Meeting room window'; root.add(g);
+    const pane = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0, wy1 - wy0), M.glass);
+    pane.position.set((wx0 + wx1) / 2, (wy0 + wy1) / 2, BACK_Z); pane.renderOrder = 2; g.add(pane);
+    const cols = [wx0, wx0 + 0.85, wx0 + 1.7, wx1], rows = [wy0, wy0 + 0.65, wy0 + 1.6, wy1];
+    for (const x of cols) box(g, M.black, 0.06, wy1 - wy0 + 0.06, 0.22, x, (wy0 + wy1) / 2, BACK_Z, { shadow: false });
+    for (const y of rows) box(g, M.black, wx1 - wx0, 0.06, 0.22, (wx0 + wx1) / 2, y, BACK_Z, { shadow: false }); }
   wall(root, W, LOBBY_S, W, BACK_Z, { h: H });
   box(root, M.ceilingBlack, W, 0.45, 0.05, W / 2, H - 0.225, BACK_Z - 0.13, { shadow: false });
   box(root, M.ceilingBlack, 0.05, 0.45, BACK_Z - LOBBY_S, W - 0.13, H - 0.225, (LOBBY_S + BACK_Z) / 2, { shadow: false });

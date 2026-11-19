@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import { M } from './materials.js';
 import { box } from './props.js';
 import { colliders } from './colliders.js';
-import { doorLeaves } from './world/helpers.js';
+import { doorLeaves, MEET_DOOR } from './world/helpers.js';
 
 /**
  * Doors you can open: walk up and press F. Kept out of the static mesh merge so the leaves can move.
  * Lounge balcony door (suggestion 10, photo IMG_5653): frameless glass double door in the west window wall,
  * long chrome pull handles, both leaves swing inward.
+ * Meeting room door: the same glass double door, from the terrace into the meeting room (suggestion 13).
  * Cabin glass doors (suggestion 12) come from glassWall() via doorLeaves; they start closed.
  */
 const REACH = 1.8;     // how close you need to be to use a door (m)
@@ -36,9 +37,9 @@ function glassLeaf(parent, len, dir, h = 2.4) {
 export function initDoors({ scene, player }) {
   const doors = [];
 
-  // ---- Lounge balcony double door: opening z 4.9..6.5 at the window wall (x = 0) ----
-  {
-    const z0 = 4.9, z1 = 6.5, half = (z1 - z0) / 2;
+  // ---- Frameless glass double doors in the west window wall (x = 0), both leaves swing inward ----
+  const glassDoubleDoor = (z0, z1, name) => {
+    const half = (z1 - z0) / 2;
     const g = new THREE.Group();
     scene.add(g);
     const left = new THREE.Group(); left.position.set(0, 0, z0); g.add(left);
@@ -48,14 +49,16 @@ export function initDoors({ scene, player }) {
     const block = { minX: -0.08, maxX: 0.08, minZ: z0, maxZ: z1 };
     colliders.push(block);
     doors.push({
-      name: 'balcony door', x: 0, z: (z0 + z1) / 2, t: 0, target: 0, block,
+      name, x: 0, z: (z0 + z1) / 2, t: 0, target: 0, block,
       apply(t) {
         const a = t * Math.PI / 2 * 0.95; // both leaves swing in toward +x
         left.rotation.y = a;
         right.rotation.y = -a;
       },
     });
-  }
+  };
+  glassDoubleDoor(4.9, 6.5, 'balcony door');                         // lounge (suggestion 10)
+  glassDoubleDoor(MEET_DOOR[0], MEET_DOOR[1], 'meeting room door');  // meeting room ↔ terrace (same style)
 
   // ---- Cabin doors (built by glassWall) ----
   for (const d of doorLeaves) {

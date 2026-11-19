@@ -389,5 +389,197 @@
     "folder": "012-make-all-cabin-door-like-f",
     "files": [],
     "reply": "All three cabin doors (Corner cabin, Cabin 1, Cabin 2) now start closed and open/close with F when you stand next to them, the same as the balcony door. A closed door blocks you; the bottom-left hint shows which door F will use. Code: glassWall() in src/world/helpers.js hands the leaf to src/doors.js."
+  },
+  {
+    "point": [
+      -1.71,
+      1.18,
+      18.7
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Terrace",
+    "target": "Terrace",
+    "view": {
+      "x": -1.6,
+      "z": 13.74,
+      "yaw": 3.12,
+      "pitch": -0.09
+    },
+    "text": "need to extend more like in right side there is a meeing room and also include the table and char to extend , and add meeint room in right side and also after meeting room it also need some space so extend almost a bit more like use this images and add meeting room with the inside image , and from the office view i add that",
+    "section": "Terrace · Terrace",
+    "status": "done",
+    "updated": 1795090046696,
+    "id": "smwni2zdq",
+    "n": 13,
+    "created": 1795089739297,
+    "folder": "013-need-to-extend-more-like-in",
+    "files": [
+      {
+        "name": "IMG_5666.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5666.HEIC"
+      },
+      {
+        "name": "IMG_5666.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5666.jpg"
+      },
+      {
+        "name": "IMG_5667.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5667.HEIC"
+      },
+      {
+        "name": "IMG_5667.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5667.jpg"
+      },
+      {
+        "name": "IMG_5668.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5668.HEIC"
+      },
+      {
+        "name": "IMG_5668.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5668.jpg"
+      },
+      {
+        "name": "IMG_5669.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5669.HEIC"
+      },
+      {
+        "name": "IMG_5669.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5669.jpg"
+      },
+      {
+        "name": "IMG_5670.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5670.HEIC"
+      },
+      {
+        "name": "IMG_5670.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5670.jpg"
+      },
+      {
+        "name": "IMG_5671.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5671.HEIC"
+      },
+      {
+        "name": "IMG_5671.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/013-need-to-extend-more-like-in/IMG_5671.jpg"
+      }
+    ],
+    "reply": "Extended the terrace past the workspace back wall to z 25.2 m and added a meeting room on the window side (x 0–3.7, z 18.7–22.6) from your photos: white walls, exposed black ceiling, a long grey-oak table with 7 mesh chairs, a TV on a rolling stand in front of the glass window to the workspace, a grey linear light plus black cylinder pendants, a split AC, a white flush door and a tall white shelf in the window corner, and a low wooden cabinet under the window. From the terrace there is a glass double door into it, the same as the lounge balcony door (press F to open). After the meeting room the facade is white plaster with the wash basin and outdoor AC, and the pantry (counter, table, stools, water cans, palms) moved to the new far end. Code: src/world/meeting.js, src/world/terrace.js, src/doors.js."
+  },
+  {
+    "point": [
+      1.41,
+      1.62,
+      18.6
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Workspace",
+    "target": "Back wall",
+    "view": {
+      "x": 2.9,
+      "z": 14.57,
+      "yaw": 2.79,
+      "pitch": -0.01
+    },
+    "text": "i added a suggestion 13 and so that the view look like this in the image",
+    "section": "Back wall · Workspace",
+    "status": "done",
+    "updated": 1795090046696,
+    "id": "smwni3uhk",
+    "n": 14,
+    "created": 1795089779505,
+    "folder": "014-i-added-a-suggestion-13-and",
+    "files": [
+      {
+        "name": "IMG_5673.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/014-i-added-a-suggestion-13-and/IMG_5673.HEIC"
+      },
+      {
+        "name": "IMG_5673.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/014-i-added-a-suggestion-13-and/IMG_5673.jpg"
+      }
+    ],
+    "reply": "The workspace back wall now has a black-framed glass window (3×3 panes, about 2.5 m wide, near the windows) looking into the new meeting room, so from your saved view you see the TV, the table and chairs, and the terrace beyond, like IMG_5673. Code: src/world/workspace.js."
+  },
+  {
+    "point": [
+      3.1,
+      1.6,
+      4.74
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Cabin 2",
+    "target": "Wall (Cabin 2)",
+    "view": {
+      "x": 5.32,
+      "z": 5.21,
+      "yaw": 1.36,
+      "pitch": -0.02
+    },
+    "text": "make this as glass only this side like the same to left glass",
+    "section": "Wall (Cabin 2) · Cabin 2",
+    "status": "done",
+    "updated": 1795090445669,
+    "id": "smwniejtv",
+    "n": 15,
+    "created": 1795090278893,
+    "folder": "015-make-this-as-glass-only-this",
+    "files": [],
+    "reply": "Cabin 2's wall facing the window lounge (x 3.0, z 3.5–5.75) is now black-framed glass, the same as Cabin 2's glass front, so you can see from the cabin into the lounge and out to the terrace. Only this side changed: the bit behind the corner cabin stays a solid wall, and the strip above the ceiling line is still wall. Code: src/world/corridor.js."
+  },
+  {
+    "point": [
+      6.02,
+      1.57,
+      4.6
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Cabin 2",
+    "target": "Built-in shelves",
+    "view": {
+      "x": 4.84,
+      "z": 5.44,
+      "yaw": -0.95,
+      "pitch": -0.05
+    },
+    "text": "make this also a glass like front and remove this locker like transperent view",
+    "section": "Built-in shelves · Cabin 2",
+    "status": "done",
+    "updated": 1795090737565,
+    "id": "smwningm5",
+    "n": 16,
+    "created": 1795090694631,
+    "folder": "016-make-this-also-a-glass-like",
+    "files": [],
+    "reply": "The wall between Cabin 2 and Cabin 1 is now black-framed glass like the cabin fronts, and the white built-in shelves that stood against it in Cabin 2 are removed, so you can see straight through into Cabin 1. Cabin 1's own built-ins on its far (east) wall are kept. Code: src/world/corridor.js."
   }
 ]

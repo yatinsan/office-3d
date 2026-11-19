@@ -65,8 +65,11 @@ function cabin(root, xc, zDesk, { chairsZ, back, len = 1.6, visitors = [-0.4, 0.
 export function buildCorridor(root) {
   // ---- Walls ----
   wall(root, CAB_X0, CAB_BACK, CAB_X1, CAB_BACK, { h: H });            // cabins' back wall
-  wall(root, CAB_X0, 0, CAB_X0, CAB_FRONT, { h: H });                   // corner cabin | cabin 2 / lounge
-  wall(root, CAB_SPLIT, CAB_BACK, CAB_SPLIT, CAB_FRONT, { h: LOBBY_CEIL, t: 0.15 });
+  wall(root, CAB_X0, 0, CAB_X0, CORNER_Z, { h: H });                    // corner cabin | cabin 2
+  // cabin 2 | window lounge: black-framed glass like cabin 2's front (suggestion 15), solid above the ceiling
+  glassWall(root, { x0: CAB_X0, z0: CORNER_Z, x1: CAB_X0, z1: CAB_FRONT, h: LOBBY_CEIL });
+  wall(root, CAB_X0, CORNER_Z, CAB_X0, CAB_FRONT, { h: H - LOBBY_CEIL, y0: LOBBY_CEIL, collide: false });
+  glassWall(root, { x0: CAB_SPLIT, z0: CAB_BACK, x1: CAB_SPLIT, z1: CAB_FRONT, h: LOBBY_CEIL }); // cabin 2 | cabin 1: glass (suggestion 16)
   concreteS(root, CAB_X0 + 0.1, CAB_SPLIT - 0.08, CAB_BACK);
   concreteS(root, CAB_SPLIT + 0.08, CAB_X1, CAB_BACK);
 
@@ -80,7 +83,7 @@ export function buildCorridor(root) {
   builtIns(root, CAB_X1, CAB_BACK + 0.1, 5.65, -1);   // white built-ins on cabin 1's east wall (scan frames 412/416)
   // ---- Cabin 2 (x 3..7) ----
   cabin(root, 4.0, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.5 }); // moved west (suggestion 5)
-  builtIns(root, CAB_SPLIT - 0.075, CAB_BACK + 0.1, 4.6, -1);
+  // (built-in shelves on the shared wall removed so the glass stays see-through, suggestion 16)
   solid(pottedPlant(root, 5.35, 3.45, { size: 0.35, h: 0.4 }));
 
   // ---- Corner cabin (x 0..3, z 0..3.3), windows behind the desk ----
