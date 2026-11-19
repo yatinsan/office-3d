@@ -137,7 +137,7 @@ const std = (o) => new THREE.MeshStandardMaterial(o);
 export const M = {
   floorBeige: std({ map: tileTex([196, 180, 160], 14, '#a8998a'), roughness: 0.3, metalness: 0.0 }),
   floorDark: std({ map: tileTex([78, 78, 80], 12, '#5a5a5c'), roughness: 0.6 }),
-  floorTerrace: std({ map: tileTex([176, 120, 104], 18, '#8a5c4f'), roughness: 0.8 }),
+  floorTerrace: std({ map: tileTex([184, 160, 136], 16, '#9c7e66'), roughness: 0.75 }),
   floorCorridor: std({ map: tileTex([226, 214, 196], 8, '#cbbfae'), roughness: 0.12 }),
   wall: std({ color: '#dededb', roughness: 0.92 }),
   wallWarm: std({ color: '#e6e1d6', roughness: 0.92 }),

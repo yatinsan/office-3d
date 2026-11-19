@@ -20,6 +20,11 @@ export const LOGO_X = 7.3;     // logo wall face (faces east, into reception)
 export const LOGO_T = 0.15;    // logo wall is a thin partition (lockers stand against its workspace side)
 export const LOBBY_S = 9.25;   // reception's south wall, reception face (0.35 m thick; workspace face at 9.6)
 export const D = BACK_Z;
+// Meeting room behind the workspace back wall, on the window side (suggestions 13 + 14, photos IMG_5669–5673).
+export const MEET_X1 = 3.7;    // meeting room east wall
+export const MEET_Z1 = 22.6;   // meeting room far (south) wall
+export const MEET_DOOR = [20.0, 21.6]; // glass double door from the terrace (like the lounge balcony door)
+export const TERRACE_Z1 = 25.2; // terrace runs on past the meeting room
 
 /** Scales a geometry's UVs so a texture tile spans `tile` metres. */
 export function worldUV(geo, sx, sy, tile) {
