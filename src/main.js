@@ -1,0 +1,112 @@
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { buildWorld, zoneAt, SPAWN } from './world/index.js';
+import { createPlayer } from './controls.js';
+import { mergeStatic } from './merge.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.9;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const HAZE = new THREE.Color('#d3d9da');
+scene.background = HAZE;
+scene.fog = new THREE.Fog(HAZE, 90, 1000);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.45;
+
+const camera = new THREE.PerspectiveCamera(78, innerWidth / innerHeight, 0.05, 1500); // wider, closer to the phone photos
+
+// ---- Lights ----
+scene.add(new THREE.HemisphereLight('#f6f7ff', '#7a7066', 0.8));
+const sun = new THREE.DirectionalLight('#fff3e2', 1.5);
+sun.position.set(-22, 20, 4);
+sun.target.position.set(5, 0, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 80 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+// Soft fill from the lobby so the (window-less) reception isn't flat.
+const fill = new THREE.PointLight('#ffe8c8', 6, 12, 1.5);
+fill.position.set(8.7, 2.6, 7.8);
+scene.add(fill);
+
+// ---- World ----
+const world = new THREE.Group();
+buildWorld(world);
+const drawGroups = mergeStatic(world);
+scene.add(world);
+
+// ---- Player ----
+const player = createPlayer(camera, renderer.domElement, { spawn: SPAWN, yaw: SPAWN.yaw });
+const overlay = document.getElementById('overlay');
+overlay.addEventListener('click', () => {
+  try {
+    const p = player.controls.domElement.requestPointerLock();
+    if (p && p.catch) p.catch(() => enableDragMode());
+  } catch { enableDragMode(); }
+});
+// Embedded browsers (e.g. app preview panes) may block Pointer Lock: fall back to click-and-drag look.
+function enableDragMode() {
+  player.state.dragMode = true;
+  overlay.classList.add('hidden');
+  hud.dataset.mode = 'drag';
+}
+document.addEventListener('pointerlockerror', enableDragMode);
+addEventListener('keydown', (e) => { if (e.code === 'Escape' && player.state.dragMode) { player.state.dragMode = false; overlay.classList.remove('hidden'); } });
+player.controls.addEventListener('lock', () => overlay.classList.add('hidden'));
+player.controls.addEventListener('unlock', () => overlay.classList.remove('hidden'));
+
+// ---- Quality toggle ----
+let high = true;
+addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyQ') return;
+  high = !high;
+  sun.castShadow = high;
+  renderer.setPixelRatio(high ? Math.min(devicePixelRatio, 2) : 1);
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---- HUD ----
+const zoneEl = document.getElementById('zone');
+const hud = document.getElementById('hud');
+let zone = '', zoneTimer = 0, fpsT = 0, frames = 0;
+function updateZone(dt) {
+  const z = zoneAt(player.pos.x, player.pos.z);
+  if (z !== zone) {
+    zone = z; zoneEl.textContent = z; zoneEl.classList.add('show'); zoneTimer = 2.2;
+  }
+  if (zoneTimer > 0 && (zoneTimer -= dt) <= 0) zoneEl.classList.remove('show');
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta();
+  player.update(dt);
+  updateZone(dt);
+  frames++; fpsT += dt;
+  if (fpsT > 0.5) {
+    hud.textContent = `${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q)${player.state.dragMode ? ' · drag mouse to look' : ''}`;
+    frames = 0; fpsT = 0;
+  }
+  renderer.render(scene, camera);
+});
+
+// Handy for debugging from the console.
+Object.assign(window, { __office: { scene, camera, player, renderer } });
