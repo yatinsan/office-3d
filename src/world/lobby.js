@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M } from '../materials.js';
 import { box, cyl, plane, sofa, conePendant, pottedPlant } from '../props.js';
 import { solid, addBox } from '../colliders.js';
-import { slab, wall, glassWall, worldUV, LOBBY_CEIL, H, LOBBY_E, CAB_BACK, CAB_FRONT, CAB_X1, LOGO_X, LOBBY_S } from './helpers.js';
+import { slab, wall, glassWall, worldUV, LOBBY_CEIL, H, LOBBY_E, CAB_BACK, CAB_FRONT, CAB_X1, LOGO_X, LOGO_T, LOBBY_S } from './helpers.js';
 
 /** Thin dark inlay line on the east-facing logo wall, from (z0,y0) to (z1,y1). */
 function lineE(root, z0, y0, z1, y1) {
@@ -18,11 +18,11 @@ function lineE(root, z0, y0, z1, y1) {
  *  - North: cabin 1's glass front and the concrete pillar with the trophy niche + fingerprint reader.
  */
 export function buildLobby(root) {
-  const z0 = 7.4; // logo block runs z 7.4..9.25 (scan), 0.4 m thick
+  const z0 = 7.4; // logo wall runs z 7.4..9.25 (scan); thin partition
   // ---- Logo wall ----
-  box(root, M.concrete, 0.4, LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - 0.2, LOBBY_CEIL / 2, (z0 + LOBBY_S + 0.35) / 2);
-  box(root, M.wall, 0.4, H - LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - 0.2, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (z0 + LOBBY_S + 0.35) / 2, { shadow: false });
-  addBox(LOGO_X - 0.4, z0, LOGO_X, LOBBY_S + 0.35);
+  box(root, M.concrete, LOGO_T, LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - LOGO_T / 2, LOBBY_CEIL / 2, (z0 + LOBBY_S + 0.35) / 2);
+  box(root, M.wall, LOGO_T, H - LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - LOGO_T / 2, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (z0 + LOBBY_S + 0.35) / 2, { shadow: false });
+  addBox(LOGO_X - LOGO_T, z0, LOGO_X, LOBBY_S + 0.35);
   const fw = LOBBY_S - z0;
   const face = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(fw, LOBBY_CEIL), fw, LOBBY_CEIL, 1.6), M.concrete);
   face.position.set(LOGO_X + 0.003, LOBBY_CEIL / 2, (z0 + LOBBY_S) / 2);
@@ -38,7 +38,7 @@ export function buildLobby(root) {
   box(root, M.concrete, 0.5, LOBBY_CEIL, 0.3, LOGO_X - 0.15, LOBBY_CEIL / 2, z0 + 0.15);
 
   // ---- South: frosted shard glass onto the workspace ----
-  wall(root, LOGO_X - 0.4, LOBBY_S + 0.175, 8.3, LOBBY_S + 0.175, { h: H, t: 0.35 }); // 0.35 m thick (scan: faces at 9.25 / 9.6)
+  wall(root, LOGO_X - LOGO_T, LOBBY_S + 0.175, 8.3, LOBBY_S + 0.175, { h: H, t: 0.35 }); // 0.35 m thick (scan: faces at 9.25 / 9.6)
   const fp = plane(root, M.glassFrost, LOBBY_E - 8.3, LOBBY_CEIL - 0.1, (8.3 + LOBBY_E) / 2, LOBBY_CEIL / 2, LOBBY_S);
   fp.renderOrder = 2;
   for (const [x, y, r] of [[8.7, 1.5, 0.5], [9.25, 0.9, -0.4], [9.25, 2.2, 0.6], [9.85, 1.4, -0.5]]) {

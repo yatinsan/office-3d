@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floor Plan Editor</title>
+<style>
+  :root { --bg:#f4f3ef; --panel:#fff; --ink:#1d1d1b; --muted:#6b6a65; --line:#dcdad3; --accent:#1a3fbf; --bad:#d23b2a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, system-ui, sans-serif; background:var(--bg); color:var(--ink); display:flex; height:100vh; }
+  #wrap { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; padding:12px; }
+  svg { height:100%; max-width:100%; background:#fff; border:1px solid var(--line); border-radius:8px; touch-action:none; user-select:none; }
+  aside { width:290px; background:var(--panel); border-left:1px solid var(--line); padding:16px; overflow:auto; }
+  h1 { font-size:17px; margin:0 0 4px; font-weight:600; }
+  p.hint { color:var(--muted); margin:0 0 14px; font-size:13px; }
+  .box { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .box b { display:block; margin-bottom:4px; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  button { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
+  button:hover { border-color:#999; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  textarea { width:100%; height:150px; font:11px/1.4 ui-monospace, monospace; border:1px solid var(--line); border-radius:6px; padding:6px; }
+  .bad { color:var(--bad); }
+  .mov { cursor:grab; }
+  .mov.drag { cursor:grabbing; }
+  .mov.sel .top { stroke:var(--accent); stroke-width:.06; }
+  .mov.hit .top { stroke:var(--bad); stroke-width:.07; }
+  label { display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:8px; }
+  @media (max-width: 760px) { body { flex-direction:column; height:auto; } aside { width:auto; border-left:0; border-top:1px solid var(--line); } svg { height:auto; width:100%; } }
+</style>
+</head>
+<body>
+<div id="wrap"><svg id="plan" viewBox="-0.9 -0.9 12.9 20.3"></svg></div>
+<aside>
+  <h1>Floor plan editor</h1>
+  <p class="hint">Drag a table, desk or the lockers to move it. Press <b>R</b> or double-click to rotate 90°. Arrow keys nudge by 5 cm. Hold Shift while dragging to move freely (otherwise snaps to 5 cm). Red outline = touching a wall, pillar or another item.</p>
+  <div class="box" id="info"><b>Nothing selected</b><span class="hint">Click an item.</span></div>
+  <label><input type="checkbox" id="grid" checked> Show 1 m grid</label>
+  <div class="row">
+    <button id="rot">Rotate 90°</button>
+    <button id="reset">Reset all</button>
+  </div>
+  <div class="row"><button class="primary" id="copy">Copy layout</button></div>
+  <textarea id="out" readonly></textarea>
+  <p class="hint">Your changes are saved in this browser. When you're happy, tell Claude "use the editor layout" (or paste the text above).</p>
+</aside>
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('plan');
+const STORE = 'pixbit-floorplan-v1';
+const SNAP = 0.05, CHAIR_R = 0.27;
+
+// ---------- static shell (metres: x from windows, z from cabin end) ----------
+const ZONES = [
+  ['#efe4d2', 0, 0, 3, 7.95], ['#efe4d2', 3, 3, 10.3, 7.95], ['#efe4d2', 6.9, 7.95, 10.3, 9.25],
+  ['#d3d3d6', 0, 7.95, 7.15, 18.7], ['#d3d3d6', 7.15, 9.6, 10.05, 18.7], ['#efe4d2', 3.3, 17.6, 10.05, 18.7],
+];
+const SOLIDS = [ // [fill, stroke, x0, z0, x1, z1, label, blocks]
+  ['#2b2b2b', null, 3, 2.9, 8.9, 3.1], ['#2b2b2b', null, 2.9, 0, 3.1, 5.75], ['#2b2b2b', null, 6.08, 3, 6.23, 5.75],
+  ['#2b2b2b', null, 0, 7.8, 1.3, 8.1, '', 1], ['#2b2b2b', null, 0, 18.6, 10.05, 18.8, '', 1], ['#2b2b2b', null, 9.95, 9.6, 10.15, 18.7, '', 1],
+  ['#2b2b2b', null, 7.15, 9.25, 8.3, 9.6, '', 1], ['#2b2b2b', null, 0, -0.1, 3, 0], ['#2b2b2b', null, 7.15, 7.4, 7.3, 9.6, '', 1],
+  ['#9b9b95', '#555', 8.9, 3, 10.35, 5.75, 'PILLAR'], ['#9b9b95', '#555', 2.35, 0, 3, 0.65],
+  ['#7fd0f0', '#2a8db8', 0, 3.44, 3, 3.56], ['#7fd0f0', '#2a8db8', 3, 5.69, 8.9, 5.81], ['#7fd0f0', '#2a8db8', 10.24, 5.75, 10.36, 9.25],
+  ['#e8eef0', '#888', 8.3, 9.17, 10.3, 9.33, '', 1],
+  ['#222', null, 7.32, 7.5, 8.22, 9.3, 'Sofa'], ['#f2c500', null, 7.3, 7.6, 7.36, 9.2],
+  ['#fff', '#333', 8.88, 5.97, 9.65, 7.22, 'Recep'],
+  ['#fff', '#6b4a2b', 0.8, 1.45, 2.4, 2.25, 'C3'], ['#fff', '#6b4a2b', 4.0, 3.95, 5.5, 4.75, 'C2'], ['#fff', '#6b4a2b', 6.55, 3.95, 8.15, 4.75, 'C1'],
+  ['#fff', '#777', 5.67, 3.1, 6.08, 4.6], ['#fff', '#777', 8.5, 3.1, 8.9, 5.65],
+  ['#222', null, 2.13, 4.23, 2.88, 6.05], ['#555', null, 0.25, 6.88, 0.95, 7.63], ['#555', null, 0.4, 3.83, 1.1, 4.58],
+  ['#f2c500', '#222', 1.3, 7.75, 2.6, 8.2, '', 1], ['#f2c500', '#222', 4.3, 7.75, 6.9, 8.2, '', 1],
+  ['#fff', '#333', 7.05, 15.4, 7.65, 16.0, '', 1], ['#fff', '#333', 0, 15.5, 1.25, 15.9, '', 1],
+  ['#f1d27a', '#222', 6.85, 18.55, 7.85, 18.7], ['#f1d27a', '#222', 3.3, 18.55, 4.26, 18.7], ['#dfe6e8', '#222', 9.2, 18.55, 10, 18.7],
+  ['#111', null, 4.05, 18.25, 4.35, 18.55, '', 1],
+];
+const STATIC_CHAIRS = [[7.25, 3.6], [7.7, 5.15], [8.2, 5.15], [4.65, 3.6], [4.35, 5.15], [5.15, 5.15], [1.5, 1.05], [1.35, 2.95], [2.05, 2.95]];
+const DOORS = [[[0.15, 3.5], [1.05, 3.5]], [[6.05, 5.75], [5.15, 5.75]], [[6.25, 5.75], [7.15, 5.75]]]; // hinge, free end (swing north)
+const LABELS = [[1.5, 0.9, 'CORNER CABIN'], [4.6, 3.4, 'CABIN 2'], [7.4, 3.4, 'CABIN 1'], [1.5, 5.3, 'LOUNGE'],
+  [4.3, 6.75, 'CORRIDOR'], [8.9, 8.45, 'RECEPTION'], [10.9, 8.3, 'ENTRANCE'], [7.95, 14.9, 'OPEN WORKSPACE']];
+const ROOM = { x0: 0, z0: 8.2, x1: 9.95, z1: 18.6 };
+
+// ---------- movable items ----------
+const tableChairs = (xs, d) => xs.flatMap(x => [[x, -(d / 2 + 0.35)], [x, d / 2 + 0.35]]);
+const DEFAULTS = [
+  ...[10.8, 13.6, 16.4].flatMap((z, i) => [
+    { id: 'W' + (i + 1), kind: 'Window table · 4 seats', x: 2.15, z, w: 1.4, d: 1.2, rot: 0, chairs: tableChairs([-0.35, 0.35], 1.2) },
+    { id: 'L' + (i + 1), kind: 'Long table · 8 seats', x: 5.2, z, w: 2.8, d: 1.2, rot: 0, chairs: tableChairs([-1.05, -0.35, 0.35, 1.05], 1.2) },
+  ]),
+  ...[10.85, 13.6, 16.4].map((z, i) => ({ id: 'E' + (i + 1), kind: 'East-wall desk · 2 seats', x: 9.3, z, w: 1.3, d: 0.8, rot: 0, chairs: [[0, -0.75], [0, 0.75]] })),
+  { id: 'LOCK', kind: 'Lockers (front faces west)', x: 6.875, z: 8.875, w: 0.55, d: 1.25, rot: 0, chairs: [], lockers: true },
+];
+let items = load();
+let sel = null;
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE));
+    if (Array.isArray(s)) return DEFAULTS.map(d => ({ ...d, ...(s.find(o => o.id === d.id) || {}) }));
+  } catch (e) {}
+  return structuredClone(DEFAULTS);
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(items.map(({ id, x, z, rot }) => ({ id, x, z, rot })))); } catch (e) {}
+}
+
+// ---------- geometry ----------
+const r2 = v => Math.round(v * 100) / 100;
+const rotPt = ([lx, lz], rot) => rot % 180 ? [-lz, lx] : [lx, lz];
+function dims(it) { return it.rot % 180 ? [it.d, it.w] : [it.w, it.d]; }
+function bounds(it) {
+  const [w, d] = dims(it);
+  return { x0: it.x - w / 2, z0: it.z - d / 2, x1: it.x + w / 2, z1: it.z + d / 2 };
+}
+function chairPts(it) { return it.chairs.map(c => { const [a, b] = rotPt(c, it.rot); return [it.x + a, it.z + b]; }); }
+function boxes(it) {
+  return [bounds(it), ...chairPts(it).map(([x, z]) => ({ x0: x - CHAIR_R, z0: z - CHAIR_R, x1: x + CHAIR_R, z1: z + CHAIR_R }))];
+}
+const overlap = (a, b) => a.x0 < b.x1 - 1e-6 && b.x0 < a.x1 - 1e-6 && a.z0 < b.z1 - 1e-6 && b.z0 < a.z1 - 1e-6;
+function hits(it) {
+  const mine = boxes(it);
+  const obstacles = SOLIDS.filter(s => s[7]).map(s => ({ x0: s[2], z0: s[3], x1: s[4], z1: s[5] }));
+  const others = items.filter(o => o !== it).flatMap(boxes);
+  const E = 1e-6, outside = mine.some(b => b.x0 < ROOM.x0 - E || b.x1 > ROOM.x1 + E || b.z0 < ROOM.z0 - E || b.z1 > ROOM.z1 + E);
+  return outside || mine.some(b => obstacles.some(o => overlap(b, o)) || others.some(o => overlap(b, o)));
+}
+function gaps(it) {
+  // clear distance from the item's outline (incl. chairs) to the nearest thing in each direction
+  const all = boxes(it);
+  const me = { x0: Math.min(...all.map(b => b.x0)), z0: Math.min(...all.map(b => b.z0)), x1: Math.max(...all.map(b => b.x1)), z1: Math.max(...all.map(b => b.z1)) };
+  const obs = [...SOLIDS.filter(s => s[7]).map(s => ({ x0: s[2], z0: s[3], x1: s[4], z1: s[5] })),
+    ...items.filter(o => o !== it).flatMap(boxes),
+    { x0: -1, z0: 0, x1: 0, z1: 20 }, { x0: ROOM.x1, z0: 0, x1: 12, z1: 20 }, { x0: -1, z0: 0, x1: 12, z1: ROOM.z0 }, { x0: -1, z0: ROOM.z1, x1: 12, z1: 21 }];
+  const g = { north: 99, south: 99, west: 99, east: 99 };
+  for (const o of obs) {
+    const xs = o.x0 < me.x1 && me.x0 < o.x1, zs = o.z0 < me.z1 && me.z0 < o.z1;
+    if (xs && o.z1 <= me.z0 + 1e-6) g.north = Math.min(g.north, me.z0 - o.z1);
+    if (xs && o.z0 >= me.z1 - 1e-6) g.south = Math.min(g.south, o.z0 - me.z1);
+    if (zs && o.x1 <= me.x0 + 1e-6) g.west = Math.min(g.west, me.x0 - o.x1);
+    if (zs && o.x0 >= me.x1 - 1e-6) g.east = Math.min(g.east, o.x0 - me.x1);
+  }
+  return g;
+}
+
+// ---------- drawing ----------
+const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+const rect = (p, x0, z0, x1, z1, fill, stroke, sw = 0.03) => el('rect', { x: x0, y: z0, width: x1 - x0, height: z1 - z0, fill: fill || 'none', stroke: stroke || 'none', 'stroke-width': sw }, p);
+const text = (p, x, z, t, size = 0.32, fill = '#8a1c1c', weight = 600) => { const e = el('text', { x, y: z, 'font-size': size, fill, 'font-weight': weight, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'pointer-events': 'none' }, p); e.textContent = t; return e; };
+
+const gridG = el('g', {});
+function drawStatic() {
+  for (const [f, ...b] of ZONES) rect(svg, ...b, f);
+  for (let i = 0; i <= 10; i++) { el('line', { x1: i, y1: 0, x2: i, y2: 18.7, stroke: '#3355ff', 'stroke-opacity': .15, 'stroke-width': .02 }, gridG); text(gridG, i + 0.5, -0.45, 'ABCDEFGHIJK'[i], .3, '#1a3fbf'); }
+  for (let j = 0; j <= 18; j++) { el('line', { x1: 0, y1: j, x2: 10.6, y2: j, stroke: '#3355ff', 'stroke-opacity': .15, 'stroke-width': .02 }, gridG); text(gridG, -0.45, j + 0.5, String(j + 1), .3, '#1a3fbf'); }
+  svg.appendChild(gridG);
+  for (const [f, s, x0, z0, x1, z1, label] of SOLIDS) { rect(svg, x0, z0, x1, z1, f, s); if (label) text(svg, (x0 + x1) / 2, (z0 + z1) / 2, label, .26, f === '#222' ? '#fff' : '#111', 500); }
+  el('line', { x1: -0.04, y1: 0, x2: -0.04, y2: 18.7, stroke: '#4aa3e0', 'stroke-width': .1 });
+  el('line', { x1: 0, y1: -0.04, x2: 3, y2: -0.04, stroke: '#4aa3e0', 'stroke-width': .1 });
+  el('line', { x1: 10.3, y1: 7.6, x2: 10.3, y2: 8.65, stroke: '#fff', 'stroke-width': .14 });
+  el('line', { x1: 10.3, y1: 7.6, x2: 10.3, y2: 8.65, stroke: '#d00', 'stroke-width': .05 });
+  for (const [[hx, hz], [ex, ez]] of DOORS) {
+    const r = Math.abs(ex - hx);
+    el('line', { x1: hx, y1: hz, x2: ex, y2: ez, stroke: '#fff', 'stroke-width': .14 });
+    el('line', { x1: hx, y1: hz, x2: hx, y2: hz - r, stroke: '#d00', 'stroke-width': .05 });
+    el('path', { d: `M${ex} ${ez} A${r} ${r} 0 0 ${ex < hx ? 1 : 0} ${hx} ${hz - r}`, fill: 'none', stroke: '#d00', 'stroke-width': .02 });
+  }
+  for (const [x, z] of STATIC_CHAIRS) el('circle', { cx: x, cy: z, r: .19, fill: '#3a3a3a' });
+  for (const [x, z, t] of LABELS) text(svg, x, z, t, .3);
+}
+drawStatic();
+const movG = el('g', {});
+
+function render() {
+  movG.innerHTML = '';
+  for (const it of items) {
+    const g = el('g', { class: 'mov' + (it === sel ? ' sel' : '') + (hits(it) ? ' hit' : ''), 'data-id': it.id }, movG);
+    for (const [x, z] of chairPts(it)) el('circle', { cx: x, cy: z, r: .19, fill: '#3a3a3a' }, g);
+    const b = bounds(it);
+    const top = rect(g, b.x0, b.z0, b.x1, b.z1, it.lockers ? '#fafafa' : '#e7d3ad', '#6b4a2b', .03);
+    top.classList.add('top');
+    if (it.lockers) {
+      // front edge: west by default, rotates with the unit
+      const fronts = [[b.x0, b.z0, b.x0, b.z1], [b.x0, b.z0, b.x1, b.z0], [b.x1, b.z0, b.x1, b.z1], [b.x0, b.z1, b.x1, b.z1]];
+      const [x1, y1, x2, y2] = fronts[(it.rot / 90) % 4];
+      el('line', { x1, y1, x2, y2, stroke: '#111', 'stroke-width': .1 }, g);
+      text(g, it.x, it.z, 'LOCK', .2, '#111', 600).setAttribute('transform', it.rot % 180 ? '' : `rotate(-90 ${it.x} ${it.z})`);
+    } else text(g, it.x, it.z, it.id, .3, '#111', 600);
+  }
+  svg.appendChild(movG);
+  info();
+  out.value = JSON.stringify(items.map(it => ({ id: it.id, x: r2(it.x), z: r2(it.z), rot: it.rot, ...Object.fromEntries(Object.entries(bounds(it)).map(([k, v]) => [k, r2(v)])) })), null, 1);
+}
+const out = document.getElementById('out');
+function info() {
+  const box = document.getElementById('info');
+  if (!sel) { box.innerHTML = '<b>Nothing selected</b><span class="hint">Click an item.</span>'; return; }
+  const b = bounds(sel), g = gaps(sel), f = v => v > 50 ? '–' : r2(v).toFixed(2) + ' m';
+  box.innerHTML = `<b>${sel.id} · ${sel.kind}</b>
+    centre x ${r2(sel.x).toFixed(2)}, z ${r2(sel.z).toFixed(2)}<br>
+    spans x ${r2(b.x0)}–${r2(b.x1)}, z ${r2(b.z0)}–${r2(b.z1)}<br>
+    clear space (incl. chairs):<br>&nbsp; up ${f(g.north)} · down ${f(g.south)}<br>&nbsp; left ${f(g.west)} · right ${f(g.east)}
+    ${hits(sel) ? '<div class="bad">Overlapping something</div>' : ''}`;
+}
+
+// ---------- interaction ----------
+let drag = null;
+const toPlan = e => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+svg.addEventListener('pointerdown', e => {
+  const g = e.target.closest('.mov');
+  if (!g) { sel = null; render(); return; }
+  sel = items.find(i => i.id === g.dataset.id);
+  const p = toPlan(e);
+  drag = { dx: sel.x - p.x, dz: sel.z - p.y };
+  svg.setPointerCapture(e.pointerId);
+  render();
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag || !sel) return;
+  const p = toPlan(e);
+  let x = p.x + drag.dx, z = p.y + drag.dz;
+  if (!e.shiftKey) { x = Math.round(x / SNAP) * SNAP; z = Math.round(z / SNAP) * SNAP; }
+  sel.x = x; sel.z = z;
+  render();
+  movG.querySelector(`[data-id="${sel.id}"]`)?.classList.add('drag');
+});
+svg.addEventListener('pointerup', () => { if (drag) { drag = null; save(); render(); } });
+svg.addEventListener('dblclick', e => { if (e.target.closest('.mov') && sel) rotate(); });
+function rotate() { if (!sel) return; sel.rot = (sel.rot + 90) % 360; save(); render(); }
+document.getElementById('rot').onclick = rotate;
+document.getElementById('reset').onclick = () => { if (confirm('Reset every item to the layout the 3D model uses (layout.json)?')) { items = structuredClone(DEFAULTS); sel = null; save(); render(); } };
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(out.value); document.getElementById('copy').textContent = 'Copied'; }
+  catch (e) { out.select(); document.getElementById('copy').textContent = 'Select + copy'; }
+  setTimeout(() => document.getElementById('copy').textContent = 'Copy layout', 1500);
+};
+document.getElementById('grid').onchange = e => gridG.style.display = e.target.checked ? '' : 'none';
+window.addEventListener('keydown', e => {
+  if (!sel) return;
+  const step = { ArrowLeft: [-SNAP, 0], ArrowRight: [SNAP, 0], ArrowUp: [0, -SNAP], ArrowDown: [0, SNAP] }[e.key];
+  if (step) { sel.x = r2(sel.x + step[0]); sel.z = r2(sel.z + step[1]); save(); render(); e.preventDefault(); }
+  if (e.key === 'r' || e.key === 'R') rotate();
+});
+window.getLayout = () => JSON.parse(out.value);
+render();
+// layout.json (what the 3D model uses) is the starting point; browser-saved edits win on top of it.
+fetch('layout.json').then(r => r.json()).then(saved => {
+  for (const d of DEFAULTS) Object.assign(d, (({ x, z, rot }) => ({ x, z, rot }))(saved.find(o => o.id === d.id) || d));
+  items = load(); render();
+}).catch(() => {});
+</script>
+</body>
+</html>

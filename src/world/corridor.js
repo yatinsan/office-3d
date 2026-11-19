@@ -69,9 +69,9 @@ export function buildCorridor(root) {
   concreteS(root, CAB_SPLIT + 0.08, CAB_X1, CAB_BACK);
 
   // ---- Glass fronts ----
-  glassWall(root, { x0: CAB_X0, z0: CAB_FRONT, x1: CAB_SPLIT, z1: CAB_FRONT, h: LOBBY_CEIL, door: [3.15, 4.35], swing: -1 });
-  glassWall(root, { x0: CAB_SPLIT, z0: CAB_FRONT, x1: CAB_X1, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.3, 7.4], swing: -1 }); // opens into the cabin, keeping the reception opening clear
-  glassWall(root, { x0: 0, z0: CORNER_Z, x1: CAB_X0, z1: CORNER_Z, h: LOBBY_CEIL, door: [1.75, 2.95], swing: -1 });
+  glassWall(root, { x0: CAB_X0, z0: CAB_FRONT, x1: CAB_SPLIT, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.05, 5.15], swing: -1 }); // hinged at the shared wall, next to cabin 1's door
+  glassWall(root, { x0: CAB_SPLIT, z0: CAB_FRONT, x1: CAB_X1, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.25, 7.15], swing: -1 }); // hinged at the shared wall, opens into the cabin
+  glassWall(root, { x0: 0, z0: CORNER_Z, x1: CAB_X0, z1: CORNER_Z, h: LOBBY_CEIL, door: [0.15, 1.05], swing: -1 }); // window end of the corner cabin
 
   // ---- Cabin 1 (x 7..9.6): desk, built-ins on the east side ----
   cabin(root, 7.35, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.6, visitors: [0.35, 0.85] }); // scan: desk x 6.6..8.3, z 4.0..4.7
@@ -84,7 +84,7 @@ export function buildCorridor(root) {
   // ---- Corner cabin (x 0..3, z 0..3.3), windows behind the desk ----
   execDesk(root, 1.6, 1.85);
   solid(officeChair(root, 1.5, 1.05, 0, { exec: true }), -0.1);
-  for (const x of [0.8, 1.45]) solid(visitorChair(root, x, 2.95, Math.PI), -0.05);
+  for (const x of [1.35, 2.05]) solid(visitorChair(root, x, 2.95, Math.PI), -0.05);
   box(root, M.concrete, 0.55, LOBBY_CEIL, 0.55, CAB_X0 - 0.38, LOBBY_CEIL / 2, 0.38);
   addBox(CAB_X0 - 0.65, 0, CAB_X0, 0.65);
   splitAC(root, CAB_X0 - 0.11, 2.55, 1.8, -Math.PI / 2);
@@ -92,7 +92,7 @@ export function buildCorridor(root) {
 
   // ---- Shelving partition along z = 8 (one walk-through gap at x 2.6..4.2) ----
   wall(root, 0, SHELF_Z, 1.3, SHELF_Z, { h: H, t: 0.3 });            // short white wall at the window corner
-  const units = [[1.3, 2.6], [4.3, 5.6], [5.6, LOGO_X - 0.4]];
+  const units = [[1.3, 2.6], [4.3, 5.6], [5.6, 6.9]]; // ends at the concrete fin by the logo wall
   for (const [a, b] of units) {
     const g = new THREE.Group();
     g.position.set(0, 0, SHELF_Z);

@@ -16,7 +16,8 @@ export const CAB_X0 = 3.0;     // cabin 2 x 3..6.15, cabin 1 x 6.15..8.9
 export const CAB_SPLIT = 6.15;
 export const CAB_X1 = 8.9;
 export const SHELF_Z = 7.95;   // shelving partition between corridor and workspace
-export const LOGO_X = 7.3;     // logo wall face (faces east, into reception); block is 0.4 m thick
+export const LOGO_X = 7.3;     // logo wall face (faces east, into reception)
+export const LOGO_T = 0.15;    // logo wall is a thin partition (lockers stand against its workspace side)
 export const LOBBY_S = 9.25;   // reception's south wall, reception face (0.35 m thick; workspace face at 9.6)
 export const D = BACK_Z;
 
