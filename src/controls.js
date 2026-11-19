@@ -75,5 +75,5 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     camera.position.set(pos.x, EYE + feetY + bob, pos.z);
   }
 
-  return { controls, update, pos, state };
+  return { controls, update, pos, vel, state, get feetY() { return feetY; } };
 }

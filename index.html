@@ -19,6 +19,30 @@
     .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; text-align: left; font-size: 14px; color: #ddd; }
     kbd { background: #2b2b2b; border: 1px solid #555; border-bottom-width: 3px; border-radius: 5px; padding: 1px 7px; font-family: inherit; font-size: 12px; color: #fff; }
     .start { margin-top: 20px; display: inline-block; background: #ecc828; color: #111; font-weight: 700; padding: 10px 22px; border-radius: 8px; }
+    .modes { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+    .modes .start { margin-top: 0; border: 2px solid #ecc828; font: inherit; font-weight: 700; cursor: pointer; }
+    .modes .start:not(.on) { background: transparent; color: #ecc828; }
+    .modes .start.nb.on { background: #e5484d; border-color: #e5484d; color: #fff; }
+    .modes .start.nb:not(.on) { color: #ff7a7e; border-color: #e5484d; }
+    .card .nb-help { margin: 12px 0 0; font-size: 12px; color: #999; }
+    #nabeel-ui { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 6; color: #fff; font-family: system-ui, sans-serif; }
+    #nabeel-ui.show { display: block; }
+    .nb-tag { position: fixed; top: 16px; left: 16px; font: italic 900 22px/1 Impact, 'Arial Black', sans-serif; letter-spacing: 1px; color: #fff; -webkit-text-stroke: 1px #000; text-shadow: 2px 2px 0 #e5484d; }
+    .nb-score { position: fixed; top: 16px; right: 18px; font: 700 14px system-ui; text-shadow: 0 1px 3px #000; }
+    .nb-score b { font: italic 900 26px Impact, 'Arial Black', sans-serif; color: #ecc828; margin-left: 6px; -webkit-text-stroke: 1px #000; }
+    .nb-weapons { position: fixed; right: 16px; bottom: 36px; display: flex; gap: 8px; }
+    .nb-slot { width: 64px; height: 64px; border-radius: 10px; background: rgba(0,0,0,.45); border: 2px solid rgba(255,255,255,.2); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: .6; }
+    .nb-slot span { font-size: 26px; line-height: 1; }
+    .nb-slot small { font-size: 10px; margin-top: 4px; }
+    .nb-slot.on { opacity: 1; border-color: #ecc828; background: rgba(236,200,40,.2); }
+    .nb-target { position: fixed; left: 50%; top: calc(50% + 26px); transform: translateX(-50%); font: 700 13px system-ui; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity .3s; text-align: center; }
+    .nb-target.show { opacity: 1; }
+    .nb-target i { display: block; width: 90px; height: 5px; margin: 4px auto 0; background: rgba(0,0,0,.5); border-radius: 3px; overflow: hidden; }
+    .nb-target s { display: block; height: 100%; background: #e5484d; }
+    .nb-feed { position: fixed; top: 54px; right: 18px; text-align: right; font: italic 900 18px Impact, 'Arial Black', sans-serif; color: #ecc828; -webkit-text-stroke: .6px #000; }
+    .nb-feed div { transition: opacity .6s; }
+    .nb-feed div.out { opacity: 0; }
+    body.nabeel #crosshair { width: 4px; height: 4px; margin: -2px 0 0 -2px; box-shadow: 0 0 0 1px #000, 0 0 0 7px rgba(255,255,255,.0), 0 0 0 8px rgba(255,255,255,.55); }
     #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,255,255,.8); box-shadow: 0 0 2px #000; pointer-events: none; z-index: 5; }
     #zone { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 20px; font-weight: 600; letter-spacing: 1px;
       padding: 8px 18px; background: rgba(0,0,0,.45); border-left: 4px solid #ecc828; border-radius: 4px; opacity: 0; transition: opacity .6s; pointer-events: none; z-index: 5; }
@@ -43,7 +67,11 @@
         <span><kbd>Q</kbd></span><span>Toggle high / low quality</span>
         <span><kbd>Esc</kbd></span><span>Release mouse</span>
       </div>
-      <div class="start">Click to explore</div>
+      <div class="modes">
+        <button id="mode-walk" class="start">Walk around</button>
+        <button id="mode-nabeel" class="start nb">Nabeel mode</button>
+      </div>
+      <p class="nb-help">Nabeel mode: third-person · click to attack · <kbd>1</kbd> fists <kbd>2</kbd> stick <kbd>3</kbd> gun · break the furniture</p>
     </div>
   </div>
   <div id="crosshair"></div>

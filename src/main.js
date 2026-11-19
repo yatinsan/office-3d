@@ -5,6 +5,7 @@ import { createPlayer } from './controls.js';
 import { mergeStatic } from './merge.js';
 import { initSuggestions } from './suggestions.js';
 import { initDoors } from './doors.js';
+import { initNabeel } from './nabeel/index.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -52,6 +53,9 @@ scene.add(world);
 // ---- Player ----
 const player = createPlayer(camera, renderer.domElement, { spawn: SPAWN, yaw: SPAWN.yaw });
 const overlay = document.getElementById('overlay');
+// Mode buttons on the start / Esc card: pick a mode, then the click bubbles up and starts the walk.
+document.getElementById('mode-walk').addEventListener('click', () => nabeel.setOn(false));
+document.getElementById('mode-nabeel').addEventListener('click', () => nabeel.setOn(true));
 overlay.addEventListener('click', () => {
   try {
     const p = player.controls.domElement.requestPointerLock();
@@ -73,6 +77,16 @@ player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) overla
 const doors = initDoors({ scene, player });
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
+
+// ---- Nabeel mode: third-person, fists / stick / gun, break the furniture ----
+const nabeel = initNabeel({ scene, camera, player, world, hud: document.getElementById('hud') });
+const syncModeButtons = () => {
+  document.getElementById('mode-nabeel').classList.toggle('on', nabeel.isOn());
+  document.getElementById('mode-walk').classList.toggle('on', !nabeel.isOn());
+};
+document.getElementById('mode-walk').addEventListener('click', syncModeButtons);
+document.getElementById('mode-nabeel').addEventListener('click', syncModeButtons);
+syncModeButtons();
 
 // ---- Quality toggle ----
 let high = true;
@@ -107,15 +121,16 @@ renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
   player.update(dt);
   doors.update(dt);
+  nabeel.update(dt);
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
     const near = doors.prompt();
-    hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · C suggest · X area · L list${player.state.dragMode ? ' · drag mouse to look' : ''}`;
+    hud.textContent = nabeel.isOn() ? `NABEEL MODE · click attack · 1 fists · 2 stick · 3 gun · wheel switch · Esc menu · ${Math.round(frames / fpsT)} fps` : `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · C suggest · X area · L list${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;
   }
   renderer.render(scene, camera);
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer } });
+Object.assign(window, { __office: { scene, camera, player, renderer, nabeel } });

@@ -3,8 +3,9 @@ import * as THREE from 'three';
 // Axis-aligned boxes on the floor plan (x/z). Everything solid is a box.
 export const colliders = [];
 
-export function addBox(minX, minZ, maxX, maxZ) {
-  colliders.push({ minX: Math.min(minX, maxX), maxX: Math.max(minX, maxX), minZ: Math.min(minZ, maxZ), maxZ: Math.max(minZ, maxZ) });
+/** maxY: how tall the obstacle is (only the third-person camera cares; walls default to full height). */
+export function addBox(minX, minZ, maxX, maxZ, maxY = Infinity) {
+  colliders.push({ minX: Math.min(minX, maxX), maxX: Math.max(minX, maxX), minZ: Math.min(minZ, maxZ), maxZ: Math.max(minZ, maxZ), maxY });
 }
 
 const _box = new THREE.Box3();
@@ -12,7 +13,7 @@ const _box = new THREE.Box3();
 export function solid(obj, pad = 0) {
   obj.updateMatrixWorld(true);
   _box.setFromObject(obj);
-  addBox(_box.min.x - pad, _box.min.z - pad, _box.max.x + pad, _box.max.z + pad);
+  addBox(_box.min.x - pad, _box.min.z - pad, _box.max.x + pad, _box.max.z + pad, _box.max.y);
   return obj;
 }
 

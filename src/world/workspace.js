@@ -62,7 +62,7 @@ function table(root, cx, cz, { len, width, seatW }, rot = 0, label = 'Table') {
     const t = new THREE.Group();
     t.userData.label = label;
     root.add(t);
-    benchDesk(t, cx, cz - len / 2, cz + len / 2, { ...opts, solidFn: (a, b, c, d) => addBox(a, b, c, d) });
+    benchDesk(t, cx, cz - len / 2, cz + len / 2, { ...opts, solidFn: (a, b, c, d) => addBox(a, b, c, d, 1.25) });
     return;
   }
   const g = new THREE.Group();
@@ -70,7 +70,7 @@ function table(root, cx, cz, { len, width, seatW }, rot = 0, label = 'Table') {
   g.rotation.y = Math.PI / 2; // benchDesk builds along local z → world x; local x → world -z
   g.userData.label = label;
   root.add(g);
-  benchDesk(g, 0, cx - len / 2, cx + len / 2, { ...opts, solidFn: (a, b, c, d) => addBox(b, cz - c, d, cz - a) });
+  benchDesk(g, 0, cx - len / 2, cx + len / 2, { ...opts, solidFn: (a, b, c, d) => addBox(b, cz - c, d, cz - a, 1.25) });
 }
 
 /** Black-framed glass door with grey concrete shards (same style as the reception panel). */
