@@ -14,8 +14,18 @@ const ICONS = {
   jump: svg('<path d="M12 19V6"/><path d="M6 11l6-6 6 6"/><path d="M5 21h14"/>'),
   doorOpen: svg('<path d="M4 21h16"/><path d="M6 21V3h9v2"/><path d="M15 21V5l-5 1.5V21"/><path d="M11.8 13h.01"/><path d="M18 9l2 2-2 2"/>'),
   doorClose: svg('<path d="M4 21h16"/><path d="M6 21V3h12v18"/><path d="M15 12h.01"/>'),
+  rotate: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
 };
+
+/** Fullscreen + landscape lock (Android Chrome). iOS Safari can't lock, so the portrait overlay asks to rotate instead. Call from a tap. */
+async function goLandscape() {
+  try {
+    const el = document.documentElement;
+    if (!document.fullscreenElement) await (el.requestFullscreen?.({ navigationUI: 'hide' }) ?? el.webkitRequestFullscreen?.());
+  } catch {}
+  try { await screen.orientation?.lock?.('landscape'); } catch {}
+}
 
 export function initTouch({ player, camera }) {
   const { touch } = player;
@@ -24,7 +34,8 @@ export function initTouch({ player, camera }) {
   root.innerHTML = `
     <div class="tj-base"><div class="tj-knob"></div></div>
     <button class="tb tb-jump" type="button" aria-label="Jump">${ICONS.jump}</button>
-    <button class="tb tb-act off" type="button" aria-label="Use"></button>`;
+    <button class="tb tb-act off" type="button" aria-label="Use"></button>
+    <div class="t-rotate">${ICONS.rotate}<div>Rotate your phone to landscape</div></div>`;
   const css = document.createElement('style');
   css.textContent = `
     #touch { position: fixed; inset: 0; z-index: 6; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -41,6 +52,12 @@ export function initTouch({ player, camera }) {
     .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 54px; height: 54px; }
     .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(92px, calc(env(safe-area-inset-bottom) + 66px)); width: 48px; height: 48px;
       background: rgba(236,200,40,.55); border-color: rgba(255,255,255,.8); }
+    .t-rotate { display: none; position: fixed; inset: 0; z-index: 20; background: #111; color: #fff; font: 600 16px system-ui, sans-serif;
+      flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+    .t-rotate svg { width: 72px; height: 72px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+      animation: t-rot 1.8s ease-in-out infinite; }
+    @keyframes t-rot { 0%, 25% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+    @media (orientation: portrait) { #touch:not(.off) .t-rotate { display: flex; } }
     #byline { display: none; }
     #hud { left: 50%; transform: translateX(-50%); bottom: 14px; font-size: 13px; }
   `;
@@ -112,7 +129,7 @@ export function initTouch({ player, camera }) {
   });
 
   return {
-    show(on) { root.classList.toggle('off', !on); },
+    show(on) { root.classList.toggle('off', !on); if (on) goLandscape(); },
     /** Show the context button for the current prompt ('' hides it). Door prompts start with "F", TV ones with "E" / TV state. */
     setAction(prompt) {
       let icon = '', key = null;
