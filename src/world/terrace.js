@@ -309,7 +309,7 @@ export function buildTerrace(root) {
       box(g, M.black, 0.3, 0.03, 0.03, lx, 0.98, z, { shadow: false });
     }
     addBox(lx - 0.2, z0, lx + 0.2, z1);
-    for (const z of [10.8, 11.6, 12.4, 13.1]) barStool(g, lx + 0.5, z, Math.PI);
+    for (const z of [10.8, 11.6, 12.4, 13.1]) barStool(g, lx + 0.5, z, 0); // back away from the rail: seated person faces the outside view
     for (const z of [10.8, 11.6, 12.4, 13.1]) addBox(lx + 0.33, z - 0.18, lx + 0.67, z + 0.18);
   }
 

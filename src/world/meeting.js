@@ -90,7 +90,7 @@ export function buildMeetingRoom(root) {
       for (const y of [0.92, 1.18]) box(leaf, M.chrome, 0.02, 0.02, 0.05, -lw + 0.1, y, s * 0.035, { shadow: false });
     }
     doorLeaves.push({
-      leaf, closed: 0, open: 1.45, name: 'game room door', x: (gd0 + gd1) / 2, z: fz,
+      leaf, closed: 0, open: 1.45, name: 'game room door', handle: [-lw + 0.1, 1.3, 0.1], x: (gd0 + gd1) / 2, z: fz,
       block: { minX: gd0, maxX: gd1, minZ: fz - 0.1, maxZ: fz + 0.1 },
     }); }
   { const sh = new THREE.Group(); sh.userData.label = 'Shelf'; g.add(sh);

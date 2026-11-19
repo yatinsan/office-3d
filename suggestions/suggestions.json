@@ -21,7 +21,7 @@
     "updated": 1795085095475,
     "id": "smwnehu92",
     "created": 1795083713894,
-    "section": "East-wall desk E2 · Workspace",
+    "section": "East-wall desk E2 \u00b7 Workspace",
     "status": "done",
     "files": [],
     "n": 1,
@@ -48,7 +48,7 @@
       "pitch": -0.01
     },
     "text": "make this look like the image",
-    "section": "East wall · Workspace",
+    "section": "East wall \u00b7 Workspace",
     "status": "done",
     "updated": 1795085095481,
     "id": "smwnexm2s",
@@ -99,7 +99,7 @@
       "pitch": 0.03
     },
     "text": "this wall is shood be plain",
-    "section": "Back wall · Workspace",
+    "section": "Back wall \u00b7 Workspace",
     "status": "done",
     "updated": 1795085095489,
     "id": "smwnf2wj1",
@@ -129,7 +129,7 @@
       "pitch": -0.35
     },
     "text": "remove this bag from here",
-    "section": "Bean bag · Window Lounge",
+    "section": "Bean bag \u00b7 Window Lounge",
     "status": "done",
     "updated": 1795085095490,
     "id": "smwnf3fru",
@@ -159,7 +159,7 @@
       "pitch": -0.39
     },
     "text": "make this desk to left side from my pov like",
-    "section": "Cabin desk · Cabin 2",
+    "section": "Cabin desk \u00b7 Cabin 2",
     "status": "done",
     "updated": 1795085095492,
     "id": "smwnf4825",
@@ -189,7 +189,7 @@
       "pitch": -0.63
     },
     "text": "make this same as entrence chair",
-    "section": "Chaise · Window Lounge",
+    "section": "Chaise \u00b7 Window Lounge",
     "status": "done",
     "updated": 1795085095495,
     "id": "smwnf4u3b",
@@ -219,7 +219,7 @@
       "pitch": 0.04
     },
     "text": "add same type locker like inside item",
-    "section": "Wall (Workspace) · Workspace",
+    "section": "Wall (Workspace) \u00b7 Workspace",
     "status": "done",
     "updated": 1795085095497,
     "id": "smwnf5q8m",
@@ -241,7 +241,7 @@
       0
     ],
     "zone": "Workspace",
-    "target": "Desk · Long table L2",
+    "target": "Desk \u00b7 Long table L2",
     "view": {
       "x": 2.8,
       "z": 15.23,
@@ -249,7 +249,7 @@
       "pitch": -0.42
     },
     "text": "make 4 chair each side like L1 not 3,3",
-    "section": "Desk · Long table L2 · Workspace",
+    "section": "Desk \u00b7 Long table L2 \u00b7 Workspace",
     "status": "done",
     "updated": 1795085095499,
     "id": "smwnf6ily",
@@ -257,7 +257,7 @@
     "created": 1795084865210,
     "folder": "008-make-4-chair-each-side-like",
     "files": [],
-    "reply": "L2 (and every long table) now gets 4 chairs per side. It was a rounding bug: 2.8 / 0.7 came out as 3.999…, which rounded down to 3 seats."
+    "reply": "L2 (and every long table) now gets 4 chairs per side. It was a rounding bug: 2.8 / 0.7 came out as 3.999\u2026, which rounded down to 3 seats."
   },
   {
     "point": [
@@ -279,7 +279,7 @@
       "pitch": -0.64
     },
     "text": "remove this item",
-    "section": "Plant · Window Lounge",
+    "section": "Plant \u00b7 Window Lounge",
     "status": "done",
     "updated": 1795085500311,
     "id": "smwnfeobo",
@@ -350,7 +350,7 @@
       "pitch": 0.28
     },
     "text": "i feel some glitch on texter like jumbing",
-    "section": "Lockers · Workspace",
+    "section": "Lockers \u00b7 Workspace",
     "status": "done",
     "updated": 1795085724728,
     "id": "smwnflbdi",
@@ -380,7 +380,7 @@
       "pitch": -0.22
     },
     "text": "make all cabin door like f to open and clsoe",
-    "section": "Glass wall (Cabin 2) · Cabin 2",
+    "section": "Glass wall (Cabin 2) \u00b7 Cabin 2",
     "status": "done",
     "updated": 1795085724729,
     "id": "smwnfn1zx",
@@ -410,7 +410,7 @@
       "pitch": -0.09
     },
     "text": "need to extend more like in right side there is a meeing room and also include the table and char to extend , and add meeint room in right side and also after meeting room it also need some space so extend almost a bit more like use this images and add meeting room with the inside image , and from the office view i add that",
-    "section": "Terrace · Terrace",
+    "section": "Terrace \u00b7 Terrace",
     "status": "done",
     "updated": 1795090046696,
     "id": "smwni2zdq",
@@ -479,7 +479,7 @@
         "path": "suggestions/013-need-to-extend-more-like-in/IMG_5671.jpg"
       }
     ],
-    "reply": "Extended the terrace past the workspace back wall to z 25.2 m and added a meeting room on the window side (x 0–3.7, z 18.7–22.6) from your photos: white walls, exposed black ceiling, a long grey-oak table with 7 mesh chairs, a TV on a rolling stand in front of the glass window to the workspace, a grey linear light plus black cylinder pendants, a split AC, a white flush door and a tall white shelf in the window corner, and a low wooden cabinet under the window. From the terrace there is a glass double door into it, the same as the lounge balcony door (press F to open). After the meeting room the facade is white plaster with the wash basin and outdoor AC, and the pantry (counter, table, stools, water cans, palms) moved to the new far end. Code: src/world/meeting.js, src/world/terrace.js, src/doors.js."
+    "reply": "Extended the terrace past the workspace back wall to z 25.2 m and added a meeting room on the window side (x 0\u20133.7, z 18.7\u201322.6) from your photos: white walls, exposed black ceiling, a long grey-oak table with 7 mesh chairs, a TV on a rolling stand in front of the glass window to the workspace, a grey linear light plus black cylinder pendants, a split AC, a white flush door and a tall white shelf in the window corner, and a low wooden cabinet under the window. From the terrace there is a glass double door into it, the same as the lounge balcony door (press F to open). After the meeting room the facade is white plaster with the wash basin and outdoor AC, and the pantry (counter, table, stools, water cans, palms) moved to the new far end. Code: src/world/meeting.js, src/world/terrace.js, src/doors.js."
   },
   {
     "point": [
@@ -501,7 +501,7 @@
       "pitch": -0.01
     },
     "text": "i added a suggestion 13 and so that the view look like this in the image",
-    "section": "Back wall · Workspace",
+    "section": "Back wall \u00b7 Workspace",
     "status": "done",
     "updated": 1795090046696,
     "id": "smwni3uhk",
@@ -520,7 +520,7 @@
         "path": "suggestions/014-i-added-a-suggestion-13-and/IMG_5673.jpg"
       }
     ],
-    "reply": "The workspace back wall now has a black-framed glass window (3×3 panes, about 2.5 m wide, near the windows) looking into the new meeting room, so from your saved view you see the TV, the table and chairs, and the terrace beyond, like IMG_5673. Code: src/world/workspace.js."
+    "reply": "The workspace back wall now has a black-framed glass window (3\u00d73 panes, about 2.5 m wide, near the windows) looking into the new meeting room, so from your saved view you see the TV, the table and chairs, and the terrace beyond, like IMG_5673. Code: src/world/workspace.js."
   },
   {
     "point": [
@@ -542,7 +542,7 @@
       "pitch": -0.02
     },
     "text": "make this as glass only this side like the same to left glass",
-    "section": "Wall (Cabin 2) · Cabin 2",
+    "section": "Wall (Cabin 2) \u00b7 Cabin 2",
     "status": "done",
     "updated": 1795090445669,
     "id": "smwniejtv",
@@ -550,7 +550,7 @@
     "created": 1795090278893,
     "folder": "015-make-this-as-glass-only-this",
     "files": [],
-    "reply": "Cabin 2's wall facing the window lounge (x 3.0, z 3.5–5.75) is now black-framed glass, the same as Cabin 2's glass front, so you can see from the cabin into the lounge and out to the terrace. Only this side changed: the bit behind the corner cabin stays a solid wall, and the strip above the ceiling line is still wall. Code: src/world/corridor.js."
+    "reply": "Cabin 2's wall facing the window lounge (x 3.0, z 3.5\u20135.75) is now black-framed glass, the same as Cabin 2's glass front, so you can see from the cabin into the lounge and out to the terrace. Only this side changed: the bit behind the corner cabin stays a solid wall, and the strip above the ceiling line is still wall. Code: src/world/corridor.js."
   },
   {
     "point": [
@@ -572,7 +572,7 @@
       "pitch": -0.05
     },
     "text": "make this also a glass like front and remove this locker like transperent view",
-    "section": "Built-in shelves · Cabin 2",
+    "section": "Built-in shelves \u00b7 Cabin 2",
     "status": "done",
     "updated": 1795090737565,
     "id": "smwningm5",
@@ -594,7 +594,7 @@
       -1
     ],
     "zone": "Meeting Room",
-    "target": "Door · Meeting room",
+    "target": "Door \u00b7 Meeting room",
     "view": {
       "x": 2.88,
       "z": 20.18,
@@ -602,7 +602,7 @@
       "pitch": -0.18
     },
     "text": "make this door like after this door to a  big game area with ps5 and bool and area like not too big but some",
-    "section": "Door · Meeting room · Meeting Room",
+    "section": "Door \u00b7 Meeting room \u00b7 Meeting Room",
     "status": "done",
     "updated": 1795091703700,
     "id": "smwnj5hw6",
@@ -610,7 +610,7 @@
     "created": 1795091536097,
     "folder": "017-make-this-door-like-after-this",
     "files": [],
-    "reply": "The white door at the end of the meeting room now opens: stand near it and press F, and it swings into a new game room behind it (about 6.6 × 4.4 m, not too big). West side: PS5 corner with a big TV on a navy accent wall with purple/cyan LED glow, a white TV unit with the PS5 and a speaker, a 3-seat sofa facing the TV, a coffee table with two controllers, and red and blue bean bags. East side: a pool table with the balls racked, a cue ball and a cue, a long pendant light over it, a cue rack on the wall and a pink 'GAME ON' neon sign. The zone label reads 'Game Room'. Code: src/world/game.js, src/world/meeting.js (door)."
+    "reply": "The white door at the end of the meeting room now opens: stand near it and press F, and it swings into a new game room behind it (about 6.6 \u00d7 4.4 m, not too big). West side: PS5 corner with a big TV on a navy accent wall with purple/cyan LED glow, a white TV unit with the PS5 and a speaker, a 3-seat sofa facing the TV, a coffee table with two controllers, and red and blue bean bags. East side: a pool table with the balls racked, a cue ball and a cue, a long pendant light over it, a cue rack on the wall and a pink 'GAME ON' neon sign. The zone label reads 'Game Room'. Code: src/world/game.js, src/world/meeting.js (door)."
   },
   {
     "point": [
@@ -624,7 +624,7 @@
       0
     ],
     "zone": "Game Room",
-    "target": "TV · Game room",
+    "target": "TV \u00b7 Game room",
     "view": {
       "x": 2.3,
       "z": 26.12,
@@ -632,7 +632,7 @@
       "pitch": -0.12
     },
     "text": "when i click e on the tv just play game like play in tv and show suggeaion and when i press somting , it will full screen ,  like for fist \n\nshow a game list and fist now show snak game and play that",
-    "section": "TV · Game room · Game Room",
+    "section": "TV \u00b7 Game room \u00b7 Game Room",
     "status": "done",
     "updated": 1795091985318,
     "id": "smwnjc3zq",
@@ -640,6 +640,36 @@
     "created": 1795091844667,
     "folder": "018-when-i-click-e-on-the",
     "files": [],
-    "reply": "The game room TV is now playable. Walk up to it (the hint at the bottom says 'E play TV games') and press E: the TV turns on with a game list (Snake, plus Pong, Tetris and Car Race shown as coming soon). Use ↑/↓ to choose and Enter to play. Snake runs on the TV with arrows or WASD, and the score and best score are shown. Press F to go full screen and F again to return to the TV. Backspace goes back to the list, and E in the list turns the TV off. While the TV is on, walking, doors and the C/X/L suggestion keys are paused so they don't clash with the game. Code: src/arcade.js (wired up in src/main.js)."
+    "reply": "The game room TV is now playable. Walk up to it (the hint at the bottom says 'E play TV games') and press E: the TV turns on with a game list (Snake, plus Pong, Tetris and Car Race shown as coming soon). Use \u2191/\u2193 to choose and Enter to play. Snake runs on the TV with arrows or WASD, and the score and best score are shown. Press F to go full screen and F again to return to the TV. Backspace goes back to the list, and E in the list turns the TV off. While the TV is on, walking, doors and the C/X/L suggestion keys are paused so they don't clash with the game. Code: src/arcade.js (wired up in src/main.js)."
+  },
+  {
+    "point": [
+      -2.49,
+      0.8,
+      10.68
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Terrace",
+    "target": "Bar stool \u00b7 Terrace",
+    "view": {
+      "x": -2.26,
+      "z": 9.45,
+      "yaw": 2.96,
+      "pitch": -0.6
+    },
+    "text": "make the chair to view side like sit to out side view",
+    "section": "Bar stool \u00b7 Terrace \u00b7 Terrace",
+    "status": "done",
+    "updated": 1795094682765,
+    "id": "smwnl0xvx",
+    "n": 19,
+    "created": 1795094682772,
+    "folder": "019-make-the-chair-to-view-side",
+    "files": [],
+    "reply": "Terrace bar stools turned around: backrests now face away from the rail, so you sit looking out at the view. (src/world/terrace.js)"
   }
 ]

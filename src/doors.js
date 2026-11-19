@@ -34,6 +34,31 @@ function glassLeaf(parent, len, dir, h = 2.4) {
   return leaf;
 }
 
+/** Floating "F" key marker that sits on a door handle and rides with the leaf. */
+let keyTex = null;
+function keyTexture() {
+  if (keyTex) return keyTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(15,18,24,.8)';
+  g.strokeStyle = '#fff'; g.lineWidth = 8;
+  g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = 'bold 72px system-ui, sans-serif';
+  g.fillText('F', 64, 68);
+  return (keyTex = new THREE.CanvasTexture(c));
+}
+function handleMarker(parent, x, y, z) {
+  const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: keyTexture(), depthTest: false, transparent: true }));
+  m.scale.set(0.11, 0.11, 1);
+  m.position.set(x, y, z);
+  m.renderOrder = 20;
+  m.visible = false;
+  parent.add(m);
+  return m;
+}
+
 export function initDoors({ scene, player }) {
   const doors = [];
 
@@ -44,12 +69,13 @@ export function initDoors({ scene, player }) {
     scene.add(g);
     const left = new THREE.Group(); left.position.set(0, 0, z0); g.add(left);
     const right = new THREE.Group(); right.position.set(0, 0, z1); g.add(right);
+    const marker = handleMarker(left, 0.1, 1.25, half - 0.12);
     glassLeaf(left, half, 1);
     glassLeaf(right, half, -1);
     const block = { minX: -0.08, maxX: 0.08, minZ: z0, maxZ: z1 };
     colliders.push(block);
     doors.push({
-      name, x: 0, z: (z0 + z1) / 2, t: 0, target: 0, block,
+      name, x: 0, z: (z0 + z1) / 2, t: 0, target: 0, block, marker,
       apply(t) {
         const a = t * Math.PI / 2 * 0.95; // both leaves swing in toward +x
         left.rotation.y = a;
@@ -64,7 +90,8 @@ export function initDoors({ scene, player }) {
   for (const d of doorLeaves) {
     scene.add(d.leaf);
     colliders.push(d.block);
-    doors.push({ name: d.name, x: d.x, z: d.z, t: 0, target: 0, block: d.block, apply(t) { d.leaf.rotation.y = d.closed + (d.open - d.closed) * t; } });
+    const marker = handleMarker(d.leaf, d.handle[0], d.handle[1], d.handle[2]);
+    doors.push({ name: d.name, x: d.x, z: d.z, t: 0, target: 0, block: d.block, marker, apply(t) { d.leaf.rotation.y = d.closed + (d.open - d.closed) * t; } });
   }
 
   const nearest = () => {
@@ -85,6 +112,12 @@ export function initDoors({ scene, player }) {
   });
 
   function update(dt) {
+    const near = nearest();
+    for (const d of doors) {
+      const dist = Math.hypot(player.pos.x - d.x, player.pos.z - d.z);
+      d.marker.visible = dist < 4.5;
+      d.marker.material.opacity = d === near ? 1 : 0.55;
+    }
     for (const d of doors) {
       if (d.t === d.target) continue;
       d.t = d.target > d.t ? Math.min(1, d.t + dt * SPEED) : Math.max(0, d.t - dt * SPEED);

@@ -122,7 +122,7 @@ export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transo
     leaf.rotation.y = closed;
     const lo = Math.min(da, db), hi = Math.max(da, db);
     doorLeaves.push({
-      leaf, closed, open, name,
+      leaf, closed, open, name, handle: [dir * (lw - 0.1), 1.2, 0.04],
       x: alongX ? (da + db) / 2 : fixed, z: alongX ? fixed : (da + db) / 2,
       block: alongX ? { minX: lo, maxX: hi, minZ: fixed - 0.06, maxZ: fixed + 0.06 } : { minX: fixed - 0.06, maxX: fixed + 0.06, minZ: lo, maxZ: hi },
     });

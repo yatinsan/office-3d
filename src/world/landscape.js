@@ -58,7 +58,7 @@ export function buildLandscape(root) {
   root.add(sky);
 
   // ---- Ground under the canopy ----
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), std('#1f2a1a'));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), std('#34462a'));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = GROUND;
   root.add(ground);
@@ -98,8 +98,8 @@ export function buildLandscape(root) {
   trunk.translate(0, 0.5, 0);
   const crown = palmCrown();                                                 // radial drooping fronds
 
-  const leaf = ['#1d2617', '#242e1c', '#2b3521', '#333d27', '#20281a'].map((col) => std(col, { flatShading: true }));
-  const fronds = ['#2a3520', '#333f26', '#252f1c', '#3c472d'].map((col) => std(col, { side: THREE.DoubleSide, roughness: 0.85 }));
+  const leaf = ['#34452a', '#3d4f30', '#475a37', '#516440', '#38492d'].map((col) => std(col, { flatShading: true }));
+  const fronds = ['#43552f', '#4d6136', '#3b4c2a', '#566b3c'].map((col) => std(col, { side: THREE.DoubleSide, roughness: 0.85 }));
   const bark = std('#4f4a40');
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 
@@ -150,7 +150,7 @@ export function buildLandscape(root) {
   hill(-1050, 700, 300, 60, 260);
   hill(-1100, 60, 500, 35, 240);
   function hill(hx, hz, rx, ry, rz) {
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), std('#28331f', { flatShading: true }));
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), std('#3f5230', { flatShading: true }));
     body.scale.set(rx, ry, rz);
     body.position.set(hx, GROUND - 2, hz);
     root.add(body);
