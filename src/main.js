@@ -76,6 +76,23 @@ const arcade = initArcade({ scene, player }); // game room TV: E to play (sugges
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 
+// ---- Dev mode: suggestions (C / X / L, pins) only while on. Toggle with P or the switch on the start card ----
+let dev = false;
+try { dev = localStorage.getItem('pixbit-devmode') === '1'; } catch {}
+const devBox = document.getElementById('devbox');
+function setDev(on) {
+  dev = on;
+  document.body.classList.toggle('dev', on);
+  devBox.checked = on;
+  suggest.setEnabled(on);
+  try { localStorage.setItem('pixbit-devmode', on ? '1' : '0'); } catch {}
+}
+devBox.addEventListener('click', (e) => e.stopPropagation());
+document.getElementById('devsw').addEventListener('click', (e) => e.stopPropagation());
+devBox.addEventListener('change', () => setDev(devBox.checked));
+addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
+setDev(dev);
+
 // ---- Quality toggle ----
 let high = true;
 addEventListener('keydown', (e) => {
@@ -114,7 +131,7 @@ renderer.setAnimationLoop(() => {
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
     const near = arcade.prompt() || doors.prompt();
-    hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · C suggest · X area · L list${player.state.dragMode ? ' · drag mouse to look' : ''}`;
+    hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · ${dev ? 'DEV · C suggest · X area · L list' : 'dev mode off (P)'}${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;
   }
   renderer.render(scene, camera);

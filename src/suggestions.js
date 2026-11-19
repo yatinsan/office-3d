@@ -27,6 +27,7 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
   let files = [];              // [{ name, type, src|path, data? (new upload) }]
   let removed = [];            // names of saved files to delete on save
   let resumeLock = false;
+  let enabled = false;
   let corner = null;           // first corner while marking an area
 
   // ---------- storage ----------
@@ -483,10 +484,12 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
 
   addEventListener('keydown', e => {
     if (isOpen()) {
+      if (!enabled) return;
       if (e.code === 'Escape') { e.preventDefault(); closeForm(); }
       if (e.code === 'Enter' && (e.metaKey || e.ctrlKey)) $('.pri').click();
       return;
     }
+    if (!enabled) return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.code === 'Escape' && corner) { corner = null; clearDraft(); toast('Area cancelled'); }
     if (e.code === 'KeyC') suggestHere();
@@ -497,6 +500,11 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
   load();
   return {
     isOpen: () => isOpen() || !panel.classList.contains('sg-hidden'),
+    setEnabled(on) {
+      enabled = on;
+      marks.visible = on;
+      if (!on) { if (isOpen()) closeForm(); togglePanel(false); corner = null; clearDraft(); }
+    },
     onResumeFailed(fn) { onResumeFailed = fn; },
   };
 }
