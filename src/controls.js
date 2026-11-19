@@ -12,6 +12,7 @@ const JUMP_V = 5.2;
 export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   const controls = new PointerLockControls(camera, domElement);
   const keys = {};
+  const touch = { x: 0, y: 0, run: false }; // on-screen joystick (src/touch.js): x right, y forward, -1..1
   const pos = new THREE.Vector3(spawn.x, 0, spawn.z); // feet position
   const vel = new THREE.Vector3();
   let vy = 0, feetY = 0, bobT = 0, bob = 0;
@@ -37,8 +38,9 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
 
   addEventListener('keydown', (e) => {
     keys[e.code] = true;
-    if (e.code === 'Space' && active() && feetY <= 0.001) vy = JUMP_V;
+    if (e.code === 'Space') jump();
   });
+  function jump() { if (active() && feetY <= 0.001) vy = JUMP_V; }
   addEventListener('keyup', (e) => { keys[e.code] = false; });
   addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
@@ -54,9 +56,13 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
       if (keys.KeyS || keys.ArrowDown) wish.sub(fwd);
       if (keys.KeyD || keys.ArrowRight) wish.add(right);
       if (keys.KeyA || keys.ArrowLeft) wish.sub(right);
+      if (touch.x || touch.y) wish.addScaledVector(fwd, touch.y).addScaledVector(right, touch.x);
     }
-    const running = keys.ShiftLeft || keys.ShiftRight;
-    if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(running ? RUN : WALK);
+    const running = keys.ShiftLeft || keys.ShiftRight || touch.run;
+    if (wish.lengthSq() > 0) {
+      const mag = Math.min(1, wish.length());
+      wish.normalize().multiplyScalar((running ? RUN : WALK) * (touch.x || touch.y ? Math.max(0.5, mag) : 1));
+    }
     // Smooth acceleration / braking.
     const k = 1 - Math.exp(-(feetY > 0 ? 3 : 12) * dt);
     vel.x += (wish.x - vel.x) * k;
@@ -75,5 +81,5 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     camera.position.set(pos.x, EYE + feetY + bob, pos.z);
   }
 
-  return { controls, update, pos, state };
+  return { controls, update, pos, state, touch, jump };
 }

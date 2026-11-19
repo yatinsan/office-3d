@@ -6,6 +6,7 @@ import { mergeStatic } from './merge.js';
 import { initSuggestions } from './suggestions.js';
 import { initDoors } from './doors.js';
 import { initArcade } from './arcade.js';
+import { initTouch, isTouchDevice } from './touch.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -53,7 +54,10 @@ scene.add(world);
 // ---- Player ----
 const player = createPlayer(camera, renderer.domElement, { spawn: SPAWN, yaw: SPAWN.yaw });
 const overlay = document.getElementById('overlay');
+const touchUI = isTouchDevice() ? initTouch({ player, camera }) : null;
+if (touchUI) touchUI.show(false);
 overlay.addEventListener('click', () => {
+  if (touchUI) { enableDragMode(); touchUI.show(true); return; } // phones: no pointer lock, use the on-screen controls
   try {
     const p = player.controls.domElement.requestPointerLock();
     if (p && p.catch) p.catch(() => enableDragMode());
@@ -131,7 +135,8 @@ renderer.setAnimationLoop(() => {
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
     const near = arcade.prompt() || doors.prompt();
-    hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · ${dev ? 'DEV · C suggest · X area · L list' : 'dev mode off (P)'}${player.state.dragMode ? ' · drag mouse to look' : ''}`;
+    if (touchUI) { touchUI.setAction(near); hud.textContent = ''; }
+    else hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · ${dev ? 'DEV · C suggest · X area · L list' : 'dev mode off (P)'}${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;
   }
   renderer.render(scene, camera);
