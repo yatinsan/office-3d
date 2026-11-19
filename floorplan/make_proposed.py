@@ -25,7 +25,7 @@ LONG_X = (3.8, 6.6)
 EAST_X = (8.65, 9.95)
 EAST_D = 0.8
 
-DROP = {'pod', 'bench', 'smalldesk', 'lockers'}
+DROP = {'pod', 'bench', 'smalldesk', 'lockers', 'ydoor', 'sdoor'}  # back wall is plain now
 items = []
 for it in mf.ITEMS:
     kind, x0, z0, x1, z1, label = it
@@ -41,14 +41,19 @@ for it in mf.ITEMS:
     items.append(it)
 
 chairs = [c for c in mf.CHAIRS if c[1] < 6.0]  # keep cabin chairs, drop all workspace chairs
-chairs = [c for c in chairs if c not in ((0.8, 2.95), (1.45, 2.95))] + [(1.35, 2.95), (2.05, 2.95)]
+chairs = [c for c in chairs if c not in ((0.8, 2.95), (1.45, 2.95), (4.65, 3.6), (4.35, 5.15), (5.15, 5.15))] + [(1.35, 2.95), (2.05, 2.95), (3.9, 3.6), (3.6, 5.15), (4.4, 5.15)]
 
 import json
+LOCKS = []
 LAYOUT = {o['id']: o for o in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'layout.json')))}
 SPEC = {'W': (1.4, 1.2, [-0.35, 0.35]), 'L': (2.8, 1.2, [-1.05, -0.35, 0.35, 1.05]), 'E': (1.3, 0.8, [0.0])}
 CH = 0.35  # chair centre beyond the table edge
 for oid, o in LAYOUT.items():
-    if oid == 'LOCK':
+    if oid.startswith('LOCK'):
+        rot = o.get('rot', 0) % 360
+        hw, hd = (0.625, 0.275) if rot % 180 else (0.275, 0.625)
+        items.append(('lockers', o['x'] - hw, o['z'] - hd, o['x'] + hw, o['z'] + hd, ''))
+        LOCKS.append((o, rot, hw, hd))
         continue
     w, dd, xs = SPEC[oid[0]]
     rot = o.get('rot', 0) % 180
@@ -59,7 +64,7 @@ for oid, o in LAYOUT.items():
         for side in (-1, 1):
             off = side * (dd / 2 + CH)
             chairs.append((o['x'] - off, o['z'] + lx) if rot else (o['x'] + lx, o['z'] + off))
-items.append(('lockers', 6.6, 8.25, 7.15, 9.5, ''))  # backed onto the thin wall, facing west
+items += [('ydoor', 9.95, 11.95, 10.1, 12.95, ''), ('ydoor', 9.95, 14.95, 10.1, 15.95, '')]  # amber doors on the east wall
 
 # new cabin doors (hinge, free end) — drawn with swing arcs below
 DOORS = [((0.15, 3.5), (1.05, 3.5), -1),    # corner cabin, swings north into the cabin
@@ -68,6 +73,11 @@ DOORS = [((0.15, 3.5), (1.05, 3.5), -1),    # corner cabin, swings north into th
 for (a, b, _) in DOORS:
     items.append(('door', a[0], a[1], b[0], b[1], ''))
 
+# suggestions 4-6: lounge bean bag removed, cabin 2 desk moved west, chaise replaced by a sofa
+items = [it for it in items if not (it[0] == 'beanbag' and it[1] == 0.4)]
+items = [('desk', 3.25, 3.95, 4.75, 4.75, 'C2') if it[-1] == 'C2' else it for it in items]
+items = [('sofa', 2.15, 4.2, 3.0, 5.8, 'Sofa') if it[0] == 'chaise' else it for it in items]
+items.append(('door', 0.0, 4.9, 0.0, 6.5, ''))  # suggestion 10: lounge balcony double door
 mf.ITEMS = items
 mf.CHAIRS = chairs
 mf.ZONE_LABELS = [z for z in mf.ZONE_LABELS if z[2] not in ('GLASS ROOM', 'OPEN WORKSPACE')] + [(7.65, 14.85, 'OPEN\nWORKSPACE')]
@@ -87,15 +97,13 @@ for (h, e, s) in DOORS:
     start = 180 if e[0] < h[0] else 270
     d.arc(box, start, start + 90, fill=(220, 0, 0, 200), width=1)
 
-# lockers: dark front edge on the west face + label
-a, b = P(6.6, 8.25), P(6.6, 9.5)
-d.line([a, b], fill=(30, 30, 30, 255), width=5)
-lx, lz = P(6.8, 8.35)
-for k, ch in enumerate('LOCK'):
-    d.text((lx, lz + k * 15), ch, fill='#111', font=f11)
-ax, az = P(6.55, 8.87)
-d.line([(ax, az), (ax - 34, az)], fill='#111', width=2)
-d.polygon([(ax - 40, az), (ax - 30, az - 6), (ax - 30, az + 6)], fill='#111')
+# lockers: dark edge on the door side (rot: 0 west, 90 north, 180 east, 270 south)
+for (o, rot, hw, hd) in LOCKS:
+    x0, z0, x1, z1 = o['x'] - hw, o['z'] - hd, o['x'] + hw, o['z'] + hd
+    edge = {0: (x0, z0, x0, z1), 90: (x0, z0, x1, z0), 180: (x1, z0, x1, z1), 270: (x0, z1, x1, z1)}[rot]
+    d.line([P(edge[0], edge[1]), P(edge[2], edge[3])], fill=(30, 30, 30, 255), width=5)
+    cx, cz = P(o['x'], o['z'])
+    d.text((cx - 14, cz - 7), 'LOCK', fill='#111', font=f11)
 
 
 def dim(x0, z0, x1, z1, txt, off=(0, 0)):

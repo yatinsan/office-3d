@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { M, rand } from '../materials.js';
 import { box, pottedPlant } from '../props.js';
+import { addBox } from '../colliders.js';
 import { slab, windowWall, wall, H, W, D, LOBBY_CEIL, CORNER_Z, CAB_X0, SHELF_Z, LOBBY_E } from './helpers.js';
 
 const FLOOR_DROP = 40; // the office is high up – ground is far below
@@ -8,7 +9,16 @@ const FLOOR_DROP = 40; // the office is high up – ground is far below
 /** West window wall, terrace with pergola, and a hazy city/hill backdrop. */
 export function buildExterior(root) {
   // Corner cabin + lounge windows run up to the false ceiling; workspace windows stop at 2.8 m under a grooved fascia.
-  windowWall(root, 0, 0, 0, SHELF_Z, LOBBY_CEIL);
+  // lounge balcony door opening z 4.9..6.5 (suggestion 10); the glass leaves themselves are in src/doors.js
+  windowWall(root, 0, 0, 0, 4.9, LOBBY_CEIL);
+  windowWall(root, 0, 6.5, 0, SHELF_Z, LOBBY_CEIL);
+  box(root, M.black, 0.12, 0.08, 1.6, 0, 2.44, 5.7);                  // door head
+  box(root, M.chrome, 0.1, 0.015, 1.6, 0, 0.008, 5.7, { shadow: false }); // threshold
+  const fan = new THREE.Mesh(new THREE.PlaneGeometry(1.6, LOBBY_CEIL - 2.48), M.glass); // fixed glass above the door
+  fan.position.set(0, (2.48 + LOBBY_CEIL) / 2, 5.7);
+  fan.rotation.y = Math.PI / 2;
+  fan.renderOrder = 2;
+  root.add(fan);
   wall(root, 0, 0, 0, SHELF_Z, { h: H - LOBBY_CEIL, y0: LOBBY_CEIL, collide: false });
   windowWall(root, 0, SHELF_Z, 0, D, 2.8);
   box(root, M.wall, 0.12, H - 2.8, D - SHELF_Z, 0.02, 2.8 + (H - 2.8) / 2, (SHELF_Z + D) / 2, { shadow: false });
@@ -20,6 +30,12 @@ export function buildExterior(root) {
   // ---- Terrace along the west facade ----
   const TX = -3.6;
   slab(root, M.floorTerrace, TX, 0, 0, D, 0.0);
+  addBox(TX - 0.1, 0, TX + 0.05, D);      // glass railing
+  addBox(TX, -0.15, 0, 0);                 // terrace ends
+  addBox(TX, D, 0, D + 0.15);
+  // outside the balcony door: a doormat and a plant each side (photo IMG_5653)
+  box(root, M.wallWarm, 0.6, 0.01, 0.9, -0.5, 0.006, 5.7, { shadow: false });
+  for (const z of [4.55, 6.85]) pottedPlant(root, -0.35, z, { size: 0.35, h: 0.35 });
   const rail = new THREE.Mesh(new THREE.PlaneGeometry(D, 1.05), M.glass);
   rail.position.set(TX, 0.55, D / 2);
   rail.rotation.y = Math.PI / 2;

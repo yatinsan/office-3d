@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { M, rand } from '../materials.js';
-import { box, rbox, officeChair, visitorChair, splitAC, shelfUnit, beanBag, pottedPlant, conePendant } from '../props.js';
+import { box, rbox, sofa, officeChair, visitorChair, splitAC, shelfUnit, beanBag, pottedPlant, conePendant } from '../props.js';
 import { solid, addBox } from '../colliders.js';
 import { wall, glassWall, worldUV, LOBBY_CEIL, H, CORNER_Z, CAB_BACK, CAB_FRONT, CAB_X0, CAB_SPLIT, CAB_X1, SHELF_Z, LOGO_X } from './helpers.js';
 
 /** White-top executive desk, long axis along x; the boss sits on -z, visitors on +z (slatted wooden front). */
 function execDesk(root, x, z, len = 1.6) {
   const g = new THREE.Group();
+  g.userData.label = 'Cabin desk';
   g.position.set(x, 0, z);
   root.add(g);
   box(g, M.whiteGloss, len, 0.05, 0.8, 0, 0.77, 0);
@@ -23,6 +24,7 @@ function execDesk(root, x, z, len = 1.6) {
 /** Tall white built-in shelving, long axis along z, facing -x (dir=-1) or +x (dir=1), backed against x. */
 function builtIns(root, x, z0, z1, dir) {
   const g = new THREE.Group();
+  g.userData.label = 'Built-in shelves';
   g.position.set(x + dir * 0.2, 0, (z0 + z1) / 2);
   root.add(g);
   const w = z1 - z0;
@@ -69,17 +71,17 @@ export function buildCorridor(root) {
   concreteS(root, CAB_SPLIT + 0.08, CAB_X1, CAB_BACK);
 
   // ---- Glass fronts ----
-  glassWall(root, { x0: CAB_X0, z0: CAB_FRONT, x1: CAB_SPLIT, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.05, 5.15], swing: -1 }); // hinged at the shared wall, next to cabin 1's door
-  glassWall(root, { x0: CAB_SPLIT, z0: CAB_FRONT, x1: CAB_X1, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.25, 7.15], swing: -1 }); // hinged at the shared wall, opens into the cabin
-  glassWall(root, { x0: 0, z0: CORNER_Z, x1: CAB_X0, z1: CORNER_Z, h: LOBBY_CEIL, door: [0.15, 1.05], swing: -1 }); // window end of the corner cabin
+  glassWall(root, { x0: CAB_X0, z0: CAB_FRONT, x1: CAB_SPLIT, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.05, 5.15], swing: -1, name: 'Cabin 2 door' }); // hinged at the shared wall, next to cabin 1's door
+  glassWall(root, { x0: CAB_SPLIT, z0: CAB_FRONT, x1: CAB_X1, z1: CAB_FRONT, h: LOBBY_CEIL, door: [6.25, 7.15], swing: -1, name: 'Cabin 1 door' }); // hinged at the shared wall, opens into the cabin
+  glassWall(root, { x0: 0, z0: CORNER_Z, x1: CAB_X0, z1: CORNER_Z, h: LOBBY_CEIL, door: [0.15, 1.05], swing: -1, name: 'Corner cabin door' }); // window end of the corner cabin
 
   // ---- Cabin 1 (x 7..9.6): desk, built-ins on the east side ----
   cabin(root, 7.35, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.6, visitors: [0.35, 0.85] }); // scan: desk x 6.6..8.3, z 4.0..4.7
   builtIns(root, CAB_X1, CAB_BACK + 0.1, 5.65, -1);   // white built-ins on cabin 1's east wall (scan frames 412/416)
   // ---- Cabin 2 (x 3..7) ----
-  cabin(root, 4.75, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.5 });
+  cabin(root, 4.0, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.5 }); // moved west (suggestion 5)
   builtIns(root, CAB_SPLIT - 0.075, CAB_BACK + 0.1, 4.6, -1);
-  solid(pottedPlant(root, 3.4, 3.65, { size: 0.35, h: 0.4 }));
+  solid(pottedPlant(root, 5.35, 3.45, { size: 0.35, h: 0.4 }));
 
   // ---- Corner cabin (x 0..3, z 0..3.3), windows behind the desk ----
   execDesk(root, 1.6, 1.85);
@@ -106,16 +108,8 @@ export function buildCorridor(root) {
 
   // ---- Window lounge (x 0..3, z 3.3..8) ----
   solid(beanBag(root, 0.6, 7.25), -0.15);
-  solid(beanBag(root, 0.75, 4.2, M.fabric), -0.15);
-  const ch = new THREE.Group();                // black leather chaise in front of the corner cabin
-  ch.position.set(2.5, 0, 5.15); // scan: chaise spans z ~4.2..6.0
-  root.add(ch);
-  rbox(ch, M.leather, 0.75, 0.32, 1.8, 0.07, 0, 0.22, 0);
-  const back = rbox(ch, M.leather, 0.72, 0.18, 0.75, 0.07, 0, 0.5, -0.55);
-  back.rotation.x = 0.55;
-  rbox(ch, M.leather, 0.4, 0.14, 0.18, 0.06, 0, 0.62, -0.62);
-  solid(ch);
-  solid(pottedPlant(root, 0.35, 3.7, { size: 0.4, h: 0.45 }));
+  // Black leather sofa like the reception one (suggestion 6), back to the corner-cabin wall, facing the windows
+  solid(sofa(root, CAB_X0 - 0.47, 5.0, -Math.PI / 2, 2));
   box(root, M.red, 0.55, 0.01, 0.9, 0.5, 0.005, 5.7, { shadow: false }); // doormat at the balcony door
   conePendant(root, 1.9, 4.6, 2.2, LOBBY_CEIL);
   conePendant(root, 5.0, 7.0, 2.25, LOBBY_CEIL);

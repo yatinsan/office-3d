@@ -3,6 +3,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildWorld, zoneAt, SPAWN } from './world/index.js';
 import { createPlayer } from './controls.js';
 import { mergeStatic } from './merge.js';
+import { initSuggestions } from './suggestions.js';
+import { initDoors } from './doors.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -63,9 +65,14 @@ function enableDragMode() {
   hud.dataset.mode = 'drag';
 }
 document.addEventListener('pointerlockerror', enableDragMode);
-addEventListener('keydown', (e) => { if (e.code === 'Escape' && player.state.dragMode) { player.state.dragMode = false; overlay.classList.remove('hidden'); } });
+addEventListener('keydown', (e) => { if (e.code === 'Escape' && player.state.dragMode && !suggest.isOpen()) { player.state.dragMode = false; overlay.classList.remove('hidden'); } });
 player.controls.addEventListener('lock', () => overlay.classList.add('hidden'));
-player.controls.addEventListener('unlock', () => overlay.classList.remove('hidden'));
+player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) overlay.classList.remove('hidden'); });
+
+// ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
+const doors = initDoors({ scene, player });
+const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
+suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 
 // ---- Quality toggle ----
 let high = true;
@@ -99,10 +106,12 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
   player.update(dt);
+  doors.update(dt);
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    hud.textContent = `${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q)${player.state.dragMode ? ' · drag mouse to look' : ''}`;
+    const near = doors.prompt();
+    hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · C suggest · X area · L list${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;
   }
   renderer.render(scene, camera);

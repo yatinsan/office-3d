@@ -52,7 +52,7 @@ function group(parent, x = 0, y = 0, z = 0, ry = 0) {
 // ---------- furniture ----------
 /** Mesh-back office chair. Faces +z (the person sits looking toward +z). */
 export function officeChair(parent, x, z, ry = 0, { exec = false } = {}) {
-  const g = group(parent, x, 0, z, ry);
+  const g = group(parent, x, 0, z, ry); g.userData.label = 'Chair';
   // 5-star base
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2;
@@ -78,7 +78,7 @@ export function officeChair(parent, x, z, ry = 0, { exec = false } = {}) {
 
 /** Visitor cantilever chair (glass cabins). Faces +z. */
 export function visitorChair(parent, x, z, ry = 0) {
-  const g = group(parent, x, 0, z, ry);
+  const g = group(parent, x, 0, z, ry); g.userData.label = 'Visitor chair';
   for (const s of [-1, 1]) {
     box(g, M.chrome, 0.025, 0.025, 0.5, s * 0.22, 0.012, 0.05);
     box(g, M.chrome, 0.025, 0.45, 0.025, s * 0.22, 0.23, 0.29, { rx: 0.05 });
@@ -90,7 +90,7 @@ export function visitorChair(parent, x, z, ry = 0) {
 
 /** One clean, standard seat setup: monitor on a stand facing the sitter, keyboard, mouse (+ optional bottle). */
 export function workstation(g, x, z, ry, i = 0) {
-  const m = group(g, x, 0.77, z, ry);
+  const m = group(g, x, 0.77, z, ry); m.userData.label = 'Monitor';
   box(m, M.black, 0.24, 0.012, 0.18, 0, 0.006, -0.05);          // stand foot
   box(m, M.black, 0.05, 0.3, 0.035, 0, 0.16, -0.08);            // stand neck
   box(m, M.black, 0.6, 0.36, 0.025, 0, 0.42, -0.06);            // monitor
@@ -106,7 +106,7 @@ export function workstation(g, x, z, ry, i = 0) {
  * sides: [-1, 1] = double-sided pod, [1] or [-1] = single-sided (against a wall).
  */
 export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solidFn, seatW = 1.1, chairOff = 0.12, sides = [-1, 1] } = {}) {
-  const g = group(parent, cx, 0, 0);
+  const g = group(parent, cx, 0, 0); g.userData.label = 'Desk';
   const len = z1 - z0, zc = (z0 + z1) / 2;
   box(g, M.wood, width, 0.04, len, 0, 0.75, zc);
   // A-frame legs at the ends and every ~2 m
@@ -118,7 +118,7 @@ export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solid
   }
   if (solidFn) solidFn(cx - width / 2, z0, cx + width / 2, z1);
   if (!seats) return g;
-  const n = Math.max(1, Math.floor(len / seatW));
+  const n = Math.max(1, Math.floor(len / seatW + 1e-6)); // 2.8 / 0.7 is 3.999… in floating point
   let k = 0;
   for (const side of sides) {
     for (let i = 0; i < n; i++) {
@@ -136,7 +136,7 @@ export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solid
 
 /** Black leather 2/3-seater sofa, back along local -z, facing +z. */
 export function sofa(parent, x, z, ry = 0, seatsN = 2) {
-  const g = group(parent, x, 0, z, ry);
+  const g = group(parent, x, 0, z, ry); g.userData.label = 'Sofa';
   const w = seatsN * 0.75 + 0.3;
   rbox(g, M.leather, w, 0.38, 0.9, 0.06, 0, 0.24, 0);
   rbox(g, M.leather, w, 0.5, 0.22, 0.08, 0, 0.62, -0.34);
@@ -152,7 +152,7 @@ export function sofa(parent, x, z, ry = 0, seatsN = 2) {
 
 /** Snake plant leaves on top of a planter at local y. */
 export function snakePlant(parent, x, y, z, n = 9, height = 0.8) {
-  const g = group(parent, x, y, z);
+  const g = group(parent, x, y, z); g.userData.label = 'Plant';
   for (let i = 0; i < n; i++) {
     const h = height * (0.6 + rand() * 0.6);
     const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.045, h, 4), rand() > 0.3 ? M.plant : M.plantLight);
@@ -166,7 +166,7 @@ export function snakePlant(parent, x, y, z, n = 9, height = 0.8) {
 }
 
 export function pottedPlant(parent, x, z, { size = 0.45, h = 0.45, mat = M.white } = {}) {
-  const g = group(parent, x, 0, z);
+  const g = group(parent, x, 0, z); g.userData.label = 'Plant';
   box(g, mat, size, h, size, 0, h / 2, 0);
   box(g, M.soil, size - 0.06, 0.02, size - 0.06, 0, h, 0, { shadow: false });
   snakePlant(g, 0, h, 0, 11, 0.9);
@@ -177,6 +177,7 @@ export function beanBag(parent, x, z, mat = M.beanbag) {
   const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 14), mat);
   m.scale.set(1, 0.65, 1.05);
   m.position.set(x, 0.3, z);
+  m.userData.label = 'Bean bag';
   m.castShadow = true; m.receiveShadow = true;
   parent.add(m);
   return m;
@@ -184,7 +185,7 @@ export function beanBag(parent, x, z, mat = M.beanbag) {
 
 /** Black metal grid shelving unit over a white planter box (corridor partition). Long axis along z. */
 export function shelfUnit(parent, x, z0, z1, { yellowCubbies = [] } = {}) {
-  const g = group(parent, x, 0, 0);
+  const g = group(parent, x, 0, 0); g.userData.label = 'Shelving';
   const len = z1 - z0, zc = (z0 + z1) / 2, d = 0.4, top = 2.4, base = 0.55;
   box(g, M.white, d, base, len, 0, base / 2, zc);
   const nPl = Math.max(1, Math.round(len / 1.1));
@@ -217,7 +218,7 @@ export function shelfUnit(parent, x, z0, z1, { yellowCubbies = [] } = {}) {
 
 /** Linear suspended LED bar light. Long axis along x unless ry. */
 export function linearLight(parent, x, z, len = 2.4, ry = 0, y = 2.6, ceiling = 3.6) {
-  const g = group(parent, x, y, z, ry);
+  const g = group(parent, x, y, z, ry); g.userData.label = 'Light';
   box(g, M.black, len, 0.06, 0.08, 0, 0, 0, { shadow: false });
   plane(g, M.lightStrip, len - 0.04, 0.05, 0, -0.031, 0, 0, Math.PI / 2);
   for (const s of [-0.4, 0.4]) cyl(g, M.black, 0.003, 0.003, ceiling - y, s * len, (ceiling - y) / 2, 0, { seg: 3, shadow: false });
@@ -226,7 +227,7 @@ export function linearLight(parent, x, z, len = 2.4, ry = 0, y = 2.6, ceiling = 
 
 /** Black cone pendant lamp. */
 export function conePendant(parent, x, z, y = 2.2, ceiling = 3.6, scale = 1) {
-  const g = group(parent, x, y, z);
+  const g = group(parent, x, y, z); g.userData.label = 'Pendant light';
   cyl(g, M.black, 0.004, 0.004, ceiling - y, 0, (ceiling - y) / 2, 0, { seg: 3, shadow: false });
   const shade = new THREE.Mesh(new THREE.ConeGeometry(0.18 * scale, 0.26 * scale, 20, 1, true), M.black);
   shade.position.y = -0.1 * scale;
@@ -249,7 +250,7 @@ export function spot(parent, x, z, y) {
 
 /** Wall-mounted split AC; back on local -z. */
 export function splitAC(parent, x, y, z, ry = 0) {
-  const g = group(parent, x, y, z, ry);
+  const g = group(parent, x, y, z, ry); g.userData.label = 'AC unit';
   rbox(g, M.white, 0.9, 0.28, 0.2, 0.05, 0, 0, 0.1);
   box(g, M.metalDark, 0.8, 0.02, 0.02, 0, -0.1, 0.2, { shadow: false });
   return g;
@@ -263,7 +264,7 @@ export function cassetteAC(parent, x, z, y = 3.0) {
 /** Tall white lockers against a wall. Long axis along z; doors face +x (use ry to turn). */
 export function lockers(parent, x, z0, z1, ry = 0, h = 2.4) {
   const len = z1 - z0;
-  const g = group(parent, x, 0, (z0 + z1) / 2, ry);
+  const g = group(parent, x, 0, (z0 + z1) / 2, ry); g.userData.label = 'Lockers';
   box(g, M.white, 0.55, h, len, 0, h / 2, 0);
   const cols = Math.round(len / 0.5), rows = 5;
   for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
@@ -277,7 +278,7 @@ export function lockers(parent, x, z0, z1, ry = 0, h = 2.4) {
 
 /** Wall clock facing +z in local space. */
 export function wallClock(parent, x, y, z, ry = 0) {
-  const g = group(parent, x, y, z, ry);
+  const g = group(parent, x, y, z, ry); g.userData.label = 'Wall clock';
   const face = new THREE.Mesh(new THREE.CircleGeometry(0.2, 32), M.clock);
   face.position.z = 0.03;
   g.add(face);

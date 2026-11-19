@@ -20,14 +20,16 @@ function lineE(root, z0, y0, z1, y1) {
 export function buildLobby(root) {
   const z0 = 7.4; // logo wall runs z 7.4..9.25 (scan); thin partition
   // ---- Logo wall ----
-  box(root, M.concrete, LOGO_T, LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - LOGO_T / 2, LOBBY_CEIL / 2, (z0 + LOBBY_S + 0.35) / 2);
-  box(root, M.wall, LOGO_T, H - LOBBY_CEIL, LOBBY_S - z0 + 0.35, LOGO_X - LOGO_T / 2, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (z0 + LOBBY_S + 0.35) / 2, { shadow: false });
+  // ends at the south wall (z = LOBBY_S) instead of running through it: overlapping faces flickered (suggestion 11)
+  box(root, M.concrete, LOGO_T, LOBBY_CEIL, LOBBY_S - z0, LOGO_X - LOGO_T / 2, LOBBY_CEIL / 2, (z0 + LOBBY_S) / 2);
+  box(root, M.wall, LOGO_T, H - LOBBY_CEIL, LOBBY_S - z0, LOGO_X - LOGO_T / 2, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (z0 + LOBBY_S) / 2, { shadow: false });
   addBox(LOGO_X - LOGO_T, z0, LOGO_X, LOBBY_S + 0.35);
   const fw = LOBBY_S - z0;
   const face = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(fw, LOBBY_CEIL), fw, LOBBY_CEIL, 1.6), M.concrete);
   face.position.set(LOGO_X + 0.003, LOBBY_CEIL / 2, (z0 + LOBBY_S) / 2);
   face.rotation.y = Math.PI / 2;
   face.receiveShadow = true;
+  face.userData.label = 'Logo wall';
   root.add(face);
   lineE(root, LOBBY_S, 3.0, z0 + 0.1, 1.0);
   lineE(root, z0 + 0.1, 1.0, z0 + 0.9, 0.0);
@@ -35,7 +37,7 @@ export function buildLobby(root) {
   plane(root, M.logoText, 1.0, 0.35, LOGO_X + 0.02, 1.78, 8.3, Math.PI / 2);
   solid(sofa(root, LOGO_X + 0.47, 8.4, Math.PI / 2, 2));
   // Concrete fin at the logo wall's north end (the corridor turns west here)
-  box(root, M.concrete, 0.5, LOBBY_CEIL, 0.3, LOGO_X - 0.15, LOBBY_CEIL / 2, z0 + 0.15);
+  box(root, M.concrete, 0.5, LOBBY_CEIL - 0.004, 0.32, LOGO_X - 0.15, (LOBBY_CEIL - 0.004) / 2, z0 + 0.14); // overhangs the logo wall end slightly (no shared faces)
 
   // ---- South: frosted shard glass onto the workspace ----
   wall(root, LOGO_X - LOGO_T, LOBBY_S + 0.175, 8.3, LOBBY_S + 0.175, { h: H, t: 0.35 }); // 0.35 m thick (scan: faces at 9.25 / 9.6)
@@ -83,6 +85,7 @@ export function buildLobby(root) {
 
   // ---- Reception desk (white, angled front) against the glass ----
   const desk = new THREE.Group();
+  desk.userData.label = 'Reception desk';
   desk.position.set(9.3, 0, 6.6); // scan: desk top x 8.9..9.6, z 6.15..6.95
   root.add(desk);
   box(desk, M.cream, 0.7, 0.05, 1.25, 0, 0.8, 0);

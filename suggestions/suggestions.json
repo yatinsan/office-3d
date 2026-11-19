@@ -1,0 +1,393 @@
+[
+  {
+    "point": [
+      9.95,
+      1.58,
+      13.42
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Workspace",
+    "view": {
+      "x": 3.15,
+      "z": 11.89,
+      "yaw": -1.79,
+      "pitch": -0.01
+    },
+    "text": "i want to change this wall to this",
+    "updated": 1795085095475,
+    "id": "smwnehu92",
+    "created": 1795083713894,
+    "section": "East-wall desk E2 · Workspace",
+    "status": "done",
+    "files": [],
+    "n": 1,
+    "folder": "001-i-want-to-change-this-wall",
+    "reply": "Same spot and request as suggestion 2 (that one has the photos), so I did it there."
+  },
+  {
+    "point": [
+      9.95,
+      1.58,
+      13.26
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "East wall",
+    "view": {
+      "x": 3.4,
+      "z": 11.85,
+      "yaw": -1.78,
+      "pitch": -0.01
+    },
+    "text": "make this look like the image",
+    "section": "East wall · Workspace",
+    "status": "done",
+    "updated": 1795085095481,
+    "id": "smwnexm2s",
+    "n": 2,
+    "created": 1795084449854,
+    "folder": "002-make-this-look-like-the-image",
+    "files": [
+      {
+        "name": "IMG_5651.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/002-make-this-look-like-the-image/IMG_5651.HEIC"
+      },
+      {
+        "name": "IMG_5652.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/002-make-this-look-like-the-image/IMG_5652.HEIC"
+      },
+      {
+        "name": "IMG_5651.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/002-make-this-look-like-the-image/IMG_5651.jpg"
+      },
+      {
+        "name": "IMG_5652.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/002-make-this-look-like-the-image/IMG_5652.jpg"
+      }
+    ],
+    "reply": "East wall now matches the photos: two amber frosted doors with the white diamond graphic in white bays (pilasters + black panel above), a framed photo grid above desk E2, and black cone pendants over the three wall desks. (src/world/workspace.js: doorBay, photoGrid)"
+  },
+  {
+    "point": [
+      4.74,
+      1.79,
+      18.6
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Workspace",
+    "target": "Back wall",
+    "view": {
+      "x": 2.79,
+      "z": 14.52,
+      "yaw": -2.7,
+      "pitch": 0.03
+    },
+    "text": "this wall is shood be plain",
+    "section": "Back wall · Workspace",
+    "status": "done",
+    "updated": 1795085095489,
+    "id": "smwnf2wj1",
+    "n": 3,
+    "created": 1795084696627,
+    "folder": "003-this-wall-is-shood-be-plain",
+    "files": [],
+    "reply": "Back wall is plain now: removed both amber doors, the shard-glass door and the photo panel. The beige floor strip and the speaker stay."
+  },
+  {
+    "point": [
+      1.04,
+      0.46,
+      4.52
+    ],
+    "normal": [
+      0.52,
+      0.7,
+      0.49
+    ],
+    "zone": "Window Lounge",
+    "target": "Bean bag",
+    "view": {
+      "x": 3.11,
+      "z": 7.01,
+      "yaw": 0.69,
+      "pitch": -0.35
+    },
+    "text": "remove this bag from here",
+    "section": "Bean bag · Window Lounge",
+    "status": "done",
+    "updated": 1795085095490,
+    "id": "smwnf3fru",
+    "n": 4,
+    "created": 1795084721566,
+    "folder": "004-remove-this-bag-from-here",
+    "files": [],
+    "reply": "Removed the bean bag in front of the corner cabin (the one by the window lounge door). The other bean bag near the shelving stays."
+  },
+  {
+    "point": [
+      5.09,
+      0.8,
+      4.67
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Cabin 2",
+    "target": "Cabin desk",
+    "view": {
+      "x": 5.94,
+      "z": 6.57,
+      "yaw": 0.42,
+      "pitch": -0.39
+    },
+    "text": "make this desk to left side from my pov like",
+    "section": "Cabin desk · Cabin 2",
+    "status": "done",
+    "updated": 1795085095492,
+    "id": "smwnf4825",
+    "n": 5,
+    "created": 1795084758229,
+    "folder": "005-make-this-desk-to-left-side",
+    "files": [],
+    "reply": "Moved the Cabin 2 desk 0.75 m to the west (your left from the door): desk, boss chair, visitor chairs and AC moved with it; the plant moved to the free east corner."
+  },
+  {
+    "point": [
+      2.41,
+      0.38,
+      4.96
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Window Lounge",
+    "target": "Chaise",
+    "view": {
+      "x": 0.88,
+      "z": 5.79,
+      "yaw": -1.07,
+      "pitch": -0.63
+    },
+    "text": "make this same as entrence chair",
+    "section": "Chaise · Window Lounge",
+    "status": "done",
+    "updated": 1795085095495,
+    "id": "smwnf4u3b",
+    "n": 6,
+    "created": 1795084786778,
+    "folder": "006-make-this-same-as-entrence-chair",
+    "files": [],
+    "reply": "Replaced the chaise with the same black leather 2-seat sofa as reception, back against the corner-cabin wall, facing the windows."
+  },
+  {
+    "point": [
+      0.95,
+      1.75,
+      8.1
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Workspace",
+    "target": "Wall (Workspace)",
+    "view": {
+      "x": 2.79,
+      "z": 10.06,
+      "yaw": 0.76,
+      "pitch": 0.04
+    },
+    "text": "add same type locker like inside item",
+    "section": "Wall (Workspace) · Workspace",
+    "status": "done",
+    "updated": 1795085095497,
+    "id": "smwnf5q8m",
+    "n": 7,
+    "created": 1795084828444,
+    "folder": "007-add-same-type-locker-like-inside",
+    "files": [],
+    "reply": "Added a second locker unit (same as the one by reception) against the short white wall at the window corner, doors facing the workspace. It's LOCK2 in floorplan/layout.json, so you can drag it in the plan editor."
+  },
+  {
+    "point": [
+      4.29,
+      0.77,
+      13.95
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "Desk · Long table L2",
+    "view": {
+      "x": 2.8,
+      "z": 15.23,
+      "yaw": -0.86,
+      "pitch": -0.42
+    },
+    "text": "make 4 chair each side like L1 not 3,3",
+    "section": "Desk · Long table L2 · Workspace",
+    "status": "done",
+    "updated": 1795085095499,
+    "id": "smwnf6ily",
+    "n": 8,
+    "created": 1795084865210,
+    "folder": "008-make-4-chair-each-side-like",
+    "files": [],
+    "reply": "L2 (and every long table) now gets 4 chairs per side. It was a rounding bug: 2.8 / 0.7 came out as 3.999…, which rounded down to 3 seats."
+  },
+  {
+    "point": [
+      0.48,
+      0.22,
+      3.9
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Window Lounge",
+    "target": "Plant",
+    "view": {
+      "x": 1.45,
+      "z": 5.57,
+      "yaw": 0.53,
+      "pitch": -0.64
+    },
+    "text": "remove this item",
+    "section": "Plant · Window Lounge",
+    "status": "done",
+    "updated": 1795085500311,
+    "id": "smwnfeobo",
+    "n": 9,
+    "created": 1795085245865,
+    "folder": "009-remove-this-item",
+    "files": [],
+    "reply": "Removed the plant from the lounge corner by the window."
+  },
+  {
+    "point": [
+      0.05,
+      1.23,
+      5.66
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Window Lounge",
+    "target": "",
+    "view": {
+      "x": 2.59,
+      "z": 6.63,
+      "yaw": 1.21,
+      "pitch": -0.15
+    },
+    "text": "add a door to outside , like when i press f open this door to inside like two door system",
+    "section": "Window Lounge",
+    "status": "done",
+    "updated": 1795085500312,
+    "id": "smwnfhd9a",
+    "n": 10,
+    "created": 1795085371518,
+    "folder": "010-add-a-door-to-outside-like",
+    "files": [
+      {
+        "name": "IMG_5653.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/010-add-a-door-to-outside-like/IMG_5653.HEIC"
+      },
+      {
+        "name": "IMG_5653.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/010-add-a-door-to-outside-like/IMG_5653.jpg"
+      }
+    ],
+    "reply": "Added a frameless glass double door in the lounge window wall, onto the terrace, like your photo: long chrome pull handles, a fixed glass panel above, a doormat and a plant on each side outside. Stand near it and press F: both leaves swing inward; press F again to close. With it open you can walk out onto the terrace (the railing stops you). Code: src/doors.js."
+  },
+  {
+    "point": [
+      7.21,
+      2.53,
+      9.6
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Workspace",
+    "target": "",
+    "view": {
+      "x": 6.45,
+      "z": 12.58,
+      "yaw": -0.25,
+      "pitch": 0.28
+    },
+    "text": "i feel some glitch on texter like jumbing",
+    "section": "Lockers · Workspace",
+    "status": "done",
+    "updated": 1795085724728,
+    "id": "smwnflbdi",
+    "n": 11,
+    "created": 1795085555676,
+    "folder": "011-i-feel-some-glitch-on-texter",
+    "files": [],
+    "reply": "Fixed the flicker: the logo wall ran through the reception's south wall, so two surfaces sat in exactly the same place (at the workspace face above the lockers) and the screen kept switching between them. The logo wall now stops where the south wall starts, and the concrete fin at its north end no longer shares a face with it."
+  },
+  {
+    "point": [
+      6.02,
+      1.29,
+      5.6
+    ],
+    "normal": [
+      -0.99,
+      0,
+      0.17
+    ],
+    "zone": "Cabin 2",
+    "target": "Glass wall (Cabin 2)",
+    "view": {
+      "x": 5.1,
+      "z": 6.92,
+      "yaw": -0.61,
+      "pitch": -0.22
+    },
+    "text": "make all cabin door like f to open and clsoe",
+    "section": "Glass wall (Cabin 2) · Cabin 2",
+    "status": "done",
+    "updated": 1795085724729,
+    "id": "smwnfn1zx",
+    "n": 12,
+    "created": 1795085636834,
+    "folder": "012-make-all-cabin-door-like-f",
+    "files": [],
+    "reply": "All three cabin doors (Corner cabin, Cabin 1, Cabin 2) now start closed and open/close with F when you stand next to them, the same as the balcony door. A closed door blocks you; the bottom-left hint shows which door F will use. Code: glassWall() in src/world/helpers.js hands the leaf to src/doors.js."
+  }
+]

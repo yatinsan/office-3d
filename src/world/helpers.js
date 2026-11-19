@@ -47,16 +47,25 @@ export function wall(parent, x0, z0, x1, z1, { h = H, mat = M.wall, t = 0.2, y0 
   const w = alongX ? Math.abs(x1 - x0) : t;
   const d = alongX ? t : Math.abs(z1 - z0);
   const m = box(parent, mat, w, h, d, (x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2);
+  m.userData.label = 'Wall';
   if (collide && y0 < 1.5) addBox((x0 + x1) / 2 - w / 2, (z0 + z1) / 2 - d / 2, (x0 + x1) / 2 + w / 2, (z0 + z1) / 2 + d / 2);
   return m;
 }
 
 /**
  * Black-framed glass partition along x (fixed z) or along z (fixed x).
- * door: [a, b] gap along the run (a = hinge side). The leaf is drawn swung open.
+ * door: [a, b] gap along the run (a = hinge side). The leaf is not merged into the static world: it goes into
+ * `doorLeaves` and src/doors.js opens/closes it with F. name: label for the on-screen hint.
  */
-export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transom = 2.3, frost = false, panel = 1.1, swing = 1 }) {
+/** Openable door leaves collected while the world is built (see glassWall). */
+export const doorLeaves = [];
+
+export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transom = 2.3, frost = false, panel = 1.1, swing = 1, name = 'door' }) {
   const alongX = z0 === z1;
+  const gw = new THREE.Group();
+  gw.userData.label = 'Glass wall';
+  parent.add(gw);
+  parent = gw;
   const a0 = alongX ? x0 : z0, a1 = alongX ? x1 : z1, fixed = alongX ? z0 : x0;
   const P = (a, y, th, len, height) => alongX
     ? box(parent, M.black, len, height, th, a, y, fixed, { shadow: true })
@@ -99,11 +108,15 @@ export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transo
     box(leaf, M.black, lw, 0.05, 0.04, dir * lw / 2, 0.06, 0);
     box(leaf, M.black, lw, 0.04, 0.04, dir * lw / 2, transom - 0.08, 0);
     box(leaf, M.chrome, 0.02, 0.35, 0.03, dir * (lw - 0.1), 1.05, 0.04);
-    leaf.rotation.y = (alongX ? 0 : -Math.PI / 2) + (alongX ? -1 : 1) * swing * dir * 1.4; // swing = -1 opens to the other side
-    parent.add(leaf);
-    leaf.updateMatrixWorld(true);
-    const b = new THREE.Box3().setFromObject(leaf);
-    addBox(b.min.x - 0.02, b.min.z - 0.02, b.max.x + 0.02, b.max.z + 0.02);
+    const closed = alongX ? 0 : -Math.PI / 2;
+    const open = closed + (alongX ? -1 : 1) * swing * dir * 1.4; // swing = -1 opens to the other side
+    leaf.rotation.y = closed;
+    const lo = Math.min(da, db), hi = Math.max(da, db);
+    doorLeaves.push({
+      leaf, closed, open, name,
+      x: alongX ? (da + db) / 2 : fixed, z: alongX ? fixed : (da + db) / 2,
+      block: alongX ? { minX: lo, maxX: hi, minZ: fixed - 0.06, maxZ: fixed + 0.06 } : { minX: fixed - 0.06, maxX: fixed + 0.06, minZ: lo, maxZ: hi },
+    });
   }
 }
 
