@@ -25,6 +25,10 @@ export const MEET_X1 = 3.7;    // meeting room east wall
 export const MEET_Z1 = 22.6;   // meeting room far (south) wall
 export const MEET_DOOR = [20.0, 21.6]; // glass double door from the terrace (like the lounge balcony door)
 export const TERRACE_Z1 = 25.2; // terrace runs on past the meeting room
+// Game room behind the meeting room's white door (suggestion 17): PS5 corner + pool table.
+export const GAME_X1 = 6.6;
+export const GAME_Z1 = 27.2;
+export const GAME_DOOR = [2.3, 3.2]; // opening in the meeting room's far wall (hinge on the 3.2 side)
 
 /** Scales a geometry's UVs so a texture tile spans `tile` metres. */
 export function worldUV(geo, sx, sy, tile) {

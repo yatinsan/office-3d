@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M, rand } from '../materials.js';
 import { box } from '../props.js';
 import { buildTerrace, TX } from './terrace.js';
-import { windowWall, wall, H, W, D, MEET_Z1, MEET_DOOR, TERRACE_Z1, LOBBY_CEIL, CORNER_Z, CAB_X0, SHELF_Z, LOBBY_E } from './helpers.js';
+import { windowWall, wall, H, W, D, MEET_Z1, MEET_DOOR, TERRACE_Z1, GAME_Z1, LOBBY_CEIL, CORNER_Z, CAB_X0, SHELF_Z, LOBBY_E } from './helpers.js';
 
 const FLOOR_DROP = 40; // the office is high up – ground is far below
 
@@ -34,7 +34,7 @@ export function buildExterior(root) {
   box(root, M.wall, 0.12, H - 2.8, MEET_Z1 - SHELF_Z, 0.02, 2.8 + (H - 2.8) / 2, (SHELF_Z + MEET_Z1) / 2, { shadow: false });
   for (let y = 2.95; y < H - 0.05; y += 0.14) box(root, M.wallWarm, 0.02, 0.03, D - SHELF_Z, 0.09, y, (SHELF_Z + D) / 2, { shadow: false });
   // past the meeting room the facade is solid plaster (pantry sink + AC hang on it, photos IMG_5667/5668)
-  wall(root, -0.1, MEET_Z1, -0.1, TERRACE_Z1, { h: H + 0.3, mat: M.wallWarm, t: 0.2 });
+  wall(root, -0.1, MEET_Z1, -0.1, GAME_Z1 + 0.2, { h: H + 0.3, mat: M.wallWarm, t: 0.2 }); // runs on past the terrace along the game room
   windowWall(root, 0, 0, CAB_X0, 0, LOBBY_CEIL);               // corner cabin, north side
   wall(root, 0, 0, CAB_X0, 0, { h: H - LOBBY_CEIL, y0: LOBBY_CEIL, collide: false });
   void CORNER_Z;
@@ -44,8 +44,8 @@ export function buildExterior(root) {
 
   // ---- Building body below the floor ----
   const BW = 20 - TX;
-  box(root, M.wallWarm, BW, FLOOR_DROP, TERRACE_Z1 + 1, TX + BW / 2, -FLOOR_DROP / 2 - 0.01, (TERRACE_Z1 - 1) / 2, { shadow: false });
-  for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, TERRACE_Z1 + 1.1, TX - 0.01, -i * 3.4, (TERRACE_Z1 - 1) / 2, { shadow: false });
+  box(root, M.wallWarm, BW, FLOOR_DROP, GAME_Z1 + 1.2, TX + BW / 2, -FLOOR_DROP / 2 - 0.01, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
+  for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, GAME_Z1 + 1.3, TX - 0.01, -i * 3.4, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
   void LOBBY_E; void W;
 
   // ---- Ground + city ----

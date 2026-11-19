@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M } from '../materials.js';
 import { box, cyl, officeChair, linearLight, splitAC } from '../props.js';
 import { addBox } from '../colliders.js';
-import { slab, wall, H, BACK_Z, MEET_X1, MEET_Z1 } from './helpers.js';
+import { slab, wall, doorLeaves, H, BACK_Z, MEET_X1, MEET_Z1, GAME_DOOR } from './helpers.js';
 
 /**
  * Meeting room behind the workspace back wall on the window side (suggestions 13 + 14, photos IMG_5669–5673):
@@ -32,7 +32,11 @@ export function buildMeetingRoom(root) {
   slab(g, M.floorDark, 0, BACK_Z, MEET_X1, MEET_Z1, 0);
   slab(g, M.ceilingBlack, 0, BACK_Z, MEET_X1, MEET_Z1, H, { down: true });
   wall(g, MEET_X1 + 0.1, BACK_Z, MEET_X1 + 0.1, MEET_Z1 + 0.1, { h: H, mat: M.white });
-  wall(g, 0, MEET_Z1 + 0.1, MEET_X1 + 0.2, MEET_Z1 + 0.1, { h: H, mat: M.white });
+  // far wall with the opening for the white door to the game room (suggestion 17)
+  const [gd0, gd1] = GAME_DOOR;
+  wall(g, 0, MEET_Z1 + 0.1, gd0, MEET_Z1 + 0.1, { h: H, mat: M.white });
+  wall(g, gd1, MEET_Z1 + 0.1, MEET_X1 + 0.2, MEET_Z1 + 0.1, { h: H, mat: M.white });
+  wall(g, gd0, MEET_Z1 + 0.1, gd1, MEET_Z1 + 0.1, { h: H - 2.12, y0: 2.12, mat: M.white, collide: false });
   cyl(g, M.ceilingBlack, 0.16, 0.16, MEET_Z1 - BACK_Z, MEET_X1 - 0.35, H - 0.3, (BACK_Z + MEET_Z1) / 2, { rx: Math.PI / 2, seg: 12, shadow: false }); // duct
   box(g, M.ceilingBlack, MEET_X1, 0.35, 0.3, MEET_X1 / 2, H - 0.18, BACK_Z + 0.25, { shadow: false });  // beam over the window
   for (const [x0, z0, x1, z1] of [[0, MEET_Z1 - 0.01, MEET_X1, MEET_Z1 - 0.01], [MEET_X1 - 0.01, BACK_Z, MEET_X1 - 0.01, MEET_Z1]]) // grey skirting
@@ -72,12 +76,23 @@ export function buildMeetingRoom(root) {
   splitAC(g, MEET_X1 - 0.02, 2.7, 20.6, -Math.PI / 2);
 
   // ---- White flush door in the far wall + tall white shelf in the window corner (IMG_5670/5671) ----
-  { const d = new THREE.Group(); d.userData.label = 'Door'; g.add(d);
-    const fz = MEET_Z1 - 0.01, dx = 2.75;
-    box(d, edge, 0.98, 2.15, 0.03, dx, 1.075, fz);
-    box(d, doorWhite, 0.9, 2.1, 0.04, dx, 1.05, fz - 0.01);
-    box(d, M.chrome, 0.025, 0.32, 0.03, dx - 0.35, 1.05, fz - 0.06);
-    for (const s of [-0.1, 0.1]) box(d, M.chrome, 0.02, 0.02, 0.05, dx - 0.35, 1.05 + s * 1.3, fz - 0.04, { shadow: false }); }
+  { const d = new THREE.Group(); d.userData.label = 'Door frame'; g.add(d);
+    const fz = MEET_Z1 + 0.1, w = gd1 - gd0;
+    for (const x of [gd0 - 0.02, gd1 + 0.02]) box(d, edge, 0.04, 2.14, 0.22, x, 1.07, fz);   // jambs
+    box(d, edge, w + 0.08, 0.04, 0.22, (gd0 + gd1) / 2, 2.14, fz);                        // head
+    // the leaf opens with F (src/doors.js); hinge on the east jamb, swings into the game room
+    const leaf = new THREE.Group();
+    leaf.position.set(gd1, 0, fz);
+    const lw = w - 0.02;
+    box(leaf, doorWhite, lw, 2.08, 0.04, -lw / 2, 1.05, 0);
+    for (const s of [-1, 1]) {
+      box(leaf, M.chrome, 0.025, 0.32, 0.03, -lw + 0.1, 1.05, s * 0.06);
+      for (const y of [0.92, 1.18]) box(leaf, M.chrome, 0.02, 0.02, 0.05, -lw + 0.1, y, s * 0.035, { shadow: false });
+    }
+    doorLeaves.push({
+      leaf, closed: 0, open: 1.45, name: 'game room door', x: (gd0 + gd1) / 2, z: fz,
+      block: { minX: gd0, maxX: gd1, minZ: fz - 0.1, maxZ: fz + 0.1 },
+    }); }
   { const sh = new THREE.Group(); sh.userData.label = 'Shelf'; g.add(sh);
     const sx = 0.38, sz = MEET_Z1 - 0.3, sw = 0.5, sd = 0.38, sH = 2.3;
     for (const s of [-1, 1]) box(sh, M.white, 0.02, sH, sd, sx + s * sw / 2, sH / 2, sz);

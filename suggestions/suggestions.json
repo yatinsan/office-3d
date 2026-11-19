@@ -581,5 +581,65 @@
     "folder": "016-make-this-also-a-glass-like",
     "files": [],
     "reply": "The wall between Cabin 2 and Cabin 1 is now black-framed glass like the cabin fronts, and the white built-in shelves that stood against it in Cabin 2 are removed, so you can see straight through into Cabin 1. Cabin 1's own built-ins on its far (east) wall are kept. Code: src/world/corridor.js."
+  },
+  {
+    "point": [
+      2.43,
+      1.2,
+      22.56
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Meeting Room",
+    "target": "Door · Meeting room",
+    "view": {
+      "x": 2.88,
+      "z": 20.18,
+      "yaw": 2.95,
+      "pitch": -0.18
+    },
+    "text": "make this door like after this door to a  big game area with ps5 and bool and area like not too big but some",
+    "section": "Door · Meeting room · Meeting Room",
+    "status": "done",
+    "updated": 1795091703700,
+    "id": "smwnj5hw6",
+    "n": 17,
+    "created": 1795091536097,
+    "folder": "017-make-this-door-like-after-this",
+    "files": [],
+    "reply": "The white door at the end of the meeting room now opens: stand near it and press F, and it swings into a new game room behind it (about 6.6 × 4.4 m, not too big). West side: PS5 corner with a big TV on a navy accent wall with purple/cyan LED glow, a white TV unit with the PS5 and a speaker, a 3-seat sofa facing the TV, a coffee table with two controllers, and red and blue bean bags. East side: a pool table with the balls racked, a cue ball and a cue, a long pendant light over it, a cue rack on the wall and a pink 'GAME ON' neon sign. The zone label reads 'Game Room'. Code: src/world/game.js, src/world/meeting.js (door)."
+  },
+  {
+    "point": [
+      0.09,
+      1.36,
+      25.25
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Game Room",
+    "target": "TV · Game room",
+    "view": {
+      "x": 2.3,
+      "z": 26.12,
+      "yaw": 1.2,
+      "pitch": -0.12
+    },
+    "text": "when i click e on the tv just play game like play in tv and show suggeaion and when i press somting , it will full screen ,  like for fist \n\nshow a game list and fist now show snak game and play that",
+    "section": "TV · Game room · Game Room",
+    "status": "done",
+    "updated": 1795091985318,
+    "id": "smwnjc3zq",
+    "n": 18,
+    "created": 1795091844667,
+    "folder": "018-when-i-click-e-on-the",
+    "files": [],
+    "reply": "The game room TV is now playable. Walk up to it (the hint at the bottom says 'E play TV games') and press E: the TV turns on with a game list (Snake, plus Pong, Tetris and Car Race shown as coming soon). Use ↑/↓ to choose and Enter to play. Snake runs on the TV with arrows or WASD, and the score and best score are shown. Press F to go full screen and F again to return to the TV. Backspace goes back to the list, and E in the list turns the TV off. While the TV is on, walking, doors and the C/X/L suggestion keys are paused so they don't clash with the game. Code: src/arcade.js (wired up in src/main.js)."
   }
 ]
