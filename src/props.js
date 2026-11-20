@@ -91,13 +91,27 @@ export function visitorChair(parent, x, z, ry = 0) {
 /** One clean, standard seat setup: monitor on a stand facing the sitter, keyboard, mouse (+ optional bottle). */
 export function workstation(g, x, z, ry, i = 0) {
   const m = group(g, x, 0.77, z, ry); m.userData.label = 'Monitor';
-  box(m, M.black, 0.24, 0.012, 0.18, 0, 0.006, -0.05);          // stand foot
-  box(m, M.black, 0.05, 0.3, 0.035, 0, 0.16, -0.08);            // stand neck
-  box(m, M.black, 0.6, 0.36, 0.025, 0, 0.42, -0.06);            // monitor
-  plane(m, i % 3 === 2 ? M.screenDash : M.screenCode, 0.57, 0.33, 0, 0.42, -0.046);
-  box(m, M.blackMatte, 0.44, 0.018, 0.14, 0, 0.009, 0.22, { shadow: false }); // keyboard
-  box(m, M.blackMatte, 0.06, 0.02, 0.1, 0.32, 0.01, 0.22, { shadow: false });  // mouse
-  if (i % 3 === 0) cyl(m, M.bottleYellow, 0.035, 0.035, 0.24, -0.38, 0.12, 0.05, { seg: 10 });
+  // Everything stays within ±0.33 m so it fits one 0.7 m seat (matches the 24-inch monitor in suggestion 22's photo)
+  box(m, M.black, 0.26, 0.012, 0.18, 0, 0.006, -0.06);          // flat stand foot
+  box(m, M.black, 0.05, 0.22, 0.025, 0, 0.12, -0.08);           // stand neck
+  box(m, M.black, 0.54, 0.32, 0.022, 0, 0.35, -0.07);           // thin-bezel monitor
+  plane(m, i % 3 === 2 ? M.screenDash : M.screenCode, 0.52, 0.30, 0, 0.35, -0.058);
+  // Mac mini: rounded aluminium body, dark base plinth, logo on top, front ports + LED
+  const mmx = -0.26, mmz = 0.06;
+  rbox(m, M.black, 0.114, 0.006, 0.114, 0.002, mmx, 0.003, mmz);                              // base plinth
+  rbox(m, M.silver, 0.12, 0.03, 0.12, 0.012, mmx, 0.021, mmz);                                // body
+  plane(m, M.macTop, 0.09, 0.09, mmx, 0.0365, mmz, 0, -Math.PI / 2);                          // top with logo
+  box(m, M.black, 0.012, 0.004, 0.002, mmx - 0.03, 0.021, mmz + 0.0605, { shadow: false });   // front port
+  box(m, M.black, 0.012, 0.004, 0.002, mmx - 0.012, 0.021, mmz + 0.0605, { shadow: false });  // front port
+  box(m, M.white, 0.004, 0.004, 0.002, mmx + 0.04, 0.021, mmz + 0.0605, { shadow: false });   // status LED
+  box(m, M.keyboardTop, 0.26, 0.012, 0.1, -0.01, 0.006, 0.25, { shadow: false }); // compact white keyboard
+  // black wireless mouse: rounded body, button split, scroll wheel
+  const mx = 0.24, mz = 0.24;
+  const body = rbox(m, M.blackMatte, 0.058, 0.03, 0.1, 0.014, mx, 0.015, mz); body.scale.y = 0.85;
+  rbox(m, M.black, 0.056, 0.006, 0.05, 0.003, mx, 0.027, mz - 0.025);          // glossy button plate
+  box(m, M.blackMatte, 0.002, 0.004, 0.045, mx, 0.0295, mz - 0.025, { shadow: false }); // button split
+  box(m, M.chrome, 0.008, 0.006, 0.016, mx, 0.0305, mz - 0.022, { shadow: false });  // scroll wheel
+  if (i % 3 === 0) cyl(m, M.bottleYellow, 0.032, 0.032, 0.22, 0.28, 0.11, -0.04, { seg: 10 });
   return m;
 }
 
@@ -108,12 +122,16 @@ export function workstation(g, x, z, ry, i = 0) {
 export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solidFn, seatW = 1.1, chairOff = 0.12, sides = [-1, 1] } = {}) {
   const g = group(parent, cx, 0, 0); g.userData.label = 'Desk';
   const len = z1 - z0, zc = (z0 + z1) / 2;
-  box(g, M.wood, width, 0.04, len, 0, 0.75, zc);
+  box(g, M.greyOak, width, 0.04, len, 0, 0.75, zc);
+  box(g, M.oakEdge, width + 0.004, 0.012, len + 0.004, 0, 0.734, zc, { shadow: false }); // pale edge band
   // A-frame legs at the ends and every ~2 m
   const nLegs = Math.max(2, Math.round(len / 2) + 1);
   for (let i = 0; i < nLegs; i++) {
     const lz = z0 + 0.12 + (i / (nLegs - 1)) * (len - 0.24);
-    for (const s of [-1, 1]) box(g, M.black, 0.05, 0.78, 0.05, s * (width / 2 - 0.22), 0.37, lz, { rz: s * 0.2 });
+    for (const s of [-1, 1]) {
+      box(g, M.black, 0.05, 0.78, 0.05, s * (width / 2 - 0.22), 0.37, lz, { rz: s * 0.2 });
+      box(g, M.black, 0.05, 0.78, 0.05, s * (width / 2 - 0.22), 0.37, lz, { rz: -s * 0.2 }); // crossed legs: X frame
+    }
     box(g, M.black, width - 0.2, 0.05, 0.05, 0, 0.72, lz);
   }
   if (solidFn) solidFn(cx - width / 2, z0, cx + width / 2, z1);

@@ -5,7 +5,7 @@ import { solid, addBox } from '../colliders.js';
 import { wall, glassWall, worldUV, LOBBY_CEIL, H, CORNER_Z, CAB_BACK, CAB_FRONT, CAB_X0, CAB_SPLIT, CAB_X1, SHELF_Z, LOGO_X } from './helpers.js';
 
 /** White-top executive desk, long axis along x; the boss sits on -z, visitors on +z (slatted wooden front). */
-function execDesk(root, x, z, len = 1.6) {
+function execDesk(root, x, z, len = 1.6, { monitor = false } = {}) {
   const g = new THREE.Group();
   g.userData.label = 'Cabin desk';
   g.position.set(x, 0, z);
@@ -15,9 +15,10 @@ function execDesk(root, x, z, len = 1.6) {
   for (let i = 0; i < 6; i++) box(g, M.black, len - 0.15, 0.02, 0.01, 0, 0.15 + i * 0.1, 0.39, { shadow: false });
   box(g, M.woodDark, 0.05, 0.72, 0.75, -len / 2 + 0.05, 0.38, 0);
   box(g, M.woodDark, 0.45, 0.72, 0.6, len / 2 - 0.25, 0.38, 0);   // drawer pedestal
-  box(g, M.black, 0.1, 0.01, 0.1, -0.2, 0.8, 0.15, { shadow: false }); // cable grommet
-  box(g, M.black, 0.5, 0.31, 0.03, -0.25, 1.12, -0.2);
-  box(g, M.black, 0.04, 0.3, 0.03, -0.25, 0.94, -0.23);
+  if (monitor) {
+    box(g, M.black, 0.5, 0.31, 0.03, -0.25, 1.12, -0.2);
+    box(g, M.black, 0.04, 0.3, 0.03, -0.25, 0.94, -0.23);
+  }
   solid(g);
 }
 
@@ -49,8 +50,8 @@ function concreteS(root, x0, x1, z) {
   root.add(m);
 }
 
-function cabin(root, xc, zDesk, { chairsZ, back, len = 1.6, visitors = [-0.4, 0.4] }) {
-  execDesk(root, xc, zDesk, len);
+function cabin(root, xc, zDesk, { chairsZ, back, len = 1.6, visitors = [-0.4, 0.4], monitor = false }) {
+  execDesk(root, xc, zDesk, len, { monitor });
   solid(officeChair(root, xc - 0.1, zDesk - 0.75, 0, { exec: true }), -0.1);
   for (const dx of visitors) solid(visitorChair(root, xc + dx, chairsZ, Math.PI), -0.05);
   splitAC(root, xc, 2.55, back + 0.11, 0);
@@ -82,7 +83,7 @@ export function buildCorridor(root) {
   cabin(root, 7.35, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.6, visitors: [0.35, 0.85] }); // scan: desk x 6.6..8.3, z 4.0..4.7
   builtIns(root, CAB_X1, CAB_BACK + 0.1, 5.65, -1);   // white built-ins on cabin 1's east wall (scan frames 412/416)
   // ---- Cabin 2 (x 3..7) ----
-  cabin(root, 4.0, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.5 }); // moved west (suggestion 5)
+  cabin(root, 4.0, 4.35, { chairsZ: 5.15, back: CAB_BACK, len: 1.5, monitor: false }); // moved west (suggestion 5)
   // (built-in shelves on the shared wall removed so the glass stays see-through, suggestion 16)
   solid(pottedPlant(root, 5.35, 3.45, { size: 0.35, h: 0.4 }));
 

@@ -671,5 +671,117 @@
     "folder": "019-make-the-chair-to-view-side",
     "files": [],
     "reply": "Terrace bar stools turned around: backrests now face away from the rail, so you sit looking out at the view. (src/world/terrace.js)"
+  },
+  {
+    "point": [
+      3.71,
+      0.8,
+      4.37
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Cabin 2",
+    "target": "Cabin desk",
+    "view": {
+      "x": 5,
+      "z": 4.99,
+      "yaw": 1.12,
+      "pitch": -0.54
+    },
+    "text": "remove monitor in this 3 cabin",
+    "section": "Cabin desk \u00b7 Cabin 2",
+    "status": "done",
+    "updated": 1795152109393,
+    "id": "smwoj7sk1",
+    "n": 20,
+    "created": 1795152109401,
+    "folder": "020-remove-monitor-in-this-3-cabin",
+    "files": [],
+    "reply": "Removed the monitor from cabin 2's desk."
+  },
+  {
+    "point": [
+      4.57,
+      0.78,
+      10.99
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "Monitor \u00b7 Desk \u00b7 Long table L1",
+    "view": {
+      "x": 3.94,
+      "z": 12.31,
+      "yaw": -0.45,
+      "pitch": -0.54
+    },
+    "text": "make table like this monitor , and mac keybord with this details",
+    "section": "Monitor \u00b7 Desk \u00b7 Long table L1 \u00b7 Workspace",
+    "status": "done",
+    "updated": 1795152197347,
+    "id": "smwoj9of7",
+    "n": 21,
+    "created": 1795152197370,
+    "folder": "021-make-table-like-this-monitor-and",
+    "files": [
+      {
+        "name": "IMG_5702.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/021-make-table-like-this-monitor-and/IMG_5702.HEIC"
+      },
+      {
+        "name": "IMG_5702.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/021-make-table-like-this-monitor-and/IMG_5702.jpg"
+      }
+    ],
+    "reply": "Long-table desks now match the photo: grey-oak top with a pale edge band and black crossed (X) legs; each seat has a thin-bezel monitor on a wide flat stand, a silver Mac mini, a compact white round-key keyboard and a black mouse."
+  },
+  {
+    "point": [
+      3.52,
+      0.81,
+      11.11
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "Monitor \u00b7 Desk \u00b7 Long table L1",
+    "view": {
+      "x": 3.02,
+      "z": 12.13,
+      "yaw": -0.46,
+      "pitch": -0.64
+    },
+    "text": "this mac and waterbottile little outside the desk fix that and reduce monition like match the monitor in this image",
+    "section": "Monitor \u00b7 Desk \u00b7 Long table L1 \u00b7 Workspace",
+    "status": "done",
+    "updated": 1795152359922,
+    "id": "smwojd5v6",
+    "n": 22,
+    "created": 1795152359950,
+    "folder": "022-this-mac-and-waterbottile-little-outside",
+    "files": [
+      {
+        "name": "IMG_5702.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/022-this-mac-and-waterbottile-little-outside/IMG_5702.HEIC"
+      },
+      {
+        "name": "IMG_5702.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/022-this-mac-and-waterbottile-little-outside/IMG_5702.jpg"
+      }
+    ],
+    "reply": "Resized each workstation to fit its 0.7 m seat: monitor now 0.54 m wide (24-inch like the photo), Mac mini smaller and moved onto the desk, bottle moved in, keyboard and mouse tightened. Nothing overhangs the desk edge now."
   }
 ]

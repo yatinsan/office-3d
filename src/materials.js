@@ -62,6 +62,39 @@ const woodTex = canvasTex(256, 1024, (g, w, h) => {
   }
 });
 
+// Grey-oak desk top (suggestion 21 photo) and a white round-key keyboard top.
+const greyOakTex = canvasTex(256, 1024, (g, w, h) => {
+  g.fillStyle = '#a8978a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 120; i++) {
+    const x = rand() * w, a = 0.05 + rand() * 0.1;
+    g.strokeStyle = rand() > 0.5 ? `rgba(90,75,65,${a})` : `rgba(210,200,190,${a})`;
+    g.lineWidth = 1 + rand() * 2.5;
+    g.beginPath(); g.moveTo(x, 0);
+    for (let y = 0; y <= h; y += 64) g.lineTo(x + Math.sin(y * 0.012 + i) * 3, y);
+    g.stroke();
+  }
+});
+const keysTex = canvasTex(256, 96, (g, w, h) => {
+  g.fillStyle = '#e4e4e2'; g.fillRect(0, 0, w, h);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 14; c++) {
+    if (r === 3 && c > 3 && c < 9) continue;
+    g.fillStyle = '#fafafa'; g.strokeStyle = '#b9b9b6'; g.lineWidth = 1.5;
+    g.beginPath(); g.arc(14 + c * 17.5, 14 + r * 22, 7.5, 0, 7); g.fill(); g.stroke();
+  }
+  g.beginPath(); g.roundRect(80, 70, 90, 15, 7); g.fill(); g.stroke();
+});
+
+// Mac mini top: brushed silver with a darker apple-logo silhouette.
+const macTopTex = canvasTex(128, 128, (g, w) => {
+  g.fillStyle = '#c4c5c8'; g.fillRect(0, 0, w, w);
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${0.03 + rand() * 0.05})`; g.fillRect(0, rand() * w, w, 1); }
+  g.fillStyle = '#8d8e92';
+  g.beginPath(); g.arc(60, 70, 15, 0, 7); g.arc(76, 70, 15, 0, 7); g.fill();       // body
+  g.beginPath(); g.ellipse(68, 80, 18, 20, 0, 0, 7); g.fill();
+  g.fillStyle = '#c4c5c8'; g.beginPath(); g.arc(90, 62, 10, 0, 7); g.fill();        // bite
+  g.fillStyle = '#8d8e92'; g.beginPath(); g.ellipse(70, 46, 9, 5, -0.7, 0, 7); g.fill(); // leaf
+}, { repeat: false });
+
 // Lobby ceiling: mostly black panels, a few cream triangles, yellow grid + diagonals (2.4m tile).
 const diamondTex = canvasTex(512, 512, (g, w) => {
   const n = 2, s = w / n;
@@ -153,6 +186,11 @@ export const M = {
   fabric: std({ color: '#2d2d30', roughness: 1.0 }),
   leather: std({ color: '#1a1a1a', roughness: 0.38, metalness: 0.05 }),
   wood: std({ map: woodTex, roughness: 0.6 }),
+  greyOak: std({ map: greyOakTex, roughness: 0.75 }),
+  oakEdge: std({ color: '#d9cfb4', roughness: 0.7 }),
+  macTop: std({ map: macTopTex, roughness: 0.35, metalness: 0.6 }),
+  silver: std({ color: '#c9cacc', roughness: 0.3, metalness: 0.8 }),
+  keyboardTop: std({ map: keysTex, roughness: 0.5 }),
   woodDark: std({ color: '#7a5233', roughness: 0.6 }),
   white: std({ color: '#f3f3f1', roughness: 0.5 }),
   whiteGloss: std({ color: '#f5f5f3', roughness: 0.2 }),
