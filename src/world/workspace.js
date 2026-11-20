@@ -3,21 +3,59 @@ import { M } from '../materials.js';
 import { box, plane, cyl, benchDesk, linearLight, conePendant, lockers, wallClock, pottedPlant } from '../props.js';
 import { solid, addBox } from '../colliders.js';
 import LAYOUT from '../../floorplan/layout.json';
-import { wall, H, W, BACK_Z, LOBBY_S } from './helpers.js';
+import { wall, H, W, BACK_Z, LOBBY_S, LOBBY_E, EAST_DOORS, DOOR_HALF, DOOR_TOP } from './helpers.js';
 
-function yellowDoor(root, x, z, facing) {
-  // Amber frosted glass door set into a wall; facing = ry of the visible side.
+// Amber glass with frosted white graphics (photos IMG_5731 / IMG_5732). Clear parts are see-through from both sides.
+const FROST = 'rgba(238,222,180,0.96)', CLEAR = 'rgba(232,186,80,0.16)';
+function glassTex(shapes) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 640;
+  const g = c.getContext('2d');
+  const P = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([u, v], i) => (i ? g.lineTo : g.moveTo).call(g, u * 256, v * 640)); g.closePath(); g.fill(); };
+  g.fillStyle = FROST; g.fillRect(0, 0, 256, 640);
+  for (const [pts, frost] of shapes) {
+    if (!frost) { g.save(); g.beginPath(); pts.forEach(([u, v], i) => (i ? g.lineTo : g.moveTo).call(g, u * 256, v * 640)); g.closePath(); g.clip(); g.clearRect(0, 0, 256, 640); g.fillStyle = CLEAR; g.fillRect(0, 0, 256, 640); g.restore(); }
+    else P(pts, FROST);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.15, metalness: 0.05, depthWrite: false, side: THREE.DoubleSide });
+}
+// [polygon in pane coords (u right, v down), frosted?] drawn in order
+const DOOR_GLASS = [
+  glassTex([ // IMG_5731: frosted top with a small clear window, clear middle, frosted arrow on the right, frosted diagonal at the bottom
+    [[[0, 0.37], [1, 0.37], [1, 1], [0, 1]], false],
+    [[[0.6, 0.15], [0.77, 0.15], [0.77, 0.22], [0.6, 0.22]], false],
+    [[[1, 0.37], [0.62, 0.6], [1, 0.85]], true],
+    [[[0.42, 0.37], [0.62, 0.37], [0.35, 0.55], [0.25, 0.5]], true],
+    [[[0, 0.55], [1, 0.9], [1, 1], [0, 1]], true],
+  ]),
+  glassTex([ // IMG_5732: frosted top, clear ribbon running diagonally down, frosted arrow on the left, frosted bottom right
+    [[[0, 0.3], [0.75, 0.6], [0.06, 1], [0, 1]], false],
+    [[[0, 0.42], [0.43, 0.62], [0, 0.82]], true],
+    [[[0.75, 0.6], [1, 0.6], [1, 1], [0.06, 1], [0.3, 0.85]], true],
+  ]),
+];
+
+/** See-through amber glass door with transom, spanning the wall from the workspace (x 9.95) to the hall face (x 10.3). */
+function glassDoor(root, zc, mat) {
   const g = new THREE.Group();
-  g.position.set(x, 0, z); g.rotation.y = facing;
   g.userData.label = 'Door';
   root.add(g);
-  box(g, M.black, 1.0, 2.4, 0.04, 0, 1.2, 0.11);
-  box(g, M.glassYellow, 0.86, 2.26, 0.02, 0, 1.17, 0.135, { shadow: false });
-  box(g, M.black, 0.04, 2.26, 0.03, -0.2, 1.17, 0.14, { shadow: false });
-  box(g, M.chrome, 0.03, 0.35, 0.03, 0.32, 1.05, 0.17);
-  // white diamond graphic on the frosted glass (photos IMG_5651/5652)
-  box(g, M.white, 0.62, 0.62, 0.005, 0.12, 1.05, 0.15, { rz: Math.PI / 4, shadow: false });
-  box(g, M.glassYellow, 0.44, 0.44, 0.006, 0.12, 1.05, 0.152, { rz: Math.PI / 4, shadow: false });
+  const xa = 9.95, xb = LOBBY_E, xm = 10.12, w = DOOR_HALF * 2, T = DOOR_TOP, split = 2.3;
+  for (const s of [-1, 1]) box(g, M.concrete, xb - xa, T, 0.03, (xa + xb) / 2, T / 2, zc + s * (DOOR_HALF + 0.015), { shadow: false }); // reveals (concrete, like the hall wall)
+  box(g, M.concrete, xb - xa, 0.03, w, (xa + xb) / 2, T + 0.015, zc, { shadow: false });
+  for (const s of [-1, 1]) box(g, M.black, 0.07, T, 0.05, xm, T / 2, zc + s * (DOOR_HALF - 0.025));
+  for (const y of [0.04, split, T - 0.03]) box(g, M.black, 0.07, y === split ? 0.06 : 0.08, w, xm, y, zc);
+  const main = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, split - 0.1), mat);
+  main.position.set(xm, (split + 0.08) / 2, zc); main.rotation.y = Math.PI / 2; main.renderOrder = 2;
+  g.add(main);
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, T - split - 0.1), DOOR_GLASS[0].clone());
+  top.material.map = null; top.material.color.set('#f4e7c4'); top.material.opacity = 0.75; // transom: fully frosted amber
+  top.position.set(xm, (split + T) / 2, zc); top.rotation.y = Math.PI / 2; top.renderOrder = 2;
+  g.add(top);
+  box(g, M.chrome, 0.12, 0.35, 0.025, xm, 1.05, zc + DOOR_HALF - 0.12, { shadow: false }); // pull handle through both sides
+  addBox(xa, zc - DOOR_HALF, xb, zc + DOOR_HALF);
 }
 
 /** Little framed photo grid on a wall; (x, z) = wall face, ry = facing, cols × rows frames. */
@@ -36,15 +74,16 @@ function photoGrid(root, x, y, z, ry, cols = 3, rows = 4) {
 }
 
 /** Door bay as in the photos: amber door, white pilasters each side, black bulkhead panel above. */
-function doorBay(root, x, z, facing) {
-  yellowDoor(root, x, z, facing);
+function doorBay(root, x, z, facing, i) {
+  glassDoor(root, z, DOOR_GLASS[i]);
   const g = new THREE.Group();
   g.position.set(x, 0, z); g.rotation.y = facing;
   g.userData.label = 'Wall';
   root.add(g);
-  for (const s of [-1, 1]) box(g, M.white, 0.14, H, 0.08, s * 0.6, H / 2, 0.12);
-  box(g, M.blackMatte, 1.06, H - 2.75, 0.03, 0, (2.75 + H) / 2, 0.11, { shadow: false });
-  box(g, M.white, 1.06, 0.12, 0.08, 0, 2.69, 0.12); // white lintel
+  const bw = 2 * DOOR_HALF + 0.16, t = DOOR_TOP;
+  for (const s of [-1, 1]) box(g, M.white, 0.14, H, 0.08, s * (DOOR_HALF + 0.15), H / 2, 0.12);
+  box(g, M.blackMatte, bw, H - t - 0.12, 0.03, 0, (t + 0.12 + H) / 2, 0.11, { shadow: false });
+  box(g, M.white, bw, 0.12, 0.08, 0, t + 0.06, 0.12); // white lintel
 }
 
 // Table types used by the floor plan editor (floorplan/editor.html → floorplan/layout.json).
@@ -104,7 +143,12 @@ export function buildWorkspace(root) {
     const cols = [wx0, wx0 + 0.85, wx0 + 1.7, wx1], rows = [wy0, wy0 + 0.65, wy0 + 1.6, wy1];
     for (const x of cols) box(g, M.black, 0.06, wy1 - wy0 + 0.06, 0.22, x, (wy0 + wy1) / 2, BACK_Z, { shadow: false });
     for (const y of rows) box(g, M.black, wx1 - wx0, 0.06, 0.22, (wx0 + wx1) / 2, y, BACK_Z, { shadow: false }); }
-  wall(root, W, LOBBY_S, W, BACK_Z, { h: H });
+  { // east wall with two see-through door openings (suggestions 25/26)
+    const cuts = EAST_DOORS.flatMap((z) => [z - DOOR_HALF, z + DOOR_HALF]);
+    const ends = [LOBBY_S, ...cuts, BACK_Z];
+    for (let k = 0; k < ends.length; k += 2) wall(root, W, ends[k], W, ends[k + 1], { h: H });
+    for (const z of EAST_DOORS) wall(root, W, z - DOOR_HALF, W, z + DOOR_HALF, { h: H - DOOR_TOP, y0: DOOR_TOP, collide: false });
+  }
   box(root, M.ceilingBlack, W, 0.45, 0.05, W / 2, H - 0.225, BACK_Z - 0.13, { shadow: false });
   box(root, M.ceilingBlack, 0.05, 0.45, BACK_Z - LOBBY_S, W - 0.13, H - 0.225, (LOBBY_S + BACK_Z) / 2, { shadow: false });
   box(root, M.white, 0.6, H, 0.6, 7.35, H / 2, 15.7).userData.label = 'Pillar'; // pillar (aligned scan: x 7.05..7.65, z 15.4..16.0)
@@ -134,7 +178,7 @@ export function buildWorkspace(root) {
 
   // ---- East wall like photos IMG_5651/5652 (suggestion 2): amber doors in white bays with black panels
   //      above, a photo grid above the middle desk, cone pendants over the desks ----
-  for (const z of [12.45, 15.45]) doorBay(root, W - 0.1, z, -Math.PI / 2);
+  EAST_DOORS.forEach((z, i) => doorBay(root, W - 0.1, z, -Math.PI / 2, i));
   photoGrid(root, W - 0.115, 1.95, 14.0, -Math.PI / 2); // wall face is at W - 0.1
 
   // ---- Lockers (LOCK = against the thin logo wall, LOCK2 = window-corner wall; suggestion 7) ----

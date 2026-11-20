@@ -21,7 +21,7 @@
     "updated": 1795085095475,
     "id": "smwnehu92",
     "created": 1795083713894,
-    "section": "East-wall desk E2 \u00b7 Workspace",
+    "section": "East-wall desk E2 · Workspace",
     "status": "done",
     "files": [],
     "n": 1,
@@ -48,7 +48,7 @@
       "pitch": -0.01
     },
     "text": "make this look like the image",
-    "section": "East wall \u00b7 Workspace",
+    "section": "East wall · Workspace",
     "status": "done",
     "updated": 1795085095481,
     "id": "smwnexm2s",
@@ -99,7 +99,7 @@
       "pitch": 0.03
     },
     "text": "this wall is shood be plain",
-    "section": "Back wall \u00b7 Workspace",
+    "section": "Back wall · Workspace",
     "status": "done",
     "updated": 1795085095489,
     "id": "smwnf2wj1",
@@ -129,7 +129,7 @@
       "pitch": -0.35
     },
     "text": "remove this bag from here",
-    "section": "Bean bag \u00b7 Window Lounge",
+    "section": "Bean bag · Window Lounge",
     "status": "done",
     "updated": 1795085095490,
     "id": "smwnf3fru",
@@ -159,7 +159,7 @@
       "pitch": -0.39
     },
     "text": "make this desk to left side from my pov like",
-    "section": "Cabin desk \u00b7 Cabin 2",
+    "section": "Cabin desk · Cabin 2",
     "status": "done",
     "updated": 1795085095492,
     "id": "smwnf4825",
@@ -189,7 +189,7 @@
       "pitch": -0.63
     },
     "text": "make this same as entrence chair",
-    "section": "Chaise \u00b7 Window Lounge",
+    "section": "Chaise · Window Lounge",
     "status": "done",
     "updated": 1795085095495,
     "id": "smwnf4u3b",
@@ -219,7 +219,7 @@
       "pitch": 0.04
     },
     "text": "add same type locker like inside item",
-    "section": "Wall (Workspace) \u00b7 Workspace",
+    "section": "Wall (Workspace) · Workspace",
     "status": "done",
     "updated": 1795085095497,
     "id": "smwnf5q8m",
@@ -241,7 +241,7 @@
       0
     ],
     "zone": "Workspace",
-    "target": "Desk \u00b7 Long table L2",
+    "target": "Desk · Long table L2",
     "view": {
       "x": 2.8,
       "z": 15.23,
@@ -249,7 +249,7 @@
       "pitch": -0.42
     },
     "text": "make 4 chair each side like L1 not 3,3",
-    "section": "Desk \u00b7 Long table L2 \u00b7 Workspace",
+    "section": "Desk · Long table L2 · Workspace",
     "status": "done",
     "updated": 1795085095499,
     "id": "smwnf6ily",
@@ -257,7 +257,7 @@
     "created": 1795084865210,
     "folder": "008-make-4-chair-each-side-like",
     "files": [],
-    "reply": "L2 (and every long table) now gets 4 chairs per side. It was a rounding bug: 2.8 / 0.7 came out as 3.999\u2026, which rounded down to 3 seats."
+    "reply": "L2 (and every long table) now gets 4 chairs per side. It was a rounding bug: 2.8 / 0.7 came out as 3.999…, which rounded down to 3 seats."
   },
   {
     "point": [
@@ -279,7 +279,7 @@
       "pitch": -0.64
     },
     "text": "remove this item",
-    "section": "Plant \u00b7 Window Lounge",
+    "section": "Plant · Window Lounge",
     "status": "done",
     "updated": 1795085500311,
     "id": "smwnfeobo",
@@ -350,7 +350,7 @@
       "pitch": 0.28
     },
     "text": "i feel some glitch on texter like jumbing",
-    "section": "Lockers \u00b7 Workspace",
+    "section": "Lockers · Workspace",
     "status": "done",
     "updated": 1795085724728,
     "id": "smwnflbdi",
@@ -380,7 +380,7 @@
       "pitch": -0.22
     },
     "text": "make all cabin door like f to open and clsoe",
-    "section": "Glass wall (Cabin 2) \u00b7 Cabin 2",
+    "section": "Glass wall (Cabin 2) · Cabin 2",
     "status": "done",
     "updated": 1795085724729,
     "id": "smwnfn1zx",
@@ -410,7 +410,7 @@
       "pitch": -0.09
     },
     "text": "need to extend more like in right side there is a meeing room and also include the table and char to extend , and add meeint room in right side and also after meeting room it also need some space so extend almost a bit more like use this images and add meeting room with the inside image , and from the office view i add that",
-    "section": "Terrace \u00b7 Terrace",
+    "section": "Terrace · Terrace",
     "status": "done",
     "updated": 1795090046696,
     "id": "smwni2zdq",
@@ -479,7 +479,7 @@
         "path": "suggestions/013-need-to-extend-more-like-in/IMG_5671.jpg"
       }
     ],
-    "reply": "Extended the terrace past the workspace back wall to z 25.2 m and added a meeting room on the window side (x 0\u20133.7, z 18.7\u201322.6) from your photos: white walls, exposed black ceiling, a long grey-oak table with 7 mesh chairs, a TV on a rolling stand in front of the glass window to the workspace, a grey linear light plus black cylinder pendants, a split AC, a white flush door and a tall white shelf in the window corner, and a low wooden cabinet under the window. From the terrace there is a glass double door into it, the same as the lounge balcony door (press F to open). After the meeting room the facade is white plaster with the wash basin and outdoor AC, and the pantry (counter, table, stools, water cans, palms) moved to the new far end. Code: src/world/meeting.js, src/world/terrace.js, src/doors.js."
+    "reply": "Extended the terrace past the workspace back wall to z 25.2 m and added a meeting room on the window side (x 0–3.7, z 18.7–22.6) from your photos: white walls, exposed black ceiling, a long grey-oak table with 7 mesh chairs, a TV on a rolling stand in front of the glass window to the workspace, a grey linear light plus black cylinder pendants, a split AC, a white flush door and a tall white shelf in the window corner, and a low wooden cabinet under the window. From the terrace there is a glass double door into it, the same as the lounge balcony door (press F to open). After the meeting room the facade is white plaster with the wash basin and outdoor AC, and the pantry (counter, table, stools, water cans, palms) moved to the new far end. Code: src/world/meeting.js, src/world/terrace.js, src/doors.js."
   },
   {
     "point": [
@@ -501,7 +501,7 @@
       "pitch": -0.01
     },
     "text": "i added a suggestion 13 and so that the view look like this in the image",
-    "section": "Back wall \u00b7 Workspace",
+    "section": "Back wall · Workspace",
     "status": "done",
     "updated": 1795090046696,
     "id": "smwni3uhk",
@@ -520,7 +520,7 @@
         "path": "suggestions/014-i-added-a-suggestion-13-and/IMG_5673.jpg"
       }
     ],
-    "reply": "The workspace back wall now has a black-framed glass window (3\u00d73 panes, about 2.5 m wide, near the windows) looking into the new meeting room, so from your saved view you see the TV, the table and chairs, and the terrace beyond, like IMG_5673. Code: src/world/workspace.js."
+    "reply": "The workspace back wall now has a black-framed glass window (3×3 panes, about 2.5 m wide, near the windows) looking into the new meeting room, so from your saved view you see the TV, the table and chairs, and the terrace beyond, like IMG_5673. Code: src/world/workspace.js."
   },
   {
     "point": [
@@ -542,7 +542,7 @@
       "pitch": -0.02
     },
     "text": "make this as glass only this side like the same to left glass",
-    "section": "Wall (Cabin 2) \u00b7 Cabin 2",
+    "section": "Wall (Cabin 2) · Cabin 2",
     "status": "done",
     "updated": 1795090445669,
     "id": "smwniejtv",
@@ -550,7 +550,7 @@
     "created": 1795090278893,
     "folder": "015-make-this-as-glass-only-this",
     "files": [],
-    "reply": "Cabin 2's wall facing the window lounge (x 3.0, z 3.5\u20135.75) is now black-framed glass, the same as Cabin 2's glass front, so you can see from the cabin into the lounge and out to the terrace. Only this side changed: the bit behind the corner cabin stays a solid wall, and the strip above the ceiling line is still wall. Code: src/world/corridor.js."
+    "reply": "Cabin 2's wall facing the window lounge (x 3.0, z 3.5–5.75) is now black-framed glass, the same as Cabin 2's glass front, so you can see from the cabin into the lounge and out to the terrace. Only this side changed: the bit behind the corner cabin stays a solid wall, and the strip above the ceiling line is still wall. Code: src/world/corridor.js."
   },
   {
     "point": [
@@ -572,7 +572,7 @@
       "pitch": -0.05
     },
     "text": "make this also a glass like front and remove this locker like transperent view",
-    "section": "Built-in shelves \u00b7 Cabin 2",
+    "section": "Built-in shelves · Cabin 2",
     "status": "done",
     "updated": 1795090737565,
     "id": "smwningm5",
@@ -594,7 +594,7 @@
       -1
     ],
     "zone": "Meeting Room",
-    "target": "Door \u00b7 Meeting room",
+    "target": "Door · Meeting room",
     "view": {
       "x": 2.88,
       "z": 20.18,
@@ -602,7 +602,7 @@
       "pitch": -0.18
     },
     "text": "make this door like after this door to a  big game area with ps5 and bool and area like not too big but some",
-    "section": "Door \u00b7 Meeting room \u00b7 Meeting Room",
+    "section": "Door · Meeting room · Meeting Room",
     "status": "done",
     "updated": 1795091703700,
     "id": "smwnj5hw6",
@@ -610,7 +610,7 @@
     "created": 1795091536097,
     "folder": "017-make-this-door-like-after-this",
     "files": [],
-    "reply": "The white door at the end of the meeting room now opens: stand near it and press F, and it swings into a new game room behind it (about 6.6 \u00d7 4.4 m, not too big). West side: PS5 corner with a big TV on a navy accent wall with purple/cyan LED glow, a white TV unit with the PS5 and a speaker, a 3-seat sofa facing the TV, a coffee table with two controllers, and red and blue bean bags. East side: a pool table with the balls racked, a cue ball and a cue, a long pendant light over it, a cue rack on the wall and a pink 'GAME ON' neon sign. The zone label reads 'Game Room'. Code: src/world/game.js, src/world/meeting.js (door)."
+    "reply": "The white door at the end of the meeting room now opens: stand near it and press F, and it swings into a new game room behind it (about 6.6 × 4.4 m, not too big). West side: PS5 corner with a big TV on a navy accent wall with purple/cyan LED glow, a white TV unit with the PS5 and a speaker, a 3-seat sofa facing the TV, a coffee table with two controllers, and red and blue bean bags. East side: a pool table with the balls racked, a cue ball and a cue, a long pendant light over it, a cue rack on the wall and a pink 'GAME ON' neon sign. The zone label reads 'Game Room'. Code: src/world/game.js, src/world/meeting.js (door)."
   },
   {
     "point": [
@@ -624,7 +624,7 @@
       0
     ],
     "zone": "Game Room",
-    "target": "TV \u00b7 Game room",
+    "target": "TV · Game room",
     "view": {
       "x": 2.3,
       "z": 26.12,
@@ -632,7 +632,7 @@
       "pitch": -0.12
     },
     "text": "when i click e on the tv just play game like play in tv and show suggeaion and when i press somting , it will full screen ,  like for fist \n\nshow a game list and fist now show snak game and play that",
-    "section": "TV \u00b7 Game room \u00b7 Game Room",
+    "section": "TV · Game room · Game Room",
     "status": "done",
     "updated": 1795091985318,
     "id": "smwnjc3zq",
@@ -640,7 +640,7 @@
     "created": 1795091844667,
     "folder": "018-when-i-click-e-on-the",
     "files": [],
-    "reply": "The game room TV is now playable. Walk up to it (the hint at the bottom says 'E play TV games') and press E: the TV turns on with a game list (Snake, plus Pong, Tetris and Car Race shown as coming soon). Use \u2191/\u2193 to choose and Enter to play. Snake runs on the TV with arrows or WASD, and the score and best score are shown. Press F to go full screen and F again to return to the TV. Backspace goes back to the list, and E in the list turns the TV off. While the TV is on, walking, doors and the C/X/L suggestion keys are paused so they don't clash with the game. Code: src/arcade.js (wired up in src/main.js)."
+    "reply": "The game room TV is now playable. Walk up to it (the hint at the bottom says 'E play TV games') and press E: the TV turns on with a game list (Snake, plus Pong, Tetris and Car Race shown as coming soon). Use ↑/↓ to choose and Enter to play. Snake runs on the TV with arrows or WASD, and the score and best score are shown. Press F to go full screen and F again to return to the TV. Backspace goes back to the list, and E in the list turns the TV off. While the TV is on, walking, doors and the C/X/L suggestion keys are paused so they don't clash with the game. Code: src/arcade.js (wired up in src/main.js)."
   },
   {
     "point": [
@@ -654,7 +654,7 @@
       0
     ],
     "zone": "Terrace",
-    "target": "Bar stool \u00b7 Terrace",
+    "target": "Bar stool · Terrace",
     "view": {
       "x": -2.26,
       "z": 9.45,
@@ -662,7 +662,7 @@
       "pitch": -0.6
     },
     "text": "make the chair to view side like sit to out side view",
-    "section": "Bar stool \u00b7 Terrace \u00b7 Terrace",
+    "section": "Bar stool · Terrace · Terrace",
     "status": "done",
     "updated": 1795094682765,
     "id": "smwnl0xvx",
@@ -692,7 +692,7 @@
       "pitch": -0.54
     },
     "text": "remove monitor in this 3 cabin",
-    "section": "Cabin desk \u00b7 Cabin 2",
+    "section": "Cabin desk · Cabin 2",
     "status": "done",
     "updated": 1795152109393,
     "id": "smwoj7sk1",
@@ -714,7 +714,7 @@
       0
     ],
     "zone": "Workspace",
-    "target": "Monitor \u00b7 Desk \u00b7 Long table L1",
+    "target": "Monitor · Desk · Long table L1",
     "view": {
       "x": 3.94,
       "z": 12.31,
@@ -722,7 +722,7 @@
       "pitch": -0.54
     },
     "text": "make table like this monitor , and mac keybord with this details",
-    "section": "Monitor \u00b7 Desk \u00b7 Long table L1 \u00b7 Workspace",
+    "section": "Monitor · Desk · Long table L1 · Workspace",
     "status": "done",
     "updated": 1795152197347,
     "id": "smwoj9of7",
@@ -755,7 +755,7 @@
       0
     ],
     "zone": "Workspace",
-    "target": "Monitor \u00b7 Desk \u00b7 Long table L1",
+    "target": "Monitor · Desk · Long table L1",
     "view": {
       "x": 3.02,
       "z": 12.13,
@@ -763,7 +763,7 @@
       "pitch": -0.64
     },
     "text": "this mac and waterbottile little outside the desk fix that and reduce monition like match the monitor in this image",
-    "section": "Monitor \u00b7 Desk \u00b7 Long table L1 \u00b7 Workspace",
+    "section": "Monitor · Desk · Long table L1 · Workspace",
     "status": "done",
     "updated": 1795152359922,
     "id": "smwojd5v6",
@@ -783,5 +783,585 @@
       }
     ],
     "reply": "Resized each workstation to fit its 0.7 m seat: monitor now 0.54 m wide (24-inch like the photo), Mac mini smaller and moved onto the desk, bottle moved in, keyboard and mouse tightened. Nothing overhangs the desk edge now."
+  },
+  {
+    "point": [
+      10.3,
+      1.36,
+      7.83
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 8.57,
+      "z": 7.5,
+      "yaw": -1.76,
+      "pitch": -0.17
+    },
+    "text": "make this look like this , like make more details",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795156959883,
+    "id": "smwolhx0k",
+    "n": 23,
+    "created": 1795155940971,
+    "folder": "023-open-door-make-the-the-door",
+    "files": [
+      {
+        "name": "IMG_5704.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/023-open-door-make-the-the-door/IMG_5704.HEIC"
+      },
+      {
+        "name": "IMG_5704.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/023-open-door-make-the-the-door/IMG_5704.jpg"
+      }
+    ],
+    "reply": "Rebuilt the entrance as seen from the hall (photo IMG_5704): concrete wall beside the glass front with light switch, fingerprint reader and socket, brown doormat outside, black-framed glass with the openable door (F), concrete pillar, then the white wall with the grey fire-hose cabinet, fire exit door with push bar and green signs. Ceiling now has 600 mm grid tiles, lowered side bulkheads with cove light, AC diffusers, downlights, smoke detectors and CCTV. New file src/world/hall.js."
+  },
+  {
+    "point": [
+      13.36,
+      0.83,
+      0.1
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Building Hall",
+    "target": "Wall (Building Hall)",
+    "view": {
+      "x": 12.86,
+      "z": 10.3,
+      "yaw": -0.05,
+      "pitch": -0.08
+    },
+    "text": "make it look like this",
+    "section": "Wall (Building Hall) · Building Hall",
+    "status": "done",
+    "updated": 1795156990060,
+    "id": "smwom4ei4",
+    "n": 24,
+    "created": 1795156990081,
+    "folder": "024-make-it-look-like-this",
+    "files": [
+      {
+        "name": "IMG_5705.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/024-make-it-look-like-this/IMG_5705.HEIC"
+      },
+      {
+        "name": "IMG_5705.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/024-make-it-look-like-this/IMG_5705.jpg"
+      }
+    ],
+    "reply": "The hall's north end now matches IMG_5705 (with IMG_5706/5707 for the rest): low sill + 5-pane window onto the hills, hanging FIRE EXIT sign, glossy beige marble with a brown marble band along the east side, glass door by the window, Gents toilet (laminate door with vision slot, blade sign, orange fire ball, yellow caution board), the neighbour office (black glass double door, diamond-pattern wall with sign between wood strips, track spots) and the pixbit sign + frosted panel on the concrete wall. The hall is now 4.6 m wide and runs to a second window at the far end."
+  },
+  {
+    "point": [
+      9.81,
+      1.27,
+      12.85
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "Door",
+    "view": {
+      "x": 7.67,
+      "z": 12.86,
+      "yaw": -1.57,
+      "pitch": -0.18
+    },
+    "text": "make this like this , like transperent , also from other side see",
+    "section": "Door · Workspace",
+    "status": "done",
+    "updated": 1795157545016,
+    "id": "smwomgapk",
+    "n": 25,
+    "created": 1795157545039,
+    "folder": "025-make-this-like-this-like-transperent",
+    "files": [
+      {
+        "name": "IMG_5731.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/025-make-this-like-this-like-transperent/IMG_5731.HEIC"
+      },
+      {
+        "name": "IMG_5731.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/025-make-this-like-this-like-transperent/IMG_5731.jpg"
+      }
+    ],
+    "reply": "The amber door at z 12.45 is now real see-through glass (photo IMG_5731): amber-tinted clear glass with the frosted cream graphics (top panel with a small clear window, arrow on the right, diagonal at the bottom) and a frosted transom. The wall behind it in the hall is cut open too, so you can see the workspace from the hall and the hall from the workspace."
+  },
+  {
+    "point": [
+      9.8,
+      1.33,
+      15.58
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Workspace",
+    "target": "Door",
+    "view": {
+      "x": 7.9,
+      "z": 15.51,
+      "yaw": -1.61,
+      "pitch": -0.17
+    },
+    "text": "for same a suggehtion like transperant but bit cahnge",
+    "section": "Door · Workspace",
+    "status": "done",
+    "updated": 1795157574666,
+    "id": "smwomgxl6",
+    "n": 26,
+    "created": 1795157574691,
+    "folder": "026-for-same-a-suggehtion-like-transperant",
+    "files": [
+      {
+        "name": "IMG_5732.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/026-for-same-a-suggehtion-like-transperant/IMG_5732.HEIC"
+      },
+      {
+        "name": "IMG_5732.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/026-for-same-a-suggehtion-like-transperant/IMG_5732.jpg"
+      }
+    ],
+    "reply": "Same for the second door at z 15.45, with the IMG_5732 pattern: frosted top, a clear diagonal ribbon, frosted arrow on the left and frosted bottom right. The pixbit sign in the hall moved between the two doors."
+  },
+  {
+    "point": [
+      10.33,
+      1.41,
+      13.78
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.1,
+      "z": 11.92,
+      "yaw": 2.16,
+      "pitch": -0.07
+    },
+    "text": "make it look like this",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795157751342,
+    "id": "smwomkpwu",
+    "n": 27,
+    "created": 1795157751362,
+    "folder": "027-make-it-look-like-this",
+    "files": [
+      {
+        "name": "IMG_5708.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/027-make-it-look-like-this/IMG_5708.HEIC"
+      },
+      {
+        "name": "IMG_5708.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/027-make-it-look-like-this/IMG_5708.jpg"
+      }
+    ],
+    "reply": "Pixbit wall in the hall now follows IMG_5708: both see-through glass doors are 1 m wide and almost reach the bulkhead (door + transom, black frames set straight into the concrete), with concrete between them. The workspace side bays were widened to match."
+  },
+  {
+    "point": [
+      10.3,
+      1.47,
+      16.77
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.29,
+      "z": 16.76,
+      "yaw": 1.58,
+      "pitch": -0.06
+    },
+    "text": "logo is in here",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795157857965,
+    "id": "smwomn06l",
+    "n": 28,
+    "created": 1795157857989,
+    "folder": "028-logo-is-in-here",
+    "files": [
+      {
+        "name": "IMG_5710.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/028-logo-is-in-here/IMG_5710.HEIC"
+      },
+      {
+        "name": "IMG_5710.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/028-logo-is-in-here/IMG_5710.jpg"
+      }
+    ],
+    "reply": "The pixbit logo is now here (IMG_5710): a black square panel with the yellow mark, \"pixbit · solutions ·\" letters directly on the concrete below it, a socket, and two white track spotlights above. The small sign that was between the doors is gone."
+  },
+  {
+    "point": [
+      13.24,
+      0.6,
+      -2
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.24,
+      "z": 3.96,
+      "yaw": 0.17,
+      "pitch": -0.17
+    },
+    "text": "make the right side space i thing a bit more , like match the image",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795157932509,
+    "id": "smwomolp9",
+    "n": 29,
+    "created": 1795157932528,
+    "folder": "029-make-the-right-side-space-i",
+    "files": [
+      {
+        "name": "IMG_5705.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/029-make-the-right-side-space-i/IMG_5705.HEIC"
+      },
+      {
+        "name": "IMG_5705.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/029-make-the-right-side-space-i/IMG_5705.jpg"
+      }
+    ],
+    "reply": "The north end is wider on the right (IMG_5705): the hall opens 1.4 m further east for the last 2.8 m, the glass door sits in that bay next to the window, the window is in the middle of the end wall with solid wall each side, and the brown marble continues into the bay."
+  },
+  {
+    "point": [
+      12.92,
+      1.27,
+      30.12
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.63,
+      "z": 12.82,
+      "yaw": -3.07,
+      "pitch": -0.02
+    },
+    "text": "use this",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795157989832,
+    "id": "smwomptxk",
+    "n": 30,
+    "created": 1795157989850,
+    "folder": "030-use-this",
+    "files": [
+      {
+        "name": "IMG_5707.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/030-use-this/IMG_5707.HEIC"
+      },
+      {
+        "name": "IMG_5707.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/030-use-this/IMG_5707.jpg"
+      }
+    ],
+    "reply": "The hall now runs on to z 42 like IMG_5707: past the office it has a laminate door, then black-framed dark glass office fronts on both sides with white pillars, glass doors and desks visible inside, and the window at the far end."
+  },
+  {
+    "point": [
+      16.3,
+      1.1,
+      -0.05
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.28,
+      "z": 1.44,
+      "yaw": -1.22,
+      "pitch": -0.13
+    },
+    "text": "match other wall in this side same like signle wall , i anly want some are like this hall width wider , so match the same size or , 24 feat from the opsite side and make everty thing in this side match like not a gap like this",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158371971,
+    "id": "smwomy0sj",
+    "n": 31,
+    "created": 1795158371976,
+    "folder": "031-match-other-wall-in-this-side",
+    "files": [],
+    "reply": "Removed the side bay: the east side is now one straight wall along the whole hall, and the hall is 24 ft (7.3 m) wide from the office glass to that wall. Everything on that side (glass door by the window, gents toilet, neighbour office, glass office fronts) moved onto the new wall, the brown marble band is wider, and the north window sits in the middle of the end wall."
+  },
+  {
+    "point": [
+      10.3,
+      1.47,
+      16.31
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.75,
+      "z": 17.72,
+      "yaw": 1.05,
+      "pitch": -0.06
+    },
+    "text": "make my staring from this point",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158508190,
+    "id": "smwon08ec",
+    "n": 32,
+    "created": 1795158475144,
+    "folder": "032-make-my-staring-from-this-point",
+    "files": [],
+    "reply": "You now start where you were standing (x 12.75, z 17.72) when you made the suggestion, looking the same way toward that point."
+  },
+  {
+    "point": [
+      14.52,
+      1.55,
+      -2.12
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.43,
+      "z": 14.42,
+      "yaw": -0.07,
+      "pitch": -0.01
+    },
+    "text": "can u make the right wall full wall and every thing a little bit close , like this hallwidt a bit close , compare with this image",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158722062,
+    "id": "smwon4w63",
+    "n": 33,
+    "created": 1795158692596,
+    "folder": "033-can-u-make-the-right-wall",
+    "files": [
+      {
+        "name": "IMG_5705.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/033-can-u-make-the-right-wall/IMG_5705.HEIC"
+      },
+      {
+        "name": "IMG_5705.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/033-can-u-make-the-right-wall/IMG_5705.jpg"
+      }
+    ],
+    "reply": "Pulled the hall in: it is now 5.8 m wide (was 7.3 m), so the east wall, doors and offices all sit closer. The north window is wider with solid wall only at the east corner, like your photo."
+  },
+  {
+    "point": [
+      15.33,
+      0.3,
+      1.95
+    ],
+    "normal": [
+      -0.46,
+      0.28,
+      -0.84
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.98,
+      "z": 1.79,
+      "yaw": -1.69,
+      "pitch": -0.78
+    },
+    "text": "remove this",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158956449,
+    "id": "smwon5uwa",
+    "n": 34,
+    "created": 1795158737582,
+    "folder": "034-remove-this",
+    "files": [],
+    "reply": "Removed the yellow caution sign from the floor by the gents toilet."
+  },
+  {
+    "point": [
+      10.33,
+      1.34,
+      21.95
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.7,
+      "z": 18.93,
+      "yaw": 2.3,
+      "pitch": -0.07
+    },
+    "text": "make this look like this",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158956449,
+    "id": "smwon6t0s",
+    "n": 35,
+    "created": 1795158781825,
+    "folder": "035-make-this-look-like-this",
+    "files": [
+      {
+        "name": "IMG_5711.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/035-make-this-look-like-this/IMG_5711.HEIC"
+      },
+      {
+        "name": "IMG_5711.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/035-make-this-look-like-this/IMG_5711.jpg"
+      }
+    ],
+    "reply": "The west wall south of the glass entrance is now the lift lobby from your photo: grey fire station hatch with its green sign, fire extinguisher sign, and the black granite lift wall starting after it."
+  },
+  {
+    "point": [
+      10.33,
+      1.45,
+      23.38
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 13.35,
+      "z": 21.39,
+      "yaw": 2.15,
+      "pitch": -0.05
+    },
+    "text": "for more detial prev suggestion",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795158956449,
+    "id": "smwon7nn9",
+    "n": 36,
+    "created": 1795158821510,
+    "folder": "036-for-more-detial-prev-suggestion",
+    "files": [
+      {
+        "name": "IMG_5712.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/036-for-more-detial-prev-suggestion/IMG_5712.HEIC"
+      },
+      {
+        "name": "IMG_5712.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/036-for-more-detial-prev-suggestion/IMG_5712.jpg"
+      },
+      {
+        "name": "IMG_5716.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/036-for-more-detial-prev-suggestion/IMG_5716.HEIC"
+      },
+      {
+        "name": "IMG_5717.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/036-for-more-detial-prev-suggestion/IMG_5717.HEIC"
+      }
+    ],
+    "reply": "Added the four lifts (numbered 4 to 1 from the wood door southwards) in black granite with steel doors and frames, white number discs, arrow/red indicators, a card reader, socket, two steel bins and the hanging FOURTH FLOOR sign. The glass offices now start after the lifts."
+  },
+  {
+    "point": [
+      10.33,
+      1.72,
+      17.19
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.83,
+      "z": 17.26,
+      "yaw": 1.55,
+      "pitch": 0.03
+    },
+    "text": "make this logo in center , like it just offset to right",
+    "section": "Building Hall",
+    "status": "open",
+    "updated": 1795159204927,
+    "id": "smwonfvi7",
+    "n": 37,
+    "created": 1795159204935,
+    "folder": "037-make-this-logo-in-center-like",
+    "files": []
   }
 ]

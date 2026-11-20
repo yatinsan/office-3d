@@ -7,9 +7,10 @@ import { buildWorkspace } from './workspace.js';
 import { buildExterior } from './exterior.js';
 import { buildMeetingRoom } from './meeting.js';
 import { buildGameRoom } from './game.js';
+import { buildHall } from './hall.js';
 
 // Start in reception, facing the logo wall (west).
-export const SPAWN = { x: 9.4, z: 8.0, yaw: Math.PI / 2 };
+export const SPAWN = { x: 12.75, z: 17.72, yaw: 1.05 };
 
 export function buildWorld(root) {
   slab(root, M.floorBeige, 0, 0, CAB_X0, SHELF_Z, 0);                   // corner cabin + lounge
@@ -19,6 +20,7 @@ export function buildWorld(root) {
   slab(root, M.floorDark, 0, LOBBY_S, W, BACK_Z, 0);
   buildCeilings(root);
   buildLobby(root);
+  buildHall(root);
   buildCorridor(root);
   buildWorkspace(root);
   buildExterior(root);

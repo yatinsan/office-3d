@@ -18,6 +18,8 @@ export const CAB_X1 = 8.9;
 export const SHELF_Z = 7.95;   // shelving partition between corridor and workspace
 export const LOGO_X = 7.3;     // logo wall face (faces east, into reception)
 export const LOGO_T = 0.15;    // logo wall is a thin partition (lockers stand against its workspace side)
+export const EAST_DOORS = [12.45, 15.45]; // see-through amber glass doors in the workspace east wall onto the hall (suggestions 25/26)
+export const DOOR_HALF = 0.5, DOOR_TOP = 2.9; // IMG_5708: door + transom almost reach the hall bulkhead
 export const LOBBY_S = 9.25;   // reception's south wall, reception face (0.35 m thick; workspace face at 9.6)
 export const D = BACK_Z;
 // Meeting room behind the workspace back wall, on the window side (suggestions 13 + 14, photos IMG_5669–5673).

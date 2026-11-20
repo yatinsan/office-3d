@@ -52,19 +52,11 @@ export function buildLobby(root) {
   addBox(8.3, LOBBY_S - 0.08, LOBBY_E, LOBBY_S + 0.08);
 
   // ---- East: glass wall + entrance door ----
-  glassWall(root, { x0: LOBBY_E, z0: CAB_FRONT, x1: LOBBY_E, z1: 7.6, h: LOBBY_CEIL, panel: 0.8 });
-  glassWall(root, { x0: LOBBY_E, z0: 8.65, x1: LOBBY_E, z1: LOBBY_S, h: LOBBY_CEIL, panel: 0.9 });
-  const door = plane(root, M.glass, 1.0, 2.35, LOBBY_E, 1.2, 8.12, Math.PI / 2);
-  door.renderOrder = 2;
-  for (const z of [7.62, 8.63]) box(root, M.black, 0.08, 2.4, 0.05, LOBBY_E, 1.2, z);
-  box(root, M.black, 0.08, 0.08, 1.05, LOBBY_E, 2.38, 8.12);
-  box(root, M.black, 0.08, 0.1, 1.05, LOBBY_E, 0.05, 8.12);
-  box(root, M.glass, 0.02, LOBBY_CEIL - 2.42, 1.0, LOBBY_E, (LOBBY_CEIL + 2.42) / 2, 8.12, { shadow: false }).renderOrder = 2;
+  // One glass wall with the entrance door in it; the leaf opens with F (suggestion 23, src/doors.js). Hinge on the cabin side (z 7.6), swings into reception.
+  glassWall(root, { x0: LOBBY_E, z0: CAB_FRONT, x1: LOBBY_E, z1: LOBBY_S, h: LOBBY_CEIL, panel: 0.9, door: [7.6, 8.65], transom: 2.4, swing: -1, name: 'entrance door' });
   box(root, M.metalDark, 0.06, 0.05, 0.4, LOBBY_E - 0.06, 2.3, 8.4, { shadow: false }); // door closer
-  for (const s of [-1, 1]) box(root, M.chrome, 0.03, 0.45, 0.03, LOBBY_E + s * 0.06, 1.05, 7.8);
-  addBox(LOBBY_E - 0.08, 7.6, LOBBY_E + 0.08, 8.65);
   box(root, M.wall, 0.15, H - LOBBY_CEIL, LOBBY_S - CAB_FRONT, LOBBY_E, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (CAB_FRONT + LOBBY_S) / 2, { shadow: false });
-  box(root, M.blackMatte, 0.6, 0.01, 1.0, LOBBY_E - 0.45, 0.005, 8.12, { shadow: false }); // doormat
+  box(root, M.blackMatte, 0.6, 0.01, 1.0, LOBBY_E - 0.45, 0.005, 8.12, { shadow: false }); // doormat (inside)
 
   // ---- Concrete pillar east of cabin 1 with the trophy niche (faces south into reception) ----
   box(root, M.concrete, LOBBY_E - CAB_X1, H, CAB_FRONT - CAB_BACK, (CAB_X1 + LOBBY_E) / 2, H / 2, (CAB_BACK + CAB_FRONT) / 2);
@@ -98,17 +90,5 @@ export function buildLobby(root) {
   box(root, M.white, 0.08, 0.08, 0.06, LOGO_X + 0.05, 2.85, 9.1); // CCTV dome
   solid(pottedPlant(root, 9.95, 8.95, { size: 0.4, h: 0.45 }));
 
-  // ---- Building common hall beyond the glass ----
-  slab(root, M.floorCorridor, LOBBY_E + 0.05, 0, 20, 16, 0.0);
-  slab(root, M.white, LOBBY_E + 0.05, 0, 20, 16, 3.1, { down: true });
-  wall(root, 20, 0, 20, 16, { h: 3.1, mat: M.wallWarm });
-  wall(root, LOBBY_E, 16, 20, 16, { h: 3.1, mat: M.wallWarm });
-  wall(root, LOBBY_E, 0, 20, 0, { h: 3.1, mat: M.wallWarm });
-  wall(root, LOBBY_E, LOBBY_S, LOBBY_E, 16, { h: 3.1, mat: M.wallWarm, collide: false });
-  for (let x = 12; x < 20; x += 3) for (let z = 1.5; z < 16; z += 3) box(root, M.lightStrip, 0.5, 0.02, 0.5, x, 3.09, z, { shadow: false });
-  for (const z of [5, 11]) {
-    box(root, M.chrome, 0.05, 2.2, 1.2, 19.88, 1.1, z);
-    box(root, M.metalDark, 0.06, 2.2, 0.02, 19.86, 1.1, z, { shadow: false });
-  }
-  box(root, M.wood, 1.0, 2.2, 0.05, 14, 1.1, 15.88); // neighbour office door
+  // ---- Building common hall beyond the glass: see src/world/hall.js (suggestions 23 + 24) ----
 }
