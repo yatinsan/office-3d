@@ -1,33 +1,32 @@
 /**
- * Game modes: the Esc / start menu lists them (Free Walk + any registered game). The picked mode is remembered.
+ * Game modes: the Esc / start menu lists them as big buttons (Free Walk + any registered game). The picked mode is remembered.
  * A mode is { id, name, desc, start(), stop(), update(dt, active) }. Free Walk is built in and does nothing.
+ * Clicking a mode button selects it and lets the click bubble to the overlay, which starts the game.
  */
 const KEY = 'pixbit-gamemode';
 
-export function initModes({ card, anchor }) {
+const ICONS = {
+  free: '<path d="M8 21l3-6 3 3v3"/><path d="M11 15l1-5-3 2-1 3"/><path d="M12 10l3 2h3"/><circle cx="13.5" cy="5" r="2"/>',
+  hunt: '<circle cx="6.5" cy="15.5" r="3.5"/><circle cx="17.5" cy="15.5" r="3.5"/><path d="M10 15h4M5 12l2-7h3v10M19 12l-2-7h-3v10"/>',
+  play: '<path d="M7 4l13 8-13 8z"/>',
+};
+
+export function initModes({ list }) {
   const modes = [{ id: 'free', name: 'Free Walk', desc: 'Just explore the office', start() {}, stop() {}, update() {} }];
   let current = modes[0];
-
-  const wrap = document.createElement('div');
-  wrap.className = 'modes';
-  wrap.innerHTML = '<div class="modes-h">Game mode</div><div class="modes-list"></div><div class="modes-d"></div>';
-  card.insertBefore(wrap, anchor);
-  const list = wrap.querySelector('.modes-list');
-  const desc = wrap.querySelector('.modes-d');
-  // Clicking the picker must not start the game (the overlay itself starts on click).
-  wrap.addEventListener('click', (e) => e.stopPropagation());
 
   function render() {
     list.innerHTML = '';
     for (const m of modes) {
+      const on = m === current;
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = m.name;
-      b.className = m === current ? 'on' : '';
-      b.addEventListener('click', () => select(m.id));
+      b.className = 'mode-btn' + (on ? ' on' : '');
+      b.innerHTML = `<svg viewBox="0 0 24 24">${on ? ICONS.play : (ICONS[m.id] || ICONS.play)}</svg>
+        <span class="name">${on ? 'Play · ' : ''}${m.name}<span class="desc">${m.desc || ''}</span></span><span class="arrow">&rsaquo;</span>`;
+      b.addEventListener('click', () => select(m.id)); // bubbles to the overlay → starts the game
       list.appendChild(b);
     }
-    desc.textContent = current.desc;
   }
 
   function select(id) {

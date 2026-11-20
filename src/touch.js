@@ -124,8 +124,12 @@ export function initTouch({ player, camera }) {
   press('.tb-jump', () => player.jump());
   const act = root.querySelector('.tb-act');
   let actKey = null, actIcon = '';
+  let heldKey = null;
   press('.tb-act', () => {
-    if (actKey) dispatchEvent(new KeyboardEvent('keydown', { code: actKey, bubbles: true }));
+    if (actKey) { heldKey = actKey; dispatchEvent(new KeyboardEvent('keydown', { code: actKey, bubbles: true })); }
+  });
+  for (const ev of ['touchend', 'touchcancel']) act.addEventListener(ev, () => { // release for press-and-hold actions (door unlock)
+    if (heldKey) { dispatchEvent(new KeyboardEvent('keyup', { code: heldKey, bubbles: true })); heldKey = null; }
   });
 
   return {
@@ -133,7 +137,7 @@ export function initTouch({ player, camera }) {
     /** Show the context button for the current prompt ('' hides it). Door prompts start with "F", TV ones with "E" / TV state. */
     setAction(prompt) {
       let icon = '', key = null;
-      if (/^F (open|close|collect)/.test(prompt)) { key = 'KeyF'; icon = prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
+      if (/^F (open|close|collect|hold)/.test(prompt)) { key = 'KeyF'; icon = prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
       else if (prompt) { key = 'KeyE'; icon = 'tv'; }
       actKey = key;
       act.classList.toggle('off', !key);

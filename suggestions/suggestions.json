@@ -1356,12 +1356,404 @@
     },
     "text": "make this logo in center , like it just offset to right",
     "section": "Building Hall",
-    "status": "open",
-    "updated": 1795159204927,
+    "status": "done",
+    "updated": 1795164115790,
     "id": "smwonfvi7",
     "n": 37,
     "created": 1795159204935,
     "folder": "037-make-this-logo-in-center-like",
-    "files": []
+    "files": [],
+    "reply": "Centred the pixbit logo on the wall between the glass doors and the wood door (with its letters, socket and spotlights)."
+  },
+  {
+    "point": [
+      16.07,
+      1.6,
+      29.48
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.12,
+      "z": 29.48,
+      "yaw": -1.57,
+      "pitch": -0.01
+    },
+    "text": "add this , using i added image , this added here for , whare u know this view from",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795164115790,
+    "id": "smwoq9hjk",
+    "n": 38,
+    "created": 1795163945768,
+    "folder": "038-add-this-using-i-added-image",
+    "files": [
+      {
+        "name": "IMG_5715.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/038-add-this-using-i-added-image/IMG_5715.HEIC"
+      },
+      {
+        "name": "IMG_5715.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/038-add-this-using-i-added-image/IMG_5715.jpg"
+      }
+    ],
+    "reply": "Added a sofa lounge off the east side at z 27–32, built from your photos: beige floor, white walls, grid ceiling with downlights, black leather sofas along both walls, a wooden coffee table, a fire station hatch and a bright glass door at the far end."
+  },
+  {
+    "point": [
+      16.07,
+      1.54,
+      16.84
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.62,
+      "z": 10.01,
+      "yaw": -2.67,
+      "pitch": -0.01
+    },
+    "text": "match the left wall using this image",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795164625365,
+    "id": "smwoqinai",
+    "n": 39,
+    "created": 1795164373117,
+    "folder": "039-match-the-left-wall-using-this",
+    "files": [
+      {
+        "name": "IMG_5707.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/039-match-the-left-wall-using-this/IMG_5707.HEIC"
+      },
+      {
+        "name": "IMG_5707.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/039-match-the-left-wall-using-this/IMG_5707.jpg"
+      },
+      {
+        "name": "IMG_5709.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/039-match-the-left-wall-using-this/IMG_5709.jpg"
+      }
+    ],
+    "reply": "Moved the neighbour office so it starts opposite the pixbit sign (from your close-up IMG_5709): white wall with a fingerprint terminal, a black 8-pane double door with a 2-pane side light and transom, and a green room with pendant bulbs behind it. After that comes white wall, a wood slat strip, the diamond panel with the Technaureus sign and spots, another wood strip, then the glass offices. The wall opposite the office doors is now plain white."
+  },
+  {
+    "point": [
+      17.16,
+      0.93,
+      27.4
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.77,
+      "z": 32,
+      "yaw": -0.86,
+      "pitch": -0.1
+    },
+    "text": "using this image improve this area and the right side space length and widht",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795165328958,
+    "id": "smwoqt1cr",
+    "n": 40,
+    "created": 1795164857922,
+    "folder": "040-using-this-image-improve-this-area",
+    "files": [
+      {
+        "name": "IMG_5743.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/040-using-this-image-improve-this-area/IMG_5743.HEIC"
+      },
+      {
+        "name": "IMG_5743.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/040-using-this-image-improve-this-area/IMG_5743.jpg"
+      },
+      {
+        "name": "IMG_5745.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/040-using-this-image-improve-this-area/IMG_5745.HEIC"
+      },
+      {
+        "name": "IMG_5745.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/040-using-this-image-improve-this-area/IMG_5745.jpg"
+      }
+    ],
+    "reply": "Made the lounge behind lift 5 much bigger, like IMG_5743/5745: the opening now runs from the lift block to a black granite pillar (about 6.4 m wide) and the room goes 11 m back. It has long white walls, a grid ceiling with downlights and AC vents, tufted club sofas and modern bench sofas on both walls, a white-top coffee table, the fire station door, and a black-framed glass screen with a double door at the far end."
+  },
+  {
+    "point": [
+      16.07,
+      1.42,
+      24.11
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.78,
+      "z": 24.36,
+      "yaw": -1.51,
+      "pitch": -0.05
+    },
+    "text": "from the logo fixed adjest other thing from this image , like add this lift and",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795165328958,
+    "id": "smwoqy0g9",
+    "n": 41,
+    "created": 1795165090032,
+    "folder": "041-from-the-logo-fixed-adjest-other",
+    "files": [
+      {
+        "name": "IMG_5714.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/041-from-the-logo-fixed-adjest-other/IMG_5714.HEIC"
+      },
+      {
+        "name": "IMG_5714.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/041-from-the-logo-fixed-adjest-other/IMG_5714.jpg"
+      },
+      {
+        "name": "IMG_5713.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/041-from-the-logo-fixed-adjest-other/IMG_5713.HEIC"
+      },
+      {
+        "name": "IMG_5713.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/041-from-the-logo-fixed-adjest-other/IMG_5713.jpg"
+      }
+    ],
+    "reply": "Kept the Technaureus sign where it was and added the rest from IMG_5713/5714: a face reader on the wood strip, a frameless glass door into a grey-floored room, a white pier with a switch, the laminate stair door standing open onto a blue stairwell with black steps, then lift 5 in black granite (steel doors, number 5 disc, red floor display, call button, fire alarm and pull station) with a FOURTH FLOOR sign hanging in front."
+  },
+  {
+    "point": [
+      15.98,
+      1.49,
+      27.55
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.17,
+      "z": 27.53,
+      "yaw": -1.58,
+      "pitch": -0.09
+    },
+    "text": "make same list look for other lift , like make other lift look like same",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795165762868,
+    "id": "smwor77kb",
+    "n": 42,
+    "created": 1795165519120,
+    "folder": "042-make-same-list-look-for-other",
+    "files": [],
+    "reply": "Lifts 1–4 now use the same lift front as lift 5: dark reveal, brushed-steel frame and sliding doors, white number disc, steel floor indicator with a red LED, a call-button plate on the right, and a red fire alarm horn + pull station on the left. The old card reader is gone (each lift has its own call button now)."
+  },
+  {
+    "point": [
+      16.06,
+      1.83,
+      21.88
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.39,
+      "z": 22.01,
+      "yaw": -1.5,
+      "pitch": 0.1
+    },
+    "text": "make it only white bord , like just hide redndering , (only u can see the text in dev and maybe make visible in future )",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795165762868,
+    "id": "smwor9mt2",
+    "n": 43,
+    "created": 1795165632187,
+    "folder": "043-make-it-only-white-bord-like",
+    "files": [],
+    "reply": "The Technaureus sign is now just a plain white board. The text is only drawn in dev mode (P), so it can be switched back on for good later by removing one line in hall.js (H.techno.visible = false)."
+  },
+  {
+    "point": [
+      16.1,
+      1.49,
+      15.28
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.61,
+      "z": 13.34,
+      "yaw": -2.08,
+      "pitch": -0.04
+    },
+    "text": "make the green hall from here and mover everyting in right side acouding to that like same distase othe but match",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795165933714,
+    "id": "smworf0qa",
+    "n": 44,
+    "created": 1795165883513,
+    "folder": "044-make-the-green-hall-from-here",
+    "files": [],
+    "reply": "Moved the green room's black door so it starts at z 14.5 (2.25 m further north than before, after your 'a bit more'). Everything after it on that wall moved by the same amount, so the gaps stay the same: the Technaureus board, glass door, stair door, lift 5 and the sofa lounge. It's all tied to one value (NB in hall.js), so the whole run can be shifted again easily."
+  },
+  {
+    "point": [
+      15.24,
+      1.2,
+      42.12
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.88,
+      "z": 29.31,
+      "yaw": -2.88,
+      "pitch": -0.03
+    },
+    "text": "fix this side using this image",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795166329873,
+    "id": "smworjlw1",
+    "n": 45,
+    "created": 1795166097573,
+    "folder": "045-fix-this-side-using-this-image",
+    "files": [
+      {
+        "name": "IMG_5736.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/045-fix-this-side-using-this-image/IMG_5736.HEIC"
+      },
+      {
+        "name": "IMG_5736.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/045-fix-this-side-using-this-image/IMG_5736.jpg"
+      }
+    ],
+    "reply": "Rebuilt the south end from IMG_5736. On the east side (left in your photo, past the lounge): a white pier, lift 6 in black granite (same front as the other lifts), then a white wall with the LADIES TOILET laminate door, blade sign and fire ball, then a navy slatted panel and glass offices. On the west side (right in your photo, past lift 1): a grey wall with a flush door and track spots, a glass office with a frosted band, a navy panel, and more glass. The hall is now 5 m longer (window at z 47) so all of this fits."
+  },
+  {
+    "point": [
+      13.56,
+      1.53,
+      42.12
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.68,
+      "z": 36.94,
+      "yaw": -2.79,
+      "pitch": -0.02
+    },
+    "text": "add this with the prev one",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795166329873,
+    "id": "smworlmfl",
+    "n": 46,
+    "created": 1795166191590,
+    "folder": "046-add-this-with-the-prev-one",
+    "files": [
+      {
+        "name": "IMG_5738.HEIC",
+        "type": "image/heic",
+        "path": "suggestions/046-add-this-with-the-prev-one/IMG_5738.HEIC"
+      },
+      {
+        "name": "IMG_5738.jpg",
+        "type": "image/jpeg",
+        "path": "suggestions/046-add-this-with-the-prev-one/IMG_5738.jpg"
+      }
+    ],
+    "reply": "Added with suggestion 45 from IMG_5738: the ladies toilet door + sign, the navy slatted panel (10COD logo), the grey eSynergy wall with track spots, the frosted-band glass office and the green FIRE EXIT sign over the end window. Like the Technaureus sign, the neighbour logos (10COD, eSynergy, ring logo) only show in dev mode (P)."
+  },
+  {
+    "point": [
+      10.31,
+      1.26,
+      9.55
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.67,
+      "z": 9.19,
+      "yaw": 1.83,
+      "pitch": -0.27
+    },
+    "text": "in this add a door unlock for 8 sec like , after reach here click like press and hold F the the circle full like , for press 3 sec , and wehn i reach the door , show top right in black box , to unlock press and hold F , like in gta , and in the finger print item  show a lock icon , \n\nalso when i press F show a animation that a hand go and press the lock",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795171441824,
+    "id": "smwotsezd",
+    "n": 47,
+    "created": 1795169867763,
+    "folder": "047-in-this-add-a-door-unlock",
+    "files": [],
+    "reply": "Fingerprint entry lock on the reception entrance door. From the hall the door is locked. Standing at the door shows a black box top right: 'Use fingerprint to unlock'. Only when you are right at the reader (within ~0.9 m) does it change to 'Press and hold F to unlock'. Hold F for 1 s: the ring fills while a hand presses the reader (LED blinks blue), then the door opens for 8 s with a countdown and locks again once the doorway is clear. From inside reception F opens it as usual. The amber workspace doors stay closed. On phones, hold the action button. Next to the reader's padlock icon there is now a small black box with the same status (Locked / Hold F to unlock / Unlocking… with a progress bar / Door unlocked with the countdown). The icon and the box only appear when you are near the reader or the door."
   }
 ]

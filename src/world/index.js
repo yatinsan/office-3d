@@ -7,7 +7,8 @@ import { buildWorkspace } from './workspace.js';
 import { buildExterior } from './exterior.js';
 import { buildMeetingRoom } from './meeting.js';
 import { buildGameRoom } from './game.js';
-import { buildHall } from './hall.js';
+import { buildHall, setHallDevSigns } from './hall.js';
+export { setHallDevSigns };
 
 // Start in reception, facing the logo wall (west).
 export const SPAWN = { x: 12.75, z: 17.72, yaw: 1.05 };

@@ -121,7 +121,7 @@ export function initDoors({ scene, player, camera }) {
     if (lk) return lk;
     let best = null, bestD = REACH;
     for (const d of doors) {
-      if (d.center) continue;
+      if (d.center || d.locked?.()) continue; // locked from this side (entrance door, src/unlock.js)
       const dist = Math.hypot(player.pos.x - d.x, player.pos.z - d.z);
       if (dist < bestD) { bestD = dist; best = d; }
     }
@@ -152,8 +152,8 @@ export function initDoors({ scene, player, camera }) {
     const near = nearest();
     for (const d of doors) {
       const dist = Math.hypot(player.pos.x - d.x, player.pos.z - d.z);
-      d.marker.visible = dist < 4.5;
-      d.marker.material.opacity = d === near ? 1 : 0.55;
+      d.marker.visible = dist < 4.5 && (!d.locked?.() || d.askToOpen); // askToOpen: locked, but F still asks (ladies toilet)
+      d.marker.material.opacity = d === near || (d.askToOpen && d.locked?.() && dist < REACH) ? 1 : 0.55;
     }
     for (const d of doors) {
       if (d.t === d.target) continue;
@@ -169,5 +169,7 @@ export function initDoors({ scene, player, camera }) {
     return d ? `${d.center ? 'F / click' : 'F'} ${d.target ? 'close' : 'open'} ${d.name.toLowerCase()}` : '';
   }
 
-  return { update, prompt };
+  /** Door by its name (e.g. 'entrance door'), so other modules can open, close or lock it. */
+  const byName = (name) => doors.find((d) => d.name === name);
+  return { update, prompt, byName, toggle };
 }

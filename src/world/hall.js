@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M } from '../materials.js';
 import { box, cyl, plane } from '../props.js';
 import { addBox } from '../colliders.js';
-import { slab, worldUV, LOBBY_E, LOBBY_S, CAB_BACK, EAST_DOORS, DOOR_HALF, DOOR_TOP } from './helpers.js';
+import { slab, worldUV, doorLeaves, LOBBY_E, LOBBY_S, CAB_BACK, EAST_DOORS, DOOR_HALF, DOOR_TOP } from './helpers.js';
 
 /**
  * Building common hall outside the office entrance (suggestions 23 + 24, photos IMG_5704–5707).
@@ -19,7 +19,7 @@ import { slab, worldUV, LOBBY_E, LOBBY_S, CAB_BACK, EAST_DOORS, DOOR_HALF, DOOR_
 const X0 = LOBBY_E;   // office side (west)
 const X1 = LOBBY_E + 5.8; // east wall: one straight wall, hall pulled in closer (suggestion 33, was 24 ft)
 const Z0 = -2.0;      // north window
-const Z1 = 42.0;      // south window (long corridor with offices both sides, IMG_5707 / suggestion 30)
+const Z1 = 47.0;      // south window (long corridor with offices both sides, IMG_5707 / 5736 / 5738, suggestions 30, 45, 46)
 const CEIL = 3.2;     // grid ceiling
 const BULK = 3.0;     // side bulkheads (meet the top of the entrance glass)
 const BW = 0.6;       // bulkhead width
@@ -146,6 +146,8 @@ const H = {
     g.fillStyle = '#cfd2d4'; g.font = '16px system-ui, sans-serif'; g.fillText('solutions', w / 2, h * 0.8);
   }, false), roughness: 0.5 }),
   mat: std({ color: '#3b2620', roughness: 1 }),
+  pink: std({ color: '#e9b8c4', roughness: 0.3 }),
+  mirror: std({ color: '#c9d4d8', roughness: 0.08, metalness: 0.25 }),
   slot: std({ color: '#5d6a6e', roughness: 0.1, metalness: 0.4 }),
   room: std({ color: '#cfccc4', roughness: 0.9 }),
   roomCeil: std({ color: '#e9e7e1', roughness: 0.95 }),
@@ -158,6 +160,39 @@ const H = {
     g.font = '44px system-ui, sans-serif'; g.fillText('· s o l u t i o n s ·', w / 2, h * 0.82);
   }, false), transparent: true, alphaTest: 0.3, roughness: 0.6 }),
   cam: std({ color: '#f2f2f0', roughness: 0.4 }),
+  leather: std({ color: '#1e1a19', roughness: 0.3, metalness: 0.05, envMapIntensity: 1.2 }),
+  tableWood: std({ color: '#6b5646', roughness: 0.55 }),
+  daylight: new THREE.MeshBasicMaterial({ color: '#f4f8ff' }),
+  lamp: new THREE.MeshBasicMaterial({ color: '#fff3c9' }),
+  tint: new THREE.MeshStandardMaterial({ color: '#c9d6b0', transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide }),
+  olive: std({ color: '#8f9a2e', roughness: 0.85 }),
+  silver: std({ color: '#b8bcc0', roughness: 0.3, metalness: 0.8 }),
+  tableTop: std({ color: '#e6e1d8', roughness: 0.35 }),
+  ladies: std({ map: sign('LADIES TOILET', { bg: '#141414', w: 512, h: 112, font: 'bold 54px system-ui, sans-serif', icon: '🚺' }), roughness: 0.4 }),
+  slate: std({ color: '#6b6e71', roughness: 0.85 }),
+  navy: std({ color: '#1f2a3b', roughness: 0.6 }),
+  navySlats: std({ map: tex(256, 256, (g, w, h) => {
+    g.fillStyle = '#212d40'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) { g.fillStyle = '#141c29'; g.fillRect(x, 0, 3, h); g.fillStyle = '#2b3950'; g.fillRect(x + 3, 0, 2, h); }
+  }), roughness: 0.55 }),
+  // neighbour logos: only drawn in dev mode, like the Technaureus sign (suggestion 43)
+  tenCod: std({ map: tex(512, 160, (g, w, h) => {
+    g.fillStyle = '#e9ecef'; g.beginPath(); g.moveTo(20, 30); g.lineTo(95, 30); g.lineTo(60, 80); g.lineTo(95, 80); g.lineTo(55, 135); g.lineTo(20, 135); g.lineTo(55, 85); g.lineTo(20, 85); g.closePath(); g.fill();
+    g.font = 'bold 96px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillText('10COD', 120, h / 2 + 4);
+  }, false), transparent: true, alphaTest: 0.3, roughness: 0.4 }),
+  eSyn: std({ map: tex(512, 256, (g, w, h) => {
+    g.fillStyle = '#e8506a'; g.beginPath(); g.arc(120, 118, 100, 0, Math.PI * 2); g.fill();
+    g.font = 'italic bold 150px Georgia, serif'; g.textBaseline = 'middle'; g.fillStyle = '#26334a'; g.fillText('e', 40, 120);
+    g.fillStyle = '#f4e9e4'; g.fillText('S', 120, 130);
+    g.font = 'bold 76px system-ui, sans-serif'; g.fillStyle = '#26334a'; g.fillText('YNERGY', 210, 150);
+  }, false), transparent: true, alphaTest: 0.3, roughness: 0.5 }),
+  ringLogo: std({ map: tex(256, 256, (g, w) => {
+    g.strokeStyle = '#8f6cff'; g.lineWidth = 16; g.beginPath(); g.arc(w / 2, w / 2, 90, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#e5e1ff'; g.font = 'bold 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('dev', w / 2, w / 2);
+  }, false), transparent: true, alphaTest: 0.3, roughness: 0.4 }),
+  greyTile: std({ color: '#9a9c9a', roughness: 0.3 }),
+  stairBlue: std({ color: '#5a6fc4', roughness: 0.8 }),
+  fireRed: std({ color: '#c8231c', roughness: 0.5 }),
   granite: std({ color: '#141416', roughness: 0.12, metalness: 0.35, envMapIntensity: 1.4 }),
   liftSteel: std({ color: '#b9bdbd', roughness: 0.42, metalness: 0.75 }),
   fireDoor: std({ color: '#9aa5a1', roughness: 0.55, metalness: 0.15 }),
@@ -201,10 +236,91 @@ function flatDoor(root, xWall, zc, w, h, mat, side) {
 }
 
 /**
+ * Ladies toilet: openable laminate door in the east wall (hinge on the north edge, swings in) and a small tiled
+ * room behind it with WC, basin and mirror. The leaf goes to doorLeaves; src/ladies.js gates it behind the
+ * big "ARE U GAY?" question before it opens.
+ */
+function ladiesToilet(root, tw0, tw1, zc) {
+  const w = 0.95, h = 2.25, d0 = zc - w / 2, d1 = zc + w / 2;
+  wallZ(root, X1, tw0, d0 - 0.06, -1);
+  wallZ(root, X1, d1 + 0.06, tw1, -1);
+  box(root, H.wall, 0.1, BULK - h - 0.06, w + 0.12, X1 + 0.05, (BULK + h + 0.06) / 2, zc);           // header
+  for (const z of [d0 - 0.03, d1 + 0.03]) box(root, H.frame, 0.14, h + 0.06, 0.06, X1 + 0.03, (h + 0.06) / 2, z); // jambs
+  box(root, H.frame, 0.14, 0.06, w + 0.12, X1 + 0.03, h + 0.03, zc);
+  // the leaf: hinge at the north jamb, runs along +z, swings into the room (+x)
+  const leaf = new THREE.Group();
+  leaf.position.set(X1 - 0.01, 0, d0);
+  box(leaf, H.laminate, 0.04, h - 0.01, w - 0.01, 0, h / 2, w / 2);
+  for (const s of [-1, 1]) {
+    box(leaf, H.slot, 0.012, 0.9, 0.12, s * 0.022, 1.45, w / 2 - 0.05, { shadow: false });
+    box(leaf, M.chrome, 0.03, 0.42, 0.03, s * 0.075, 1.05, w - 0.12, { shadow: false });
+    for (const y of [0.86, 1.24]) box(leaf, M.chrome, 0.06, 0.02, 0.02, s * 0.05, y, w - 0.12, { shadow: false });
+  }
+  doorLeaves.push({
+    leaf, closed: 0, open: Math.PI / 2 * 0.92, name: 'ladies toilet', handle: [-0.12, 1.25, w - 0.12],
+    x: X1, z: zc, block: { minX: X1 - 0.05, maxX: X1 + 0.1, minZ: d0, maxZ: d1 },
+  });
+  // the room
+  const rx0 = X1 + 0.1, rx1 = X1 + 2.3, rz0 = tw0 + 0.05, rz1 = tw1 - 0.05, RH = BULK;
+  const cx = (rx0 + rx1) / 2, cz = (rz0 + rz1) / 2;
+  box(root, M.floorCorridor, rx1 - rx0, 0.02, rz1 - rz0, cx, 0.01, cz, { shadow: false });
+  box(root, M.white, rx1 - rx0, 0.04, rz1 - rz0, cx, RH, cz, { shadow: false });
+  box(root, M.whiteGloss, 0.1, RH, rz1 - rz0 + 0.2, rx1 + 0.05, RH / 2, cz);                           // back wall
+  for (const z of [rz0 - 0.05, rz1 + 0.05]) box(root, M.whiteGloss, rx1 - rx0, RH, 0.1, cx, RH / 2, z); // side walls
+  box(root, H.pink, 0.02, 1.2, rz1 - rz0, rx1 - 0.005, 0.6, cz, { shadow: false });                     // pink tile dado
+  for (const z of [rz0 + 0.005, rz1 - 0.005]) box(root, H.pink, rx1 - rx0, 1.2, 0.02, cx, 0.6, z, { shadow: false });
+  addBox(rx1, rz0 - 0.1, rx1 + 0.1, rz1 + 0.1);
+  addBox(rx0 - 0.1, rz0 - 0.1, rx1, rz0);
+  addBox(rx0 - 0.1, rz1, rx1, rz1 + 0.1);
+  box(root, M.lightStrip, 0.6, 0.02, 0.6, cx, RH - 0.03, cz, { shadow: false });                          // ceiling light
+  // WC against the back wall (south half), basin + mirror on the north half
+  const wz = cz + 0.7;
+  box(root, M.whiteGloss, 0.2, 0.55, 0.42, rx1 - 0.1, 0.8, wz);                                         // cistern
+  cyl(root, M.whiteGloss, 0.19, 0.15, 0.4, rx1 - 0.42, 0.2, wz, { seg: 20 });                            // bowl
+  cyl(root, M.white, 0.2, 0.2, 0.03, rx1 - 0.42, 0.42, wz, { seg: 20 });                                 // seat
+  addBox(rx1 - 0.65, wz - 0.25, rx1, wz + 0.25);
+  const bz = cz - 0.6;
+  box(root, M.whiteGloss, 0.45, 0.14, 0.55, rx1 - 0.23, 0.85, bz);                                      // basin
+  box(root, M.chrome, 0.12, 0.03, 0.03, rx1 - 0.08, 0.98, bz, { shadow: false });                       // tap
+  box(root, H.mirror, 0.02, 0.7, 0.55, rx1 - 0.012, 1.55, bz, { shadow: false });                       // mirror
+  addBox(rx1 - 0.46, bz - 0.3, rx1, bz + 0.3);
+}
+
+/**
+ * Lift front in black granite (IMG_5713): dark reveal, brushed-steel frame + sliding doors, white number disc,
+ * steel floor indicator with red LED, call-button plate on one side, fire alarm horn + pull station on the other.
+ * fx = granite face x, out = direction toward the hall (-1 east wall, +1 west wall).
+ */
+function liftFront(root, fx, zc, n, out, { alarm = true } = {}) {
+  const w = 1.1, k = -out, ry = out * Math.PI / 2, x = (d) => fx + out * d;
+  box(root, M.blackMatte, 0.04, 2.3, w + 0.2, x(0.005), 1.15, zc, { shadow: false });
+  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.03, 2.22, w / 2 - 0.01, x(0.03), 1.11, zc + sd * w / 4, { shadow: false });
+  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.04, 2.26, 0.03, x(0.03), 1.13, zc + sd * (w / 2 + 0.02), { shadow: false });
+  box(root, H.liftSteel, 0.04, 0.03, w + 0.07, x(0.03), 2.26, zc, { shadow: false });
+  plane(root, H.numDisc(n), 0.22, 0.22, x(0.012), 2.55, zc, ry);
+  box(root, H.liftSteel, 0.03, 0.14, 0.62, x(0.015), 2.92, zc, { shadow: false });
+  box(root, M.blackMatte, 0.035, 0.08, 0.2, x(0.02), 2.92, zc, { shadow: false });
+  box(root, H.ledRed, 0.036, 0.04, 0.06, x(0.022), 2.92, zc, { shadow: false });
+  const cz = zc + k * (w / 2 + 0.33);
+  box(root, H.liftSteel, 0.02, 0.26, 0.11, x(0.01), 1.15, cz, { shadow: false });
+  box(root, M.blackMatte, 0.01, 0.06, 0.05, x(0.022), 1.12, cz, { shadow: false });
+  if (alarm) {
+    const az = zc - k * (w / 2 + 0.42);
+    box(root, H.fireRed, 0.05, 0.14, 0.12, x(0.025), 2.05, az, { shadow: false });
+    box(root, H.fireRed, 0.04, 0.13, 0.1, x(0.02), 1.3, az, { shadow: false });
+  }
+}
+
+/** Dev mode (P) shows the neighbour's sign text; normally it is a plain white board (suggestion 43). */
+const DEV_SIGNS = ['techno', 'tenCod', 'eSyn', 'ringLogo'];
+export function setHallDevSigns(on) { for (const k of DEV_SIGNS) H[k].visible = on; }
+setHallDevSigns(false);
+
+/**
  * Black-framed dark glass office fronts along a hall wall (IMG_5707): side -1 = west wall (faces east), +1 = east wall.
  * Each unit gets a glass door with pull handles and a white pillar at its end; a dim room sits behind the glass.
  */
-function glassFronts(root, xw, side, z0, z1, unit = 4.2) {
+function glassFronts(root, xw, side, z0, z1, unit = 4.2, { frost = false } = {}) {
   const x = xw - side * 0.03, back = xw + side * 3.0;
   slab(root, H.room, Math.min(xw, back), z0, Math.max(xw, back), z1, 0.0);                      // floor behind the glass
   box(root, H.room, 0.1, CEIL, z1 - z0, back, CEIL / 2, (z0 + z1) / 2, { shadow: false });      // back wall
@@ -215,6 +331,10 @@ function glassFronts(root, xw, side, z0, z1, unit = 4.2) {
     const g = new THREE.Mesh(new THREE.PlaneGeometry(zb - za, BULK - 0.05), H.officeGlass);
     g.position.set(x, (BULK - 0.05) / 2, (za + zb) / 2); g.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2; g.renderOrder = 2;
     root.add(g);
+    if (frost) {                                                                                // frosted privacy band (IMG_5738)
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(zb - za, 0.75), M.glassFrost);
+      f.position.set(x - side * 0.006, 1.25, (za + zb) / 2); f.rotation.y = g.rotation.y; f.renderOrder = 3; root.add(f);
+    }
     const n = Math.max(2, Math.round((zb - za) / 1.0));
     for (let i = 0; i <= n; i++) box(root, M.black, 0.06, BULK, 0.05, x, BULK / 2, za + (i / n) * (zb - za));
     for (const y of [0.04, 2.35, BULK - 0.03]) box(root, M.black, 0.06, 0.06, zb - za, x, y, (za + zb) / 2);
@@ -229,6 +349,91 @@ function glassFronts(root, xw, side, z0, z1, unit = 4.2) {
   }
   box(root, H.wall, 0.4, CEIL, 0.4, xw, CEIL / 2, z1);
   addBox(Math.min(xw, x) - 0.05, z0, Math.max(xw, x) + 0.05, z1);
+}
+
+// ---- Sofa lounge off the east side (suggestions 38 + 40, IMG_5715 / 5743 / 5745) ----
+// A wide open room behind lift 5: long white walls, grid ceiling, club + bench sofas, glazed door at the far end.
+// NB = where the neighbour office (green room door) starts on the east wall (suggestion 44); everything south of it
+// on that wall — sign panel, glass door, stair door, lift 5, this lounge — keeps its spacing relative to NB.
+const NB = 14.5;
+const LNZ0 = NB + 11.85, LNZ1 = LNZ0 + 6.4, LNX = X1 + 11.0;
+
+/** Tufted 2-seat club sofa; local front faces +z (back against -z). */
+function sofaClub(root, x, z, ry = 0, len = 1.6) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; root.add(g);
+  box(g, H.leather, len, 0.3, 0.82, 0, 0.24, 0);                                    // base
+  box(g, H.leather, len - 0.36, 0.14, 0.62, 0, 0.45, 0.08);                         // seat cushion
+  for (const e of [-1, 1]) box(g, H.leather, 0.18, 0.62, 0.82, e * (len / 2 - 0.09), 0.37, 0); // arms
+  box(g, H.leather, len - 0.1, 0.36, 0.18, 0, 0.6, -0.32);                          // back frame
+  for (const e of [-1, 1]) box(g, H.leather, (len - 0.4) / 2, 0.36, 0.16, e * (len - 0.4) / 4, 0.74, -0.22, { rx: -0.12 }); // tufted back cushions
+  for (const e of [-1, 1]) for (const f of [-1, 1]) box(g, M.blackMatte, 0.06, 0.09, 0.06, e * (len / 2 - 0.08), 0.045, f * 0.34, { shadow: false });
+  return g;
+}
+/** Modern bench sofa: high plain back, thin seat on a box base, chrome sled legs; front faces +z. */
+function sofaBench(root, x, z, ry = 0, len = 1.9) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; root.add(g);
+  box(g, H.leather, len, 0.22, 0.72, 0, 0.27, 0.04);
+  box(g, H.leather, len, 0.1, 0.7, 0, 0.42, 0.05);
+  box(g, H.leather, len, 0.62, 0.16, 0, 0.73, -0.3, { rx: -0.08 });
+  for (const e of [-1, 1]) {
+    box(g, M.chrome, 0.03, 0.03, 0.72, e * (len / 2 - 0.12), 0.015, 0.02, { shadow: false });
+    box(g, M.chrome, 0.03, 0.16, 0.03, e * (len / 2 - 0.12), 0.08, 0.34, { shadow: false });
+    box(g, M.chrome, 0.03, 0.16, 0.03, e * (len / 2 - 0.12), 0.08, -0.3, { shadow: false });
+  }
+  return g;
+}
+/** Collider for a sofa whose rotation is close to 0 / PI (length along x). */
+function sofaBox(x, z, len, d = 0.85) { addBox(x - len / 2, z - d / 2, x + len / 2, z + d / 2); }
+
+function buildLounge(root) {
+  const zm = (LNZ0 + LNZ1) / 2, w = LNZ1 - LNZ0;
+  slab(root, H.floor, X1, LNZ0, LNX, LNZ1, 0.001, { tile: 1.6 });
+  slab(root, H.grid, X1, LNZ0, LNX, LNZ1, CEIL, { down: true, tile: 1.2 });
+  for (const z of [LNZ0, LNZ1]) {                                                   // long white side walls
+    const dir = z === LNZ0 ? -1 : 1;
+    box(root, H.wall, LNX - X1, CEIL, 0.1, (X1 + LNX) / 2, CEIL / 2, z + dir * 0.05);
+    box(root, H.skirting, LNX - X1, 0.1, 0.015, (X1 + LNX) / 2, 0.05, z - dir * 0.008, { shadow: false });
+    addBox(X1, z - 0.1, LNX, z + 0.1);
+  }
+  // black granite pillar at the south corner of the opening (IMG_5745)
+  box(root, H.granite, 0.65, CEIL, 0.55, X1 + 0.08, CEIL / 2, LNZ1 + 0.275);
+  addBox(X1 - 0.25, LNZ1, X1 + 0.4, LNZ1 + 0.55);
+  // far end: white wall with a black-framed glazed screen + double glass door onto daylight (IMG_5715)
+  box(root, H.wall, 0.1, CEIL, w, LNX + 0.05, CEIL / 2, zm);
+  const gx = LNX - 0.02, gz0 = zm - 1.6, gz1 = zm + 1.6, gt = 2.55;
+  const bg = new THREE.Mesh(new THREE.PlaneGeometry(gz1 - gz0, gt), H.daylight);
+  bg.position.set(gx + 0.005, gt / 2, zm); bg.rotation.y = -Math.PI / 2; root.add(bg);
+  const gl = new THREE.Mesh(new THREE.PlaneGeometry(gz1 - gz0, gt), M.glass);
+  gl.position.set(gx, gt / 2, zm); gl.rotation.y = -Math.PI / 2; gl.renderOrder = 2; root.add(gl);
+  for (const z of [gz0, zm - 0.75, zm + 0.75, gz1]) box(root, M.black, 0.07, gt, 0.07, gx, gt / 2, z);
+  for (const y of [0.04, gt]) box(root, M.black, 0.07, 0.07, gz1 - gz0, gx, y, zm);
+  for (const [za, zb] of [[gz0, zm - 0.75], [zm + 0.75, gz1]]) for (const y of [0.3, 1.25, 2.15]) box(root, M.black, 0.07, 0.05, zb - za, gx, y, (za + zb) / 2);
+  box(root, M.black, 0.07, 0.05, 1.5, gx, 2.15, zm);                                 // transom bar over the door
+  for (const z of [zm - 0.07, zm + 0.07]) box(root, M.blackMatte, 0.04, 0.45, 0.03, gx - 0.07, 1.1, z, { shadow: false });
+  addBox(LNX - 0.1, LNZ0, LNX + 0.1, LNZ1);
+  // sofas: club + bench on the north wall with the coffee table, bench + club on the south wall
+  sofaClub(root, X1 + 5.0, LNZ0 + 0.48, 0, 1.6); sofaBox(X1 + 5.0, LNZ0 + 0.48, 1.6);
+  sofaBench(root, X1 + 7.1, LNZ0 + 0.45, 0, 1.9); sofaBox(X1 + 7.1, LNZ0 + 0.45, 1.9);
+  sofaBench(root, X1 + 5.6, LNZ1 - 0.45, Math.PI, 2.2); sofaBox(X1 + 5.6, LNZ1 - 0.45, 2.2);
+  sofaClub(root, X1 + 9.4, LNZ1 - 0.75, Math.PI + 0.35, 1.6); addBox(X1 + 8.5, LNZ1 - 1.3, X1 + 10.3, LNZ1 - 0.2);
+  const tx = X1 + 6.2, tz = LNZ0 + 1.6;                                             // coffee table: light top, wood legs
+  box(root, H.tableTop, 1.2, 0.04, 0.6, tx, 0.42, tz);
+  box(root, H.tableWood, 1.1, 0.02, 0.5, tx, 0.12, tz, { shadow: false });
+  for (const e of [-1, 1]) for (const f of [-1, 1]) box(root, H.tableWood, 0.04, 0.44, 0.04, tx + e * 0.52, 0.2, tz + f * 0.24, { rz: e * 0.12 });
+  addBox(tx - 0.62, tz - 0.32, tx + 0.62, tz + 0.32);
+  // fire station door + green sign + switch on the south wall, near the far end
+  const fx = X1 + 8.4;
+  box(root, H.frame, 1.05, 2.15, 0.05, fx, 1.075, LNZ1 - 0.02);
+  box(root, H.fireDoor, 0.95, 2.1, 0.04, fx, 1.05, LNZ1 - 0.04);
+  box(root, M.chrome, 0.14, 0.03, 0.04, fx - 0.35, 1.05, LNZ1 - 0.08, { shadow: false });
+  plane(root, H.greenSign, 0.5, 0.11, fx + 0.2, 2.35, LNZ1 - 0.012, Math.PI);
+  box(root, M.white, 0.09, 0.09, 0.012, fx - 0.75, 1.25, LNZ1 - 0.006, { shadow: false });
+  // ceiling: square downlights, AC diffusers, smoke detectors, CCTV dome
+  for (const x of [X1 + 2.0, X1 + 5.0, X1 + 8.0]) for (const z of [zm - 1.7, zm + 1.7]) box(root, H.lamp, 0.24, 0.01, 0.24, x, CEIL - 0.006, z, { shadow: false });
+  for (const x of [X1 + 3.5, X1 + 6.5, X1 + 9.5]) for (const z of [zm - 2.2, zm + 2.2]) plane(root, H.diffuser, 0.6, 0.6, x, CEIL - 0.004, z, 0, Math.PI / 2);
+  for (const x of [X1 + 3.0, X1 + 7.5]) cyl(root, H.cam, 0.06, 0.07, 0.03, x, CEIL - 0.015, zm - 0.6, { seg: 14, shadow: false });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), H.cam);
+  dome.rotation.x = Math.PI; dome.position.set(X1 + 9.2, CEIL, LNZ1 - 0.5); root.add(dome);
 }
 
 export function buildHall(root) {
@@ -294,7 +499,7 @@ export function buildHall(root) {
   box(root, M.white, 0.012, 0.09, 0.09, X0 + 0.006, 0.4, 9.7, { shadow: false });            // socket
   // pixbit logo sign south of the glass doors (IMG_5708 / IMG_5710, suggestion 28): black square with the yellow mark,
   // "pixbit · solutions ·" letters straight on the concrete, socket below, two white track spots above
-  const lz = 16.85;
+  const lz = 17.4; // centred on the wall between the doors and the laminate door (suggestion 37)
   box(root, M.black, 0.03, 0.78, 0.78, X0 + 0.015, 2.05, lz);
   plane(root, M.logo, 0.42, 0.6, X0 + 0.032, 2.05, lz, Math.PI / 2);
   plane(root, H.pixLetters, 0.8, 0.34, X0 + 0.004, 1.42, lz, Math.PI / 2);
@@ -316,25 +521,32 @@ export function buildHall(root) {
   wallZ(root, X0, 20.0, LZ0, 1);                                                        // white wall with the hatch
   wallZ(root, X0, LZ0, LZ1, 1, H.granite);                                              // black granite lift wall
   const lifts = [{ n: 4, z: 24.6 }, { n: 3, z: 28.0 }, { n: 2, z: 31.4 }, { n: 1, z: 34.6 }];
-  for (const L of lifts) {
-    const w = 1.1, h = 2.2;
-    box(root, M.blackMatte, 0.12, h + 0.06, w + 0.24, X0 + 0.06, (h + 0.06) / 2, L.z, { shadow: false });   // dark reveal
-    for (const s of [-1, 1]) box(root, H.liftSteel, 0.05, h, 0.03, X0 + 0.03, h / 2, L.z + s * (w / 2 + 0.01), { shadow: false });
-    box(root, H.liftSteel, 0.05, 0.04, w + 0.06, X0 + 0.03, h, L.z, { shadow: false });
-    for (const s of [-1, 1]) box(root, H.liftSteel, 0.03, h - 0.04, w / 2 - 0.01, X0 - 0.02, (h - 0.04) / 2 + 0.02, L.z + s * (w / 4), { shadow: false }); // sliding doors
-    plane(root, H.numDisc(L.n), 0.22, 0.22, X0 + 0.012, 2.5, L.z, Math.PI / 2);        // white number disc
-    box(root, H.liftSteel, 0.03, 0.12, 0.5, X0 + 0.015, 2.75, L.z, { shadow: false }); // arrow indicator
-    box(root, M.blackMatte, 0.035, 0.07, 0.17, X0 + 0.02, 2.75, L.z, { shadow: false });
-    box(root, H.ledRed, 0.036, 0.04, 0.1, X0 + 0.022, 2.75, L.z, { shadow: false });
-  }
-  box(root, M.white, 0.03, 0.14, 0.09, X0 + 0.015, 1.15, 26.3, { shadow: false });     // card reader between lifts 4 and 3
+  // same look as lift 5 (suggestion 42): steel frame, number disc, indicator, call button, fire alarm
+  for (const L of lifts) liftFront(root, X0, L.z, L.n, 1);
   box(root, M.white, 0.012, 0.09, 0.09, X0 + 0.006, 0.38, 29.7, { shadow: false });    // socket
   for (const z of [32.6, 33.0]) cyl(root, M.chrome, 0.22, 0.22, 0.7, X0 + 0.32, 0.35, z, { seg: 20, shadow: false }); // steel bins
   const fl = new THREE.Group(); fl.position.set(X0 + 0.9, 2.95, 24.2); root.add(fl);   // hanging FOURTH FLOOR sign
   box(fl, M.black, 0.03, 0.2, 0.62, 0, 0, 0, { shadow: false });
   plane(fl, H.fourth, 0.6, 0.18, 0.017, 0, 0, Math.PI / 2);
   plane(fl, H.fourth, 0.6, 0.18, -0.017, 0, 0, -Math.PI / 2);
-  glassFronts(root, X0, -1, LZ1, Z1 - 0.15);
+  // south of lift 1 (suggestions 45 + 46, IMG_5736 / 5738): grey wall with a flush door, logo + track spots,
+  // glass office with a frosted band, navy slatted panel with a ring logo, then more glass up to the window
+  const es0 = LZ1, es1 = LZ1 + 3.6;
+  wallZ(root, X0, es0, es1, 1, H.slate);
+  for (const z of [es1 - 1.25, es1 - 0.25]) box(root, M.blackMatte, 0.006, 2.2, 0.01, X0 + 0.003, 1.1, z, { shadow: false }); // flush door seams
+  box(root, M.blackMatte, 0.006, 0.01, 1.0, X0 + 0.003, 2.2, es1 - 0.75, { shadow: false });
+  plane(root, H.eSyn, 1.3, 0.65, X0 + 0.012, 1.75, es0 + 1.35, Math.PI / 2);
+  box(root, M.white, 0.04, 0.03, 1.2, X0 + BW + 0.3, CEIL - 0.03, es0 + 1.35, { shadow: false });
+  for (const z of [es0 + 0.9, es0 + 1.35, es0 + 1.8]) cyl(root, M.white, 0.045, 0.045, 0.16, X0 + BW + 0.3, CEIL - 0.12, z, { seg: 12, shadow: false, rz: 0.7 });
+  box(root, H.navy, 0.4, CEIL, 0.3, X0, CEIL / 2, es1 + 0.1);                                     // dark jamb
+  const gw1 = es1 + 4.2;
+  glassFronts(root, X0, -1, es1 + 0.25, gw1, 4.2, { frost: true });
+  const nv0 = gw1 + 0.2, nv1 = nv0 + 1.3;
+  wallZ(root, X0, nv0, nv1, 1, H.navy);
+  const ns = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(nv1 - nv0, BULK), nv1 - nv0, BULK, 0.8), H.navySlats);
+  ns.position.set(X0 + 0.004, BULK / 2, (nv0 + nv1) / 2); ns.rotation.y = Math.PI / 2; root.add(ns);
+  plane(root, H.ringLogo, 0.5, 0.5, X0 + 0.01, 1.75, (nv0 + nv1) / 2, Math.PI / 2);
+  glassFronts(root, X0, -1, nv1 + 0.2, Z1 - 0.15);
   box(root, H.wall, 0.1, CEIL - BULK, Z1 - 20, X0 - 0.05, (BULK + CEIL) / 2, (20 + Z1) / 2, { shadow: false });
 
   // ---- Entrance (suggestion 23): brown doormat outside, CCTV ----
@@ -345,7 +557,7 @@ export function buildHall(root) {
   }
 
   // ---- East side ----
-  wallZ(root, X1, Z0, 15.0, -1);
+  wallZ(root, X1, Z0, Math.min(15.0, NB), -1); // plain white wall opposite the office doors
   box(root, H.wall, 0.1, CEIL - BULK, Z1 - Z0, X1 + 0.05, (BULK + CEIL) / 2, (Z0 + Z1) / 2, { shadow: false });
   // glass door next to the north window (IMG_5705)
   const gd = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 2.3), M.glassFrost);
@@ -371,35 +583,146 @@ export function buildHall(root) {
   fb.position.set(X1 - 0.13, 1.78, tz + 1.4); fb.castShadow = true; root.add(fb);
   cyl(root, M.metalDark, 0.11, 0.09, 0.08, X1 - 0.13, 1.72, tz + 1.4, { seg: 16, open: true, shadow: false });
   box(root, M.metalDark, 0.08, 0.02, 0.02, X1 - 0.05, 1.72, tz + 1.4, { shadow: false });
-  // neighbour office: black glass double door + transom, keypad, wood strips, diamond-pattern wall with sign
-  const dz0 = 9.0, dz1 = 10.7;
-  const dg = new THREE.Mesh(new THREE.PlaneGeometry(dz1 - dz0, BULK - 0.05), H.darkGlass);
-  dg.position.set(X1 - 0.04, (BULK - 0.05) / 2, (dz0 + dz1) / 2); dg.rotation.y = -Math.PI / 2; dg.renderOrder = 2;
+  // neighbour office (IMG_5707 / IMG_5709, suggestion 39): sits opposite the pixbit sign. White wall with a
+  // fingerprint terminal, black 8-pane double door + 2-pane side light + transom (green room with pendant bulbs behind),
+  // white wall, wood slat strip, diamond-pattern panel with the Technaureus sign + track spots, wood strip, glass fronts
+  const dz0 = NB, dz1 = dz0 + 1.7, dTop = 2.45, dx = X1 - 0.04, dm = dz0 + 1.05;
+  if (dz0 > 15.01) wallZ(root, X1, 15.0, dz0, -1);
+  const dg = new THREE.Mesh(new THREE.PlaneGeometry(dz1 - dz0, BULK - 0.05), H.tint);
+  dg.position.set(dx, (BULK - 0.05) / 2, (dz0 + dz1) / 2); dg.rotation.y = -Math.PI / 2; dg.renderOrder = 2;
   root.add(dg);
-  for (const z of [dz0, (dz0 + dz1) / 2, dz1]) box(root, M.black, 0.07, BULK, 0.06, X1 - 0.04, BULK / 2, z);
-  for (const y of [0.05, 2.4, BULK - 0.03]) box(root, M.black, 0.07, 0.06, dz1 - dz0, X1 - 0.04, y, (dz0 + dz1) / 2);
-  for (const z of [(dz0 + dz1) / 2 - 0.08, (dz0 + dz1) / 2 + 0.08]) {
-    box(root, M.chrome, 0.03, 0.75, 0.025, X1 - 0.12, 1.1, z, { shadow: false });
-    for (const y of [0.78, 1.42]) box(root, M.chrome, 0.08, 0.02, 0.02, X1 - 0.09, y, z, { shadow: false });
+  const fz = (z, y0 = 0, y1 = BULK) => box(root, M.black, 0.07, y1 - y0, 0.06, dx, (y0 + y1) / 2, z);
+  const fy = (y, z0 = dz0, z1 = dz1) => box(root, M.black, 0.07, 0.06, z1 - z0, dx, y, (z0 + z1) / 2);
+  for (const z of [dz0, dz1]) fz(z, 0, BULK);                              // outer frame
+  fy(0.03); fy(dTop); fy(BULK - 0.03);                                     // sill, transom bar, head
+  for (const z of [dz0 + 0.04, dm - 0.03, dm + 0.03, dz1 - 0.04]) fz(z, 0, dTop); // leaf stiles
+  fz((dz0 + dm) / 2, 0, dTop);                                             // mullion: 2 columns on the main leaf
+  for (const y of [0.62, 1.22, 1.84]) fy(y, dz0, dm);                      // 4 rows of panes
+  fy(1.22, dm, dz1);                                                       // side light: 2 tall panes
+  for (const z of [dm - 0.09, dm + 0.09]) {
+    box(root, M.chrome, 0.03, 0.6, 0.025, X1 - 0.12, 1.15, z, { shadow: false });
+    for (const y of [0.88, 1.42]) box(root, M.chrome, 0.08, 0.02, 0.02, X1 - 0.09, y, z, { shadow: false });
   }
-  box(root, M.white, 0.025, 0.13, 0.09, X1 - 0.012, 1.3, dz0 - 0.3, { shadow: false });         // keypad
-  box(root, M.blackMatte, 0.01, 0.05, 0.06, X1 - 0.026, 1.32, dz0 - 0.3, { shadow: false });
-  const wz0 = 11.05, wz1 = 14.6;
-  for (const z of [10.9, wz1 + 0.1]) box(root, H.woodStrip, 0.06, BULK, 0.16, X1 - 0.03, BULK / 2, z);
+  addBox(X1 - 0.08, dz0, X1 + 0.02, dz1);
+  // room seen through the door: olive-green walls, wood floor, two bare pendant bulbs
+  const rz0 = dz0 - 0.6, rz1 = dz1 + 0.6, rb = X1 + 2.6;
+  slab(root, H.tableWood, X1 + 0.02, rz0, rb, rz1, 0.002);
+  slab(root, H.roomCeil, X1, rz0, rb, rz1, CEIL, { down: true });
+  box(root, H.olive, 0.1, CEIL, rz1 - rz0, rb, CEIL / 2, (rz0 + rz1) / 2, { shadow: false });
+  for (const z of [rz0, rz1]) box(root, H.olive, rb - X1 - 0.12, CEIL, 0.1, (X1 + 0.12 + rb) / 2, CEIL / 2, z, { shadow: false });
+  for (const [z, l] of [[dm - 0.1, 0.9], [dm + 0.15, 1.15]]) {
+    box(root, M.black, 0.01, l, 0.01, X1 + 0.9, CEIL - l / 2, z, { shadow: false });
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), H.lamp);
+    bulb.position.set(X1 + 0.9, CEIL - l - 0.04, z); root.add(bulb);
+  }
+  // fingerprint terminal left of the door, CCTV dome above
+  box(root, H.silver, 0.035, 0.2, 0.15, X1 - 0.018, 1.35, dz0 - 0.4, { shadow: false });
+  box(root, M.blackMatte, 0.01, 0.08, 0.09, X1 - 0.037, 1.39, dz0 - 0.4, { shadow: false });
+  box(root, M.bottleBlue, 0.006, 0.05, 0.05, X1 - 0.043, 1.4, dz0 - 0.42, { shadow: false });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), H.cam);
+  dome.rotation.x = Math.PI; dome.position.set(X1 - 0.35, BULK, dz0 + 0.3); root.add(dome);
+  // white wall, then the Technaureus panel between wood slat strips
+  const wz0 = dz0 + 2.85, wz1 = wz0 + 3.4;
+  wallZ(root, X1, dz1, wz1 + 0.2, -1);
+  box(root, M.white, 0.012, 0.09, 0.09, X1 - 0.006, 0.38, wz0 - 0.3, { shadow: false });           // socket
+  for (const z of [wz0 - 0.1, wz1 + 0.1]) {
+    box(root, H.woodStrip, 0.06, BULK, 0.2, X1 - 0.03, BULK / 2, z);
+    for (const k of [-0.06, 0, 0.06]) box(root, M.blackMatte, 0.005, BULK, 0.008, X1 - 0.061, BULK / 2, z + k, { shadow: false });
+  }
   const dw = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(wz1 - wz0, BULK), wz1 - wz0, BULK, 0.7), H.diamond);
   dw.position.set(X1 - 0.004, BULK / 2, (wz0 + wz1) / 2); dw.rotation.y = -Math.PI / 2; dw.receiveShadow = true;
   root.add(dw);
-  box(root, M.white, 0.03, 0.58, 1.05, X1 - 0.02, 1.75, 12.8);
-  plane(root, H.techno, 1.0, 0.55, X1 - 0.036, 1.75, 12.8, -Math.PI / 2);
+  const tz2 = (wz0 + wz1) / 2 + 0.2;
+  box(root, M.white, 0.03, 0.58, 1.05, X1 - 0.02, 1.85, tz2);
+  plane(root, H.techno, 1.0, 0.55, X1 - 0.036, 1.85, tz2, -Math.PI / 2);
   // track spotlights aimed at the sign
-  box(root, M.black, 0.04, 0.03, 0.8, X1 - BW - 0.3, CEIL - 0.03, 12.8, { shadow: false });
-  for (const z of [12.5, 13.1]) cyl(root, M.black, 0.04, 0.035, 0.14, X1 - BW - 0.3, CEIL - 0.12, z, { seg: 10, shadow: false, rz: -0.7 });
-  // more offices further down: black-framed glass fronts (IMG_5707, suggestion 30)
-  glassFronts(root, X1, 1, 15.0, Z1 - 0.15);
+  box(root, M.black, 0.04, 0.03, 0.8, X1 - BW - 0.3, CEIL - 0.03, tz2, { shadow: false });
+  for (const z of [tz2 - 0.3, tz2 + 0.05, tz2 + 0.35]) cyl(root, M.black, 0.04, 0.035, 0.14, X1 - BW - 0.3, CEIL - 0.12, z, { seg: 10, shadow: false, rz: -0.7 });
+  // after the panel (suggestion 41, IMG_5713 / 5714): frameless glass door with a face-reader on the wood strip,
+  // white pier with a switch, open laminate stair door (blue stairwell, black steps), then lift 5 in black granite
+  const g0 = wz1 + 0.2, g1 = wz1 + 1.35, p1 = g1 + 0.6, s1 = p1 + 1.1, lf0 = s1, lf1 = LNZ0;
+  box(root, M.blackMatte, 0.02, 0.17, 0.09, X1 - 0.07, 1.45, wz1 + 0.1, { shadow: false });   // face reader
+  box(root, M.bottleBlue, 0.005, 0.11, 0.06, X1 - 0.081, 1.47, wz1 + 0.1, { shadow: false });
+  const gdoor = new THREE.Mesh(new THREE.PlaneGeometry(g1 - g0 - 0.04, 2.38), M.glass);
+  gdoor.position.set(X1 - 0.03, 1.2, (g0 + g1) / 2); gdoor.rotation.y = -Math.PI / 2; gdoor.renderOrder = 2; root.add(gdoor);
+  for (const z of [g0 + 0.05, g1 - 0.05]) box(root, M.chrome, 0.03, 0.05, 0.12, X1 - 0.03, 2.36, z, { shadow: false }); // patch fittings
+  box(root, M.chrome, 0.03, 1.1, 0.03, X1 - 0.11, 1.15, g0 + 0.16, { shadow: false });        // long pull handle
+  for (const y of [0.62, 1.68]) box(root, M.chrome, 0.08, 0.02, 0.02, X1 - 0.07, y, g0 + 0.16, { shadow: false });
+  addBox(X1 - 0.06, g0, X1 + 0.02, g1);
+  // room behind the glass door: grey tile floor, white walls
+  slab(root, H.greyTile, X1 + 0.02, g0, X1 + 3.0, g1 + 0.3, 0.002, { tile: 1.2 });
+  slab(root, H.roomCeil, X1, g0, X1 + 3.0, g1 + 0.3, CEIL, { down: true });
+  box(root, H.room, 0.1, CEIL, g1 + 0.3 - g0, X1 + 3.0, CEIL / 2, (g0 + g1 + 0.3) / 2, { shadow: false });
+  box(root, M.black, 0.05, 2.6, 0.05, X1 + 1.6, 1.3, g0 + 0.5, { shadow: false });                // glimpse of a black partition
+  box(root, H.room, 2.88, CEIL, 0.1, X1 + 1.56, CEIL / 2, g1 + 0.35, { shadow: false });
+  // white pier + headers over both doors
+  wallZ(root, X1, g1, p1, -1);
+  box(root, M.white, 0.012, 0.09, 0.09, X1 - 0.006, 1.25, (g1 + p1) / 2, { shadow: false });   // switch
+  box(root, M.blackMatte, 0.015, 0.03, 0.035, X1 - 0.012, 1.25, (g1 + p1) / 2, { shadow: false });
+  box(root, H.wall, 0.1, BULK - 2.4, g1 - g0, X1 + 0.05, (2.4 + BULK) / 2, (g0 + g1) / 2);
+  box(root, H.wall, 0.1, BULK - 2.3, s1 - p1, X1 + 0.05, (2.3 + BULK) / 2, (p1 + s1) / 2);
+  // stair door: laminate leaf with a vision slot, standing open into the stairwell
+  box(root, H.frame, 0.12, 0.06, s1 - p1, X1 + 0.02, 2.3, (p1 + s1) / 2);
+  for (const z of [p1 + 0.02, s1 - 0.02]) box(root, H.frame, 0.12, 2.3, 0.04, X1 + 0.02, 1.15, z);
+  const leaf = new THREE.Group(); leaf.position.set(X1 + 0.06, 0, p1 + 0.04); leaf.rotation.y = 1.25; root.add(leaf);
+  const lw = s1 - p1 - 0.08;
+  box(leaf, H.laminate, 0.04, 2.25, lw, 0, 1.125, lw / 2);
+  for (const sd of [-1, 1]) {
+    box(leaf, H.slot, 0.012, 0.9, 0.1, sd * 0.021, 1.45, lw * 0.6, { shadow: false });
+    box(leaf, M.chrome, 0.03, 0.42, 0.025, sd * 0.06, 1.05, lw - 0.12, { shadow: false });
+  }
+  addBox(X1 + 0.04, p1, X1 + 1.05, p1 + 0.4);
+  // stairwell: blue walls, black glossy floor, black steps rising east along the far side
+  const sx1 = X1 + 4.2, sz0 = p1 - 0.1, sz1 = s1 + 0.15;
+  slab(root, H.granite, X1 + 0.02, sz0, sx1, sz1, 0.003, { tile: 1.2 });
+  slab(root, H.roomCeil, X1, sz0, sx1, sz1, 4.5, { down: true });
+  box(root, H.stairBlue, sx1 - X1 - 0.12, 4.5, 0.1, (X1 + 0.12 + sx1) / 2, 2.25, sz0 - 0.05, { shadow: false });
+  box(root, H.stairBlue, sx1 - X1 - 0.12, 4.5, 0.1, (X1 + 0.12 + sx1) / 2, 2.25, sz1 + 0.05, { shadow: false });
+  box(root, H.stairBlue, 0.1, 4.5, sz1 - sz0, sx1 + 0.05, 2.25, (sz0 + sz1) / 2, { shadow: false });
+  box(root, H.wall, 0.1, 4.5 - BULK, s1 - p1, X1 + 0.05, (4.5 + BULK) / 2, (p1 + s1) / 2, { shadow: false });
+  for (let i = 0; i < 9; i++) box(root, H.granite, 0.3, 0.17 * (i + 1), 0.95, X1 + 1.3 + i * 0.3, 0.085 * (i + 1), s1 - 0.4);
+  addBox(X1 + 1.15, s1 - 0.9, sx1, sz1);
+  addBox(sx1 - 0.05, sz0, sx1 + 0.1, sz1);
+  // lift 5: black granite block from floor to ceiling, steel doors, number disc, indicator, call button, fire alarm
+  const L5 = s1 + 1.5, lx = X1 - 0.1;
+  box(root, H.granite, 0.2, CEIL, lf1 - lf0, X1, CEIL / 2, (lf0 + lf1) / 2);
+  box(root, H.granite, 0.1, CEIL, 0.1, X1 + 0.05, CEIL / 2, lf1 + 0.05);                        // return into the lounge
+  addBox(lx, lf0, X1 + 0.1, lf1);
+  liftFront(root, lx, L5, 5, -1);
+  // hanging FOURTH FLOOR sign in front of lift 5
+  const fl5 = new THREE.Group(); fl5.position.set(X1 - 0.9, 2.95, lf0 - 0.1); root.add(fl5);
+  box(fl5, M.black, 0.03, 0.2, 0.62, 0, 0, 0, { shadow: false });
+  plane(fl5, H.fourth, 0.6, 0.18, 0.017, 0, 0, Math.PI / 2);
+  plane(fl5, H.fourth, 0.6, 0.18, -0.017, 0, 0, -Math.PI / 2);
+  // south of the lounge (suggestions 45 + 46, IMG_5736 / 5738): lift 6 in black granite, ladies toilet,
+  // navy slatted panel with the 10COD logo, then black-framed glass offices to the window
+  const P6 = LNZ1 + 0.55, lb0 = P6 + 0.35, lb1 = lb0 + 2.6;
+  wallZ(root, X1, P6, lb0, -1);
+  box(root, H.granite, 0.2, CEIL, lb1 - lb0, X1, CEIL / 2, (lb0 + lb1) / 2);
+  addBox(X1 - 0.1, lb0, X1 + 0.1, lb1);
+  liftFront(root, X1 - 0.1, lb0 + 1.45, 6, -1);
+  const tw0 = lb1, tw1 = tw0 + 2.8, lz6 = tw0 + 0.9;
+  ladiesToilet(root, tw0, tw1, lz6);
+  const lb = new THREE.Group(); lb.position.set(X1 - 0.33, 2.62, lz6 + 0.75); root.add(lb);
+  box(lb, M.black, 0.6, 0.15, 0.03, 0, 0, 0);
+  plane(lb, H.ladies, 0.56, 0.12, 0, 0, 0.017, 0);
+  plane(lb, H.ladies, 0.56, 0.12, 0, 0, -0.017, Math.PI);
+  const fb6 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 14), H.orange);                  // fire ball
+  fb6.position.set(X1 - 0.13, 1.78, tw0 + 2.2); fb6.castShadow = true; root.add(fb6);
+  cyl(root, M.metalDark, 0.11, 0.09, 0.08, X1 - 0.13, 1.72, tw0 + 2.2, { seg: 16, open: true, shadow: false });
+  box(root, M.white, 0.012, 0.09, 0.09, X1 - 0.006, 0.38, tw1 - 0.25, { shadow: false });        // socket
+  const np0 = tw1, np1 = np0 + 2.6;
+  wallZ(root, X1, np0, np1, -1, H.navy);
+  const ps = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(np1 - np0, BULK), np1 - np0, BULK, 0.8), H.navySlats);
+  ps.position.set(X1 - 0.004, BULK / 2, (np0 + np1) / 2); ps.rotation.y = -Math.PI / 2; root.add(ps);
+  plane(root, H.tenCod, 1.5, 0.47, X1 - 0.012, 1.75, (np0 + np1) / 2, -Math.PI / 2);
+  glassFronts(root, X1, 1, np1 + 0.2, Z1 - 0.15);
+  buildLounge(root);
 
   // ---- End windows + hanging FIRE EXIT sign ----
   endWindow(root, Z0 - 0.12, 1, X0, X1, X0 + 0.9, X1 - 0.25);  // north: wide glass, solid wall only at the east corner (IMG_5705)
   endWindow(root, Z1 + 0.12, -1);
+  plane(root, H.fireExit, 0.5, 0.11, (X0 + X1) / 2, 2.95, Z1 - 0.01, Math.PI); // green FIRE EXIT on the window header (IMG_5738)
   const ex = new THREE.Group(); ex.position.set((X0 + X1) / 2, 2.72, Z0 + 1.6); root.add(ex);
   box(ex, M.white, 0.58, 0.14, 0.03, 0, 0, 0, { shadow: false });
   plane(ex, H.fireExit, 0.56, 0.12, 0, 0, 0.016, 0);

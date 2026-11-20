@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { buildWorld, zoneAt, SPAWN } from './world/index.js';
+import { buildWorld, zoneAt, SPAWN, setHallDevSigns } from './world/index.js';
 import { createPlayer } from './controls.js';
 import { mergeStatic } from './merge.js';
 import { initSuggestions } from './suggestions.js';
 import { initDoors } from './doors.js';
+import { initUnlock } from './unlock.js';
+import { initLadies } from './ladies.js';
 import { initArcade } from './arcade.js';
 import { initTouch, isTouchDevice } from './touch.js';
 import { initModes } from './modes.js';
@@ -78,12 +80,14 @@ player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) overla
 
 // ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
 const doors = initDoors({ scene, player, camera });
+const unlock = initUnlock({ scene, player, camera, doors }); // fingerprint entry lock on the reception entrance door (suggestion 47)
+const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 
 // ---- Game modes (Esc menu): Free Walk + Scavenger Hunt ----
-const modes = initModes({ card: overlay.querySelector('.card'), anchor: overlay.querySelector('.start') });
+const modes = initModes({ list: overlay.querySelector('.modes') });
 const hunt = initHunt({ scene, camera, player });
 modes.register(hunt);
 
@@ -96,6 +100,7 @@ function setDev(on) {
   document.body.classList.toggle('dev', on);
   devBox.checked = on;
   suggest.setEnabled(on);
+  setHallDevSigns(on);
   try { localStorage.setItem('pixbit-devmode', on ? '1' : '0'); } catch {}
 }
 devBox.addEventListener('click', (e) => e.stopPropagation());
@@ -137,12 +142,14 @@ renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
   player.update(dt);
   doors.update(dt);
+  unlock.update(dt);
+  ladies.update(dt);
   arcade.update(dt);
   modes.update(dt, overlay.classList.contains('hidden'));
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt();
+    const near = arcade.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; }
     else hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · ${dev ? 'DEV · C suggest · X area · L list' : 'dev mode off (P)'}${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;

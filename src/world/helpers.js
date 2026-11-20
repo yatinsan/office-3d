@@ -72,6 +72,8 @@ export function wall(parent, x0, z0, x1, z1, { h = H, mat = M.wall, t = 0.2, y0 
 export const doorLeaves = [];
 /** Individual locker doors (see lockers() in props.js); src/doors.js opens/closes the one you look at with F. */
 export const lockerDoors = [];
+/** Fingerprint reader on the hall's west wall that unlocks the reception entrance door from outside (suggestion 47). */
+export const READER = { x: 10.3 + 0.03, y: 1.25, z: 9.8 };
 
 export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transom = 2.3, frost = false, panel = 1.1, swing = 1, name = 'door' }) {
   const alongX = z0 === z1;
