@@ -133,7 +133,7 @@ export function initTouch({ player, camera }) {
     /** Show the context button for the current prompt ('' hides it). Door prompts start with "F", TV ones with "E" / TV state. */
     setAction(prompt) {
       let icon = '', key = null;
-      if (/^F (open|close)/.test(prompt)) { key = 'KeyF'; icon = prompt.startsWith('F open') ? 'doorOpen' : 'doorClose'; }
+      if (/^F (open|close|collect)/.test(prompt)) { key = 'KeyF'; icon = prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
       else if (prompt) { key = 'KeyE'; icon = 'tv'; }
       actKey = key;
       act.classList.toggle('off', !key);

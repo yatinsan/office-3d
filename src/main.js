@@ -7,6 +7,8 @@ import { initSuggestions } from './suggestions.js';
 import { initDoors } from './doors.js';
 import { initArcade } from './arcade.js';
 import { initTouch, isTouchDevice } from './touch.js';
+import { initModes } from './modes.js';
+import { initHunt } from './hunt.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -80,6 +82,11 @@ const arcade = initArcade({ scene, player }); // game room TV: E to play (sugges
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 
+// ---- Game modes (Esc menu): Free Walk + Scavenger Hunt ----
+const modes = initModes({ card: overlay.querySelector('.card'), anchor: overlay.querySelector('.start') });
+const hunt = initHunt({ scene, camera, player });
+modes.register(hunt);
+
 // ---- Dev mode: suggestions (C / X / L, pins) only while on. Toggle with P or the switch on the start card ----
 let dev = false;
 try { dev = localStorage.getItem('pixbit-devmode') === '1'; } catch {}
@@ -131,10 +138,11 @@ renderer.setAnimationLoop(() => {
   player.update(dt);
   doors.update(dt);
   arcade.update(dt);
+  modes.update(dt, overlay.classList.contains('hidden'));
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || doors.prompt();
+    const near = arcade.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; }
     else hud.textContent = `${near ? near.toUpperCase() + ' · ' : ''}${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} quality (Q) · ${dev ? 'DEV · C suggest · X area · L list' : 'dev mode off (P)'}${player.state.dragMode ? ' · drag mouse to look' : ''}`;
     frames = 0; fpsT = 0;
