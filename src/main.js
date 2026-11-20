@@ -151,6 +151,7 @@ renderer.setAnimationLoop(() => {
   ladies.update(dt);
   arcade.update(dt);
   modes.update(dt, overlay.classList.contains('hidden'));
+  online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {

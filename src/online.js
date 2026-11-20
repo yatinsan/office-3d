@@ -40,12 +40,15 @@ const CSS = `
   .ow-status { font: 500 13px system-ui, sans-serif; color: rgba(255,255,255,.75); }
   .ow-status b { color: #7ee08f; }
   .ow-status.err b { color: #ff8a80; }
-  #ow-hud { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 5; display: none; align-items: center; gap: 10px;
+  #ow-hud { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 8; display: none; align-items: center; gap: 10px;
     padding: 6px 14px; border-radius: 20px; background: rgba(0,0,0,.5); color: #fff; font: 600 13px system-ui, sans-serif; pointer-events: none; }
   #ow-hud.show { display: flex; }
   #ow-hud .mic { width: 10px; height: 10px; border-radius: 50%; background: #777; }
   #ow-hud.live .mic { background: #7ee08f; }
   #ow-hud.talk .mic { background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
+  #ow-hud .ow-mode { pointer-events: auto; cursor: pointer; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(236,200,40,.7);
+    background: rgba(236,200,40,.15); color: #ecc828; font: 700 12px system-ui, sans-serif; white-space: nowrap; }
+  #ow-hud .ow-mode:hover { background: rgba(236,200,40,.3); }
   #ow-hud kbd { background: #333; border: 1px solid #666; border-radius: 4px; padding: 0 5px; font: 700 11px system-ui; }
   #ow-ptt { position: fixed; z-index: 7; right: max(84px, calc(env(safe-area-inset-right) + 66px)); bottom: max(26px, env(safe-area-inset-bottom));
     width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(20,20,20,.5); color: #fff;
@@ -103,6 +106,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   }
   dot.addEventListener('click', () => {
     myColor = COLORS[(COLORS.indexOf(myColor) + 1) % COLORS.length]; dot.style.background = myColor;
+    me.setLook(null, myColor);
     try { localStorage.setItem(COLOR_KEY, myColor); } catch {}
     publishMe();
   });
@@ -110,7 +114,8 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
 
   // ---------- In-game HUD pill + touch talk button ----------
   const hud = document.createElement('div'); hud.id = 'ow-hud';
-  hud.innerHTML = '<span class="mic"></span><span class="txt"></span>';
+  hud.innerHTML = '<span class="mic"></span><span class="txt"></span><button type="button" class="ow-mode"></button>';
+  const modeChip = hud.querySelector('.ow-mode');
   document.body.appendChild(hud);
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
   pttBtn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
@@ -118,6 +123,17 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   // push to talk: hold the button; always on: tap it to mute / unmute
   pttBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, () => setHeld(false));
+
+  // ---------- Your own body, seen when you look down (every mode, in your colour) ----------
+  const me = makeAvatar('', myColor, { self: true });
+  scene.add(me.group);
+  const meDir = new THREE.Vector3();
+  function updateSelf(dt, reach = null) {
+    camera.getWorldDirection(meDir);
+    me.target(player.pos.x, Math.max(0, camera.position.y - EYE), player.pos.z, Math.atan2(-meDir.x, -meDir.z), false);
+    me.setReach(reach?.aim, reach?.k || 0);
+    me.update(dt);
+  }
 
   // ---------- State ----------
   let on = false, fb = null, db = null, uid = null, unsubs = [], connecting = false;
@@ -155,6 +171,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
       const cred = await fb.signIn(fb.auth);
       if (!on) return;
       uid = cred.user.uid;
+      if (micMode === 'open') getMic().then(() => refreshMic()); // always on: ask for the mic as you join, not mid-walk
       await fb.remove(path(`signal/${uid}`)); // drop any old handshake messages addressed to me
       fb.onDisconnect(path(`players/${uid}`)).remove();
       fb.onDisconnect(path(`signal/${uid}`)).remove();
@@ -298,17 +315,24 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   let hudNote = '';
 
   // Mic mode: 'ptt' = hold V (or the mic button) to talk; 'open' = mic is live while you're in the game, V / mic button mutes.
-  let micMode = 'ptt', held = false, muted = false, inGame = false, speaking = false, quietT = 0, micSrc = null, meter = null;
-  try { if (localStorage.getItem(MIC_KEY) === 'open') micMode = 'open'; } catch {}
+  let micMode = 'open', held = false, muted = false, inGame = false, speaking = false, quietT = 0, micSrc = null, meter = null;
+  try { if (localStorage.getItem(MIC_KEY) === 'ptt') micMode = 'ptt'; } catch {} // default: always on
   const segBtns = box.querySelectorAll('.ow-seg button');
   function drawSeg() { for (const b of segBtns) b.classList.toggle('on', b.dataset.m === micMode); }
-  for (const b of segBtns) b.addEventListener('click', () => {
-    micMode = b.dataset.m; muted = false; held = false;
+  /** Switch mic mode (menu buttons, the T key and the chip on the in-game bar all land here). */
+  function setMode(m) {
+    if (m === micMode) return;
+    micMode = m; muted = false; held = false;
     try { localStorage.setItem(MIC_KEY, micMode); } catch {}
-    if (micMode === 'open') getMic().then(refreshMic); // ask for the mic now, from the menu, not mid-game
+    if (micMode === 'open' && on) getMic().then(refreshMic);
     drawSeg(); refreshMic(); refreshStatus();
-  });
+  }
+  for (const b of segBtns) b.addEventListener('click', () => setMode(b.dataset.m));
   drawSeg();
+  modeChip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); setMode(micMode === 'ptt' ? 'open' : 'ptt'); });
+  addEventListener('keydown', (e) => {
+    if (e.code === 'KeyT' && !e.repeat && on && !typing(e)) setMode(micMode === 'ptt' ? 'open' : 'ptt');
+  });
   const live = () => on && (micMode === 'ptt' ? held : inGame && !muted);
   /** Turn the mic track on/off from the current mode + keys, and tell the others whether I'm talking. */
   function refreshMic() {
@@ -366,6 +390,8 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     drawHud();
   }
   function drawHud() {
+    modeChip.innerHTML = `${micMode === 'ptt' ? 'Push to talk' : 'Always on'}${touch ? '' : ' <kbd>T</kbd>'}`;
+    modeChip.title = 'Switch between push to talk and always-on mic';
     hud.classList.toggle('talk', talking);
     hud.classList.toggle('live', !talking && micMode === 'open' && live() && !!mic);
     const n = connectedCount() + 1;
@@ -399,30 +425,55 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
       if (hudNote && (hudT += dt) > 5) { hudNote = ''; hudT = 0; drawHud(); }
     },
     prompt() { return ''; },
+    updateSelf,
   };
 }
 let hudT = 0;
 
-// ---------- Avatar: a simple capsule person with a visor (shows facing) and a floating name tag ----------
-function makeAvatar(name, color) {
+// ---------- Avatar: a rounded figure (capsule body, round head with a visor, capsule arms + legs) that swings as it walks ----------
+const SKIN = '#f1d3b8', PANTS = '#2b3550', SHOES = '#1c1c20';
+/** self: your own body in first person: no head, chest or name tag, pinned to you with no smoothing. */
+export function makeAvatar(name, color, { self = false } = {}) {
   const group = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.85, 6, 14), bodyMat);
-  body.position.y = 0.24 + 0.425 + 0.02;
-  body.castShadow = true;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 14), new THREE.MeshStandardMaterial({ color: '#f1d3b8', roughness: 0.7 }));
-  head.position.y = 1.5;
-  head.castShadow = true;
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.08), new THREE.MeshStandardMaterial({ color: '#15171c', roughness: 0.2, metalness: 0.4 }));
-  visor.position.set(0, 1.53, -0.14);
-  group.add(body, head, visor);
+  const mat = (c, r = 0.65, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+  const shirtMat = mat(color, 0.6), skinMat = mat(SKIN, 0.7), pantsMat = mat(PANTS, 0.8), shoeMat = mat(SHOES, 0.5);
+  const add = (parent, geo, m, x, y, z) => {
+    const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o;
+  };
+  const capsule = (r, len) => new THREE.CapsuleGeometry(r, len, 6, 14);
+  // limbs hang from a pivot (hip / shoulder) so they can swing; the figure faces -z (the way the player looks)
+  const pivot = (x, y) => { const p = new THREE.Group(); p.position.set(x, y, 0); group.add(p); return p; };
+  const HIP = 0.8, SHOULDER = 1.47;
+  const legL = pivot(-0.1, HIP), legR = pivot(0.1, HIP);
+  for (const leg of [legL, legR]) {
+    add(leg, capsule(0.085, 0.6), pantsMat, 0, -0.385, 0);
+    add(leg, new THREE.SphereGeometry(0.1, 16, 10), shoeMat, 0, -0.77, -0.04).scale.set(1, 0.55, 1.45);
+  }
+  const torso = add(group, capsule(0.22, 0.4), shirtMat, 0, 1.17, 0);
+  const armL = pivot(-0.29, SHOULDER), armR = pivot(0.29, SHOULDER);
+  for (const arm of [armL, armR]) {
+    add(arm, capsule(0.065, 0.48), shirtMat, 0, -0.27, 0);
+    add(arm, new THREE.SphereGeometry(0.07, 16, 12), skinMat, 0, -0.6, 0);   // hand
+  }
+  const head = new THREE.Group(); head.position.y = 1.62; group.add(head);
+  add(head, new THREE.SphereGeometry(0.17, 24, 16), skinMat, 0, 0.13, 0);
+  add(head, new THREE.BoxGeometry(0.22, 0.07, 0.08), mat('#15171c', 0.2, 0.4), 0, 0.16, -0.14); // visor: shows which way they face
+  if (self) {
+    // first person: no head, and no chest (it would fill the screen when you look down). A round seat of hips joins
+    // the legs, and everything sits slightly forward so your feet show and your arms swing at the edges of the view.
+    head.visible = false; torso.visible = false;
+    add(group, new THREE.SphereGeometry(0.2, 18, 12), pantsMat, 0, HIP + 0.02, 0).scale.set(1.05, 0.55, 0.75);
+    for (const c of group.children) { c.position.z -= 0.08; c.position.y -= 0.08; }
+  }
+  const ARM = 0.6; // shoulder to hand centre
 
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
   const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
   const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
   tag.scale.set(1.1, 0.275, 1);
-  tag.position.y = 1.95;
+  tag.position.y = 2.2;
   tag.renderOrder = 10;
+  tag.visible = !self;
   group.add(tag);
   let curName = name, curColor = color, talk = false;
   function drawTag() {
@@ -441,25 +492,56 @@ function makeAvatar(name, color) {
   }
   drawTag();
 
-  const to = new THREE.Vector3(), cur = new THREE.Vector3();
-  let toYaw = 0, yaw = 0, started = false, bobT = 0, voice = null;
+  const to = new THREE.Vector3(), cur = new THREE.Vector3(), prev = new THREE.Vector3();
+  let toYaw = 0, yaw = 0, started = false, voice = null, phase = 0, speed = 0, swing = 0, talkT = 0;
+  // reaching: the right arm points its hand at a world point (fingerprint reader), blended in by reachK 0..1
+  let reachK = 0;
+  const reachAim = new THREE.Vector3(), sh = new THREE.Vector3(), dir = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
+  const qPoint = new THREE.Quaternion(), qInv = new THREE.Quaternion();
   return {
     group,
-    setLook(n, c) { curName = n || curName; curColor = c || curColor; bodyMat.color.set(curColor); drawTag(); },
+    setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
+    /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
+    setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
     setVoice(v) { if (voice) { voice.disconnect?.(); head.remove(voice); } voice = v; head.add(v); },
     target(x, y, z, yw, t) {
       to.set(x, y, z); toYaw = yw;
-      if (!started) { cur.copy(to); yaw = yw; started = true; group.visible = true; }
+      if (!started) { cur.copy(to); prev.copy(to); yaw = yw; started = true; group.visible = true; }
       if (t !== talk) { talk = t; drawTag(); }
     },
     update(dt) {
-      if (!started) return;
-      const k = 1 - Math.exp(-12 * dt);
-      const moving = cur.distanceToSquared(to) > 0.0004;
+      if (!started || dt <= 0) return;
+      const k = self ? 1 : 1 - Math.exp(-12 * dt);
+      prev.copy(cur);
       cur.lerp(to, k);
       let d = toYaw - yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); yaw += d * k;
-      if (moving) bobT += dt * 9;
-      group.position.set(cur.x, cur.y + (moving ? Math.abs(Math.sin(bobT)) * 0.04 : 0), cur.z);
+      // walking speed on the ground, smoothed; drives the arm / leg swing
+      const v = Math.hypot(cur.x - prev.x, cur.z - prev.z) / dt;
+      speed += (v - speed) * (1 - Math.exp(-8 * dt));
+      const air = cur.y > 0.05;
+      phase += dt * (3 + speed * 2.2);
+      const amp = air ? 0 : Math.min(1, speed / 3) * 0.75;   // walk ~0.45 rad, run up to 0.75
+      swing += (Math.sin(phase) * amp - swing) * (1 - Math.exp(-14 * dt));
+      legL.rotation.x = swing; legR.rotation.x = -swing;
+      armL.rotation.x = -swing * 0.9; armR.rotation.x = swing * 0.9;
+      const lift = air ? -0.5 : 0;                              // arms out a little while jumping
+      armL.rotation.z = air ? -0.35 : 0; armR.rotation.z = air ? 0.35 : 0;
+      armL.rotation.x += lift; armR.rotation.x += lift;
+      talkT += dt;
+      head.rotation.z = talk ? Math.sin(talkT * 7) * 0.03 : 0;  // a little nod while talking
+      armR.scale.y = 1;
+      if (reachK > 0) {
+        group.position.set(cur.x, cur.y, cur.z); group.rotation.y = yaw; group.updateMatrixWorld(true);
+        armR.getWorldPosition(sh);
+        dir.subVectors(reachAim, sh);
+        const dist = dir.length();
+        dir.applyQuaternion(qInv.copy(group.quaternion).invert()).normalize(); // into the figure's own space
+        qPoint.setFromUnitVectors(down, dir);
+        armR.quaternion.slerp(qPoint, reachK);
+        armR.scale.y = 1 + (Math.min(1.9, Math.max(1, dist / ARM)) - 1) * reachK; // stretch the last bit if the reader is out of reach
+      }
+      const bob = air ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
+      group.position.set(cur.x, cur.y + bob, cur.z);
       group.rotation.y = yaw;
     },
     dispose() {

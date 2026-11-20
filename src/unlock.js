@@ -4,7 +4,7 @@ import { READER, LOBBY_E } from './world/helpers.js';
 /**
  * Fingerprint entry lock on the reception entrance door (glass door in the hall's west wall, z 7.6–8.65; suggestion 47).
  * From the hall side the door is locked: stand close to the reader or the door and a black box top right says
- * "press and hold F". Holding F for 1 s fills the ring while a hand reaches out and presses the reader; the door then
+ * "press and hold F". Holding F for 1 s fills the ring while your own right hand reaches out and presses the reader; the door then
  * swings open for 8 s and locks again. From inside reception F opens it as usual (exit). The reader carries a padlock
  * icon (red = locked, green = open).
  */
@@ -31,30 +31,6 @@ function lockTexture(open) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
-}
-
-/** Simple right hand + sleeve, index finger pointing along +z with the fingertip at the origin. */
-function makeHand() {
-  const skin = new THREE.MeshStandardMaterial({ color: '#d7a07c', roughness: 0.75 });
-  const cloth = new THREE.MeshStandardMaterial({ color: '#27324a', roughness: 0.9 });
-  const g = new THREE.Group();
-  const add = (mat, w, h, d, x, y, z, rx = 0, ry = 0) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z); m.rotation.set(rx, ry, 0); g.add(m);
-  };
-  add(skin, 0.018, 0.018, 0.075, 0, 0, -0.037);                         // index finger
-  add(skin, 0.084, 0.026, 0.09, 0.03, -0.004, -0.118);                  // palm
-  for (const [i, x] of [0.023, 0.044, 0.064].entries()) add(skin, 0.019, 0.026, 0.034 - i * 0.003, x, -0.012, -0.072); // curled fingers
-  add(skin, 0.02, 0.02, 0.055, -0.016, -0.012, -0.11, 0, 0.6);           // thumb
-  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.05, 0.34, 14), cloth);
-  sleeve.rotation.x = Math.PI / 2; sleeve.position.set(0.03, -0.006, -0.33);
-  g.add(sleeve);
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.03, 14), skin);
-  cuff.rotation.x = Math.PI / 2; cuff.position.set(0.03, -0.006, -0.165);
-  g.add(cuff);
-  g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
-  g.visible = false;
-  return g;
 }
 
 const CSS = `
@@ -113,11 +89,9 @@ export function initUnlock({ scene, player, camera, doors }) {
     labelTex.needsUpdate = true;
   };
 
-  // ---- the reaching hand ----
-  const hand = makeHand();
-  scene.add(hand);
+  // ---- your own right hand reaches out (the first-person body in src/online.js draws it) ----
   const target = new THREE.Vector3(READER.x + 0.004, READER.y + 0.02, READER.z);
-  const start = new THREE.Vector3(), aim = new THREE.Vector3(), fwd = new THREE.Vector3();
+  const aim = new THREE.Vector3(), fwd = new THREE.Vector3();
   let reach = 0; // 0 = hand down, 1 = finger on the reader
 
   // ---- top-right box ----
@@ -186,18 +160,11 @@ export function initUnlock({ scene, player, camera, doors }) {
     // hand: reach out while F is held, press the reader, pull back after
     const goalReach = holding ? 1 : 0;
     reach = goalReach ? Math.min(1, reach + dt / 0.3) : Math.max(0, reach - dt / 0.35);
-    hand.visible = reach > 0;
-    if (hand.visible) {
-      start.set(0.2, -0.34, -0.32);
-      camera.localToWorld(start);
+    if (reach > 0) {
       if (camera.position.distanceTo(target) < 2.4 && outside()) aim.copy(target);
-      else { camera.getWorldDirection(fwd); aim.copy(camera.position).addScaledVector(fwd, 0.6); } // too far / other side: press the air
-      hand.position.copy(start);
-      hand.lookAt(aim);
-      const k = reach * reach * (3 - 2 * reach);
+      else { camera.getWorldDirection(fwd); aim.copy(camera.position).addScaledVector(fwd, 0.6).y -= 0.15; } // too far / other side: press the air
       const press = holding && reach === 1 ? 0.012 * (0.5 + 0.5 * Math.sin(performance.now() / 120)) : 0; // finger pushes in and out
-      hand.position.lerpVectors(start, aim, k);
-      hand.translateZ(press);
+      if (press) { camera.getWorldDirection(fwd); aim.addScaledVector(fwd, press); }
     }
 
     // LED: red locked, blinking blue while scanning, green open
@@ -231,5 +198,8 @@ export function initUnlock({ scene, player, camera, doors }) {
     return state === 'locked' && inZone() ? 'F hold to unlock door' : '';
   }
 
-  return { update, prompt };
+  /** Where your own right hand should be: k 0 = down at your side, 1 = on the reader. */
+  function reachInfo() { return { k: reach * reach * (3 - 2 * reach), aim }; }
+
+  return { update, prompt, reach: reachInfo };
 }
