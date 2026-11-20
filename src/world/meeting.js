@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { M } from '../materials.js';
-import { box, cyl, officeChair, linearLight, splitAC } from '../props.js';
+import { box, cyl, officeChair, linearLight, splitAC, flowerPot } from '../props.js';
 import { addBox } from '../colliders.js';
 import { slab, wall, doorLeaves, H, BACK_Z, MEET_X1, MEET_Z1, GAME_DOOR } from './helpers.js';
 
@@ -53,6 +53,7 @@ export function buildMeetingRoom(root) {
       gr.rotation.x = -Math.PI / 2; gr.position.set(tx + 0.1, 0.772, z); t.add(gr);
     }
     box(t, M.black, 0.05, 0.02, 0.2, tx - 0.15, 0.78, tz - 0.4, { shadow: false, ry: 0.4 }); // remote
+    flowerPot(t, tx, 0.77, tz + 0.35, { petal: M.petalWhite, n: 5 });
     addBox(tx - tw / 2, tz0, tx + tw / 2, tz1); }
   for (const z of [tz0 + 0.4, tz, tz1 - 0.4]) {
     officeChair(g, tx - tw / 2 - 0.32, z, Math.PI / 2);

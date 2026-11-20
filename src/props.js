@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, rand } from './materials.js';
 import { lockerDoors } from './world/helpers.js';
+import { monitorGeo, keyboardGeo, mouseGeo, bottleGeo, bladeGeo, planterGeo, flowerGeo, stemGeo } from './models.js';
 
 // ---------- primitive helpers ----------
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -39,6 +40,17 @@ export function plane(parent, mat, w, h, x, y, z, ry = 0, rx = 0) {
   m.position.set(x, y, z);
   m.rotation.set(rx, ry, 0, 'YXZ');
   m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+/** Mesh from a shared (cached) geometry. */
+export function part(parent, geometry, mat, x = 0, y = 0, z = 0, { shadow = true, rx = 0, ry = 0, rz = 0, s = null } = {}) {
+  const m = new THREE.Mesh(geometry, mat);
+  m.position.set(x, y, z);
+  m.rotation.set(rx, ry, rz);
+  if (s) Array.isArray(s) ? m.scale.set(...s) : m.scale.setScalar(s);
+  m.castShadow = shadow; m.receiveShadow = true;
   parent.add(m);
   return m;
 }
@@ -93,10 +105,13 @@ export function visitorChair(parent, x, z, ry = 0) {
 export function workstation(g, x, z, ry, i = 0) {
   const m = group(g, x, 0.77, z, ry); m.userData.label = 'Monitor';
   // Everything stays within ±0.33 m so it fits one 0.7 m seat (matches the 24-inch monitor in suggestion 22's photo)
-  box(m, M.black, 0.26, 0.012, 0.18, 0, 0.006, -0.06);          // flat stand foot
-  box(m, M.black, 0.05, 0.22, 0.025, 0, 0.12, -0.08);           // stand neck
-  box(m, M.black, 0.54, 0.32, 0.022, 0, 0.35, -0.07);           // thin-bezel monitor
+  // Monitor: bevelled thin-bezel shell, tapered rear housing, curved oval arm, rounded foot (src/models.js)
+  part(m, monitorGeo.foot(), M.black);
+  part(m, monitorGeo.arm(), M.silver);
+  part(m, monitorGeo.back(), M.black);
+  part(m, monitorGeo.shell(), M.black);
   plane(m, i % 3 === 2 ? M.screenDash : M.screenCode, 0.52, 0.30, 0, 0.35, -0.058);
+  box(m, M.led, 0.006, 0.0025, 0.002, 0.235, 0.35 - 0.1665, -0.0585, { shadow: false }); // power LED in the chin
   // Mac mini: rounded aluminium body, dark base plinth, logo on top, front ports + LED
   const mmx = -0.26, mmz = 0.06;
   rbox(m, M.black, 0.114, 0.006, 0.114, 0.002, mmx, 0.003, mmz);                              // base plinth
@@ -105,14 +120,15 @@ export function workstation(g, x, z, ry, i = 0) {
   box(m, M.black, 0.012, 0.004, 0.002, mmx - 0.03, 0.021, mmz + 0.0605, { shadow: false });   // front port
   box(m, M.black, 0.012, 0.004, 0.002, mmx - 0.012, 0.021, mmz + 0.0605, { shadow: false });  // front port
   box(m, M.white, 0.004, 0.004, 0.002, mmx + 0.04, 0.021, mmz + 0.0605, { shadow: false });   // status LED
-  box(m, M.keyboardTop, 0.26, 0.012, 0.1, -0.01, 0.006, 0.25, { shadow: false }); // compact white keyboard
-  // black wireless mouse: rounded body, button split, scroll wheel
+  // keyboard: wedge aluminium base + individual white key caps
+  part(m, keyboardGeo.base(), M.silver, 0, 0, 0, { shadow: false });
+  part(m, keyboardGeo.keys(), M.white, 0, 0, 0, { shadow: false });
+  // black wireless mouse: sculpted dome, button split, scroll wheel
   const mx = 0.24, mz = 0.24;
-  const body = rbox(m, M.blackMatte, 0.058, 0.03, 0.1, 0.014, mx, 0.015, mz); body.scale.y = 0.85;
-  rbox(m, M.black, 0.056, 0.006, 0.05, 0.003, mx, 0.027, mz - 0.025);          // glossy button plate
-  box(m, M.blackMatte, 0.002, 0.004, 0.045, mx, 0.0295, mz - 0.025, { shadow: false }); // button split
-  box(m, M.chrome, 0.008, 0.006, 0.016, mx, 0.0305, mz - 0.022, { shadow: false });  // scroll wheel
-  if (i % 3 === 0) cyl(m, M.bottleYellow, 0.032, 0.032, 0.22, 0.28, 0.11, -0.04, { seg: 10 });
+  part(m, mouseGeo.shell(), M.blackMatte, mx, 0, mz);
+  box(m, M.black, 0.0015, 0.003, 0.024, mx, 0.0195, mz - 0.02, { shadow: false, rx: 0.25 }); // button split
+  part(m, mouseGeo.wheel(), M.chrome, mx, 0.0185, mz - 0.024, { shadow: false });
+  if (i % 3 === 0) { part(m, bottleGeo.body(), M.bottleYellow, 0.28, 0, -0.04); part(m, bottleGeo.cap(), M.black, 0.28, 0, -0.04, { shadow: false }); }
   return m;
 }
 
@@ -173,22 +189,47 @@ export function sofa(parent, x, z, ry = 0, seatsN = 2) {
 export function snakePlant(parent, x, y, z, n = 9, height = 0.8) {
   const g = group(parent, x, y, z); g.userData.label = 'Plant';
   for (let i = 0; i < n; i++) {
+    // same 7 rand() calls per leaf as before so the seeded layout of everything built later stays put
     const h = height * (0.6 + rand() * 0.6);
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.045, h, 4), rand() > 0.3 ? M.plant : M.plantLight);
-    leaf.scale.z = 0.25;
-    leaf.position.set((rand() - 0.5) * 0.3, h / 2, (rand() - 0.5) * 0.2);
+    const light = rand() > 0.3;
+    const leaf = part(g, bladeGeo(i % 5), light ? M.plant : (i % 2 ? M.plantDark : M.plantLight), (rand() - 0.5) * 0.3, 0, (rand() - 0.5) * 0.2, { s: [1, h, 1] });
     leaf.rotation.set((rand() - 0.5) * 0.35, rand() * Math.PI, (rand() - 0.5) * 0.35);
-    leaf.castShadow = true;
-    g.add(leaf);
   }
   return g;
 }
 
 export function pottedPlant(parent, x, z, { size = 0.45, h = 0.45, mat = M.white } = {}) {
   const g = group(parent, x, 0, z); g.userData.label = 'Plant';
-  box(g, mat, size, h, size, 0, h / 2, 0);
-  box(g, M.soil, size - 0.06, 0.02, size - 0.06, 0, h, 0, { shadow: false });
-  snakePlant(g, 0, h, 0, 11, 0.9);
+  const { pot, soil, soilY } = planterGeo(size, h);
+  part(g, pot, mat);
+  part(g, soil, M.soil, 0, 0, 0, { shadow: false });
+  snakePlant(g, 0, soilY - 0.01, 0, 11, 0.9);
+  return g;
+}
+
+/** Small ceramic pot of flowers for a table top (y = table surface). Deterministic, does not use rand(). */
+export function flowerPot(parent, x, y, z, { petal = M.petalPink, n = 5, scale = 1 } = {}) {
+  const g = group(parent, x, y, z); g.userData.label = 'Flowers';
+  g.scale.setScalar(scale);
+  part(g, flowerGeo.pot(), M.ceramic);
+  part(g, flowerGeo.soil(), M.soil, 0, 0, 0, { shadow: false });
+  const hash = (k) => { const v = Math.sin(k * 127.1 + x * 311.7 + z * 74.7) * 43758.5453; return v - Math.floor(v); };
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + hash(i) * 0.6;
+    const r = 0.025 + hash(i + 9) * 0.06, ht = 0.16 + hash(i + 3) * 0.12;
+    const top = [Math.cos(a) * r, ht, Math.sin(a) * r];
+    part(g, stemGeo(top), M.stem, 0, 0.1, 0, { shadow: false });
+    const head = group(g, top[0], 0.1 + top[1], top[2]);
+    head.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); // face outwards a little
+    const np = 6;
+    for (let k = 0; k < np; k++) part(head, flowerGeo.petal(), petal, 0, 0, 0, { ry: (k / np) * Math.PI * 2 + hash(i + k) * 0.2, rx: -0.35, shadow: false });
+    part(head, flowerGeo.centre(), M.flowerCentre, 0, 0.003, 0, { shadow: false });
+  }
+  // a ring of leaves around the stems
+  for (let k = 0; k < 6; k++) {
+    const leaf = part(g, bladeGeo(k, { width: 0.035, thick: 0.006, bend: 0.06, twist: 0.3 }), k % 2 ? M.plant : M.plantDark, 0, 0.098, 0, { s: [1, 0.11 + hash(k + 20) * 0.05, 1], shadow: false });
+    leaf.rotation.set(0.7 + hash(k + 30) * 0.3, (k / 6) * Math.PI * 2, 0, 'YXZ');
+  }
   return g;
 }
 
