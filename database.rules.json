@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "!newData.exists() || (newData.hasChildren(['name', 'color', 't']) && newData.child('name').isString() && newData.child('name').val().length <= 18 && newData.child('color').isString() && newData.child('color').val().length <= 9)"
+          }
+        },
+        "signal": {
+          "$to": {
+            ".read": "auth != null && auth.uid === $to",
+            ".write": "auth != null",
+            "$msg": {
+              ".validate": "!newData.exists() || (newData.child('from').val() === auth.uid && newData.hasChild('type'))"
+            }
+          }
+        }
+      }
+    }
+  }
+}

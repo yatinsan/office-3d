@@ -11,6 +11,7 @@ import { initArcade } from './arcade.js';
 import { initTouch, isTouchDevice } from './touch.js';
 import { initModes } from './modes.js';
 import { initHunt } from './hunt.js';
+import { initOnline } from './online.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -90,6 +91,9 @@ suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 const modes = initModes({ list: overlay.querySelector('.modes') });
 const hunt = initHunt({ scene, camera, player });
 modes.register(hunt);
+// Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
+const online = initOnline({ scene, camera, player, panel: overlay.querySelector('.m-main'), touch: !!touchUI });
+modes.register(online);
 
 // ---- Dev mode: suggestions (C / X / L, pins) only while on. Toggle with P or the switch on the start card ----
 let dev = false;
