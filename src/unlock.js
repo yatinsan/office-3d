@@ -46,7 +46,8 @@ const CSS = `
   font: 700 12px/18px system-ui, sans-serif; text-align: center; }
 `;
 
-export function initUnlock({ scene, player, camera, doors }) {
+export function initUnlock({ scene, player, camera, doors, touch = false }) {
+  const KEY = touch ? '👆' : 'F'; // phones never show the letter F: there is a button instead
   const door = doors.byName('entrance door');
   const outside = () => player.pos.x > LOBBY_E;
 
@@ -101,7 +102,7 @@ export function initUnlock({ scene, player, camera, doors }) {
   const C = 2 * Math.PI * 18;
   box.innerHTML = `<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="4"/>
     <circle class="ring" cx="22" cy="22" r="18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
-    <text x="22" y="27.5" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-weight="700" font-size="15">F</text></svg>
+    <text x="22" y="27.5" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-weight="700" font-size="15">${KEY}</text></svg>
     <div class="txt"></div>`;
   document.body.appendChild(box);
   const ring = box.querySelector('.ring'), keyText = box.querySelector('text'), txt = box.querySelector('.txt');
@@ -140,6 +141,9 @@ export function initUnlock({ scene, player, camera, doors }) {
   addEventListener('blur', () => { holding = false; });
 
   function update(dt) {
+    // Opened by hand from inside (or by another player, via door sync): the door counts as unlocked for the same 8 s,
+    // so someone outside can walk in, then it locks again.
+    if (state === 'locked' && door.target) unlock();
     const near = inZone();
     if (!near || state !== 'locked') holding = false;
 
@@ -178,7 +182,7 @@ export function initUnlock({ scene, player, camera, doors }) {
     if (close) {
       if (state === 'open') { const s = Math.max(0, Math.ceil(timer)); drawLabel('Door unlocked', timer > 0 ? `Locks again in ${s}s` : 'Clear the doorway to lock', Math.max(0, timer) / OPEN_FOR, '#34d058'); }
       else if (state === 'closing') drawLabel('Locking…', 'Door closing', 0, '#ff5a4f');
-      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : 'Hold F to unlock', progress > 0 ? 'Keep holding F' : 'Place your finger', progress, '#fff');
+      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : touch ? 'Hold the button' : 'Hold F to unlock', progress > 0 ? (touch ? 'Keep holding' : 'Keep holding F') : 'Place your finger', progress, '#fff');
       else drawLabel('Locked', 'Use fingerprint to unlock', 1, '#ff5a4f');
     }
 
@@ -186,7 +190,7 @@ export function initUnlock({ scene, player, camera, doors }) {
     const hasBox = near || (state !== 'locked' && Math.hypot(player.pos.x - LOBBY_E, player.pos.z - DOOR_Z) < 5);
     if (state === 'locked') {
       if (!near && atDoor()) setBox(true, 'Use fingerprint to unlock<small>Reader on the wall beside the door</small>', 1, '#ff5a4f', '🔒');
-      else setBox(near, progress > 0 ? 'Unlocking…<small>Keep holding <kbd>F</kbd></small>' : 'Press and hold <kbd>F</kbd> to unlock<small>Pixbit entrance</small>', progress, '#fff', 'F');
+      else setBox(near, progress > 0 ? `Unlocking…<small>Keep holding ${touch ? 'the button' : '<kbd>F</kbd>'}</small>` : touch ? 'Hold the button to unlock<small>Pixbit entrance</small>' : 'Press and hold <kbd>F</kbd> to unlock<small>Pixbit entrance</small>', progress, '#fff', KEY);
     } else if (state === 'open') {
       const s = Math.max(0, Math.ceil(timer));
       setBox(hasBox, timer > 0 ? `Door unlocked<small>Locks again in ${s}s</small>` : 'Door unlocked<small>Clear the doorway to lock</small>', Math.max(0, timer) / OPEN_FOR, '#34d058', String(s));

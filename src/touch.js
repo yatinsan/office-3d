@@ -14,6 +14,7 @@ const ICONS = {
   jump: svg('<path d="M12 19V6"/><path d="M6 11l6-6 6 6"/><path d="M5 21h14"/>'),
   doorOpen: svg('<path d="M4 21h16"/><path d="M6 21V3h9v2"/><path d="M15 21V5l-5 1.5V21"/><path d="M11.8 13h.01"/><path d="M18 9l2 2-2 2"/>'),
   doorClose: svg('<path d="M4 21h16"/><path d="M6 21V3h12v18"/><path d="M15 12h.01"/>'),
+  finger: svg('<path d="M12 11v3a6 6 0 0 1-1.5 4"/><path d="M8 13v-2a4 4 0 0 1 8 0v1"/><path d="M5 12v-1a7 7 0 0 1 14 0v2"/><path d="M16 14.5c0 2-.5 3.8-1.5 5.5"/><path d="M12 14c0 2.5-.6 4.5-2 6"/>'),
   rotate: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
 };
@@ -34,38 +35,47 @@ export function initTouch({ player, camera }) {
   root.innerHTML = `
     <div class="tj-base"><div class="tj-knob"></div></div>
     <button class="tb tb-jump" type="button" aria-label="Jump">${ICONS.jump}</button>
-    <button class="tb tb-act off" type="button" aria-label="Use"></button>
-    <div class="t-rotate">${ICONS.rotate}<div>Rotate your phone to landscape</div></div>`;
+    <button class="tb tb-act off" type="button" aria-label="Use"></button>`;
+  // portrait guard: lives on the body (not in #touch) so it also covers the start menu; the game is landscape only
+  const rot = document.createElement('div');
+  rot.className = 't-rotate';
+  rot.innerHTML = `${ICONS.rotate}<div>Rotate your phone to landscape</div><small>Tap to go full screen</small>`;
   const css = document.createElement('style');
   css.textContent = `
     #touch { position: fixed; inset: 0; z-index: 6; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     #touch.off { display: none; }
-    .tj-base { position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%;
-      background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.35); opacity: .45; pointer-events: none; }
-    .tj-knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
-      background: rgba(236,200,40,.75); border: 2px solid rgba(255,255,255,.7); }
-    .tb { position: absolute; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(20,20,20,.5);
+    .tj-base { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%;
+      background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.35); opacity: .4; pointer-events: none; }
+    .tj-knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+      background: rgba(236,200,40,.55); border: 2px solid rgba(255,255,255,.7); }
+    .tb { position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.4); background: rgba(20,20,20,.28); opacity: .5; transition: opacity .12s;
       color: #fff; padding: 0; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    .tb svg { width: 55%; height: 55%; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-    .tb:active, .tb.on { background: rgba(236,200,40,.7); color: #111; }
+    .tb svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .tb:active, .tb.on { opacity: .9; background: rgba(236,200,40,.7); color: #111; }
     .tb.off { display: none; }
-    .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 54px; height: 54px; }
-    .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(92px, calc(env(safe-area-inset-bottom) + 66px)); width: 48px; height: 48px;
-      background: rgba(236,200,40,.55); border-color: rgba(255,255,255,.8); }
-    .t-rotate { display: none; position: fixed; inset: 0; z-index: 20; background: #111; color: #fff; font: 600 16px system-ui, sans-serif;
+    .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
+    .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(82px, calc(env(safe-area-inset-bottom) + 58px)); width: 40px; height: 40px;
+      background: rgba(236,200,40,.3); border-color: rgba(255,255,255,.55); opacity: .65; }
+    .t-rotate { display: none; position: fixed; inset: 0; z-index: 60; background: #111; color: #fff; font: 600 16px system-ui, sans-serif;
       flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
     .t-rotate svg { width: 72px; height: 72px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
       animation: t-rot 1.8s ease-in-out infinite; }
     @keyframes t-rot { 0%, 25% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
-    @media (orientation: portrait) { #touch:not(.off) .t-rotate { display: flex; } }
+    @media (orientation: portrait) { .t-rotate { display: flex; } }
+    .t-rotate small { font-weight: 400; font-size: 12px; opacity: .55; }
     #byline { display: none; }
     #hud { left: 50%; transform: translateX(-50%); bottom: 14px; font-size: 13px; }
   `;
   document.head.appendChild(css);
   document.body.appendChild(root);
+  document.body.appendChild(rot);
+  // the first tap anywhere (menu, rotate screen) asks for fullscreen + landscape lock; needs a user gesture
+  const first = () => { goLandscape(); removeEventListener('touchend', first); };
+  addEventListener('touchend', first);
+  rot.addEventListener('touchend', () => goLandscape());
 
   const base = root.querySelector('.tj-base'), knob = root.querySelector('.tj-knob');
-  const R = 55;                       // joystick radius in px
+  const R = 48;                       // joystick radius in px
   let moveId = null, ox = 0, oy = 0;
   let lookId = null, lx = 0, ly = 0;
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -137,7 +147,7 @@ export function initTouch({ player, camera }) {
     /** Show the context button for the current prompt ('' hides it). Door prompts start with "F", TV ones with "E" / TV state. */
     setAction(prompt) {
       let icon = '', key = null;
-      if (/^F (open|close|collect|hold)/.test(prompt)) { key = 'KeyF'; icon = prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
+      if (/^F (open|close|collect|hold)/.test(prompt)) { key = 'KeyF'; icon = /unlock/.test(prompt) ? 'finger' : prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
       else if (prompt) { key = 'KeyE'; icon = 'tv'; }
       actKey = key;
       act.classList.toggle('off', !key);

@@ -100,13 +100,16 @@ const CSS = `
     background: rgba(14,14,18,.62); color: rgba(255,255,255,.75); font: 700 12px system-ui, sans-serif; white-space: nowrap; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   #ow-hud .ow-mode:hover { border-color: #ecc828; color: #ecc828; }
   #ow-hud .ow-mode kbd { margin-left: 4px; }
-  #ow-ptt { position: fixed; z-index: 7; right: max(84px, calc(env(safe-area-inset-right) + 66px)); bottom: max(26px, env(safe-area-inset-bottom));
-    width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(20,20,20,.5); color: #fff;
-    display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
+  /* phone mic: small, faint, tucked in the top-left corner away from the thumbs; needs a deliberate press-and-hold */
+  #ow-ptt { position: fixed; z-index: 7; left: max(14px, env(safe-area-inset-left)); top: 46px;
+    width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.35); background: rgba(20,20,20,.3); color: #fff; opacity: .4;
+    display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .15s; }
   #ow-ptt.show { display: flex; }
-  #ow-ptt.on { background: rgba(255,77,77,.8); }
-  #ow-ptt.muted::after { content: ''; position: absolute; width: 34px; height: 2.5px; background: #fff; transform: rotate(-45deg); border-radius: 2px; }
-  #ow-ptt svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+  #ow-ptt.arm { opacity: .85; }
+  #ow-ptt.on { background: rgba(126,224,143,.6); opacity: .9; }
+  #ow-ptt.muted { color: #ff9a9a; }
+  #ow-ptt.muted::after { content: ''; position: absolute; width: 22px; height: 2px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
+  #ow-ptt svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 `;
 
 export function initOnline({ scene, camera, player, panel, doors = null, touch = false, start = () => {} }) {
@@ -250,9 +253,16 @@ export function initOnline({ scene, camera, player, panel, doors = null, touch =
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
   pttBtn.innerHTML = MIC_SVG;
   document.body.appendChild(pttBtn);
-  // push to talk: hold the button; always on: tap it to mute / unmute
-  pttBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, () => setHeld(false));
+  // phone mic is deliberately hard to hit by accident: press and HOLD (0.45 s). Push to talk: talks while held; always on: toggles mute.
+  let pttTimer = null, pttHeld = false;
+  pttBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); pttBtn.classList.add('arm');
+    clearTimeout(pttTimer);
+    pttTimer = setTimeout(() => { pttTimer = null; if (micMode === 'ptt') { pttHeld = true; setHeld(true); } else setMuted(!muted); if (navigator.vibrate) navigator.vibrate(15); }, 450);
+  });
+  const pttEnd = () => { clearTimeout(pttTimer); pttTimer = null; pttBtn.classList.remove('arm'); if (pttHeld) { pttHeld = false; setHeld(false); } };
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, pttEnd);
+  pttBtn.addEventListener('contextmenu', (e) => e.preventDefault());
   micChip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) micChip.addEventListener(ev, () => setHeld(false));
 

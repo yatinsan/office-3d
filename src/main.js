@@ -85,7 +85,7 @@ player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) showMe
 
 // ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
 const doors = initDoors({ scene, player, camera });
-const unlock = initUnlock({ scene, player, camera, doors }); // fingerprint entry lock on the reception entrance door (suggestion 47)
+const unlock = initUnlock({ scene, player, camera, doors, touch: !!touchUI }); // fingerprint entry lock on the reception entrance door (suggestion 47)
 const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const balconyJump = initBalconyJump({ camera, player, touch: !!touchUI }); // terrace rail: Space to jump -> video cutscene
