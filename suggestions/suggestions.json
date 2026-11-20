@@ -1755,5 +1755,34 @@
     "folder": "047-in-this-add-a-door-unlock",
     "files": [],
     "reply": "Fingerprint entry lock on the reception entrance door. From the hall the door is locked. Standing at the door shows a black box top right: 'Use fingerprint to unlock'. Only when you are right at the reader (within ~0.9 m) does it change to 'Press and hold F to unlock'. Hold F for 1 s: the ring fills while a hand presses the reader (LED blinks blue), then the door opens for 8 s with a countdown and locks again once the doorway is clear. From inside reception F opens it as usual. The amber workspace doors stay closed. On phones, hold the action button. Next to the reader's padlock icon there is now a small black box with the same status (Locked / Hold F to unlock / Unlocking… with a progress bar / Door unlocked with the countdown). The icon and the box only appear when you are near the reader or the door."
+  },
+  {
+    "point": [
+      8.86,
+      0.54,
+      8.68
+    ],
+    "normal": [
+      0.03,
+      0.99,
+      0.1
+    ],
+    "zone": "Reception",
+    "target": "Armchair",
+    "view": {
+      "x": 8.52,
+      "z": 7.37,
+      "yaw": -2.89,
+      "pitch": -0.69
+    },
+    "text": "remove this chari",
+    "section": "Armchair · Reception",
+    "status": "open",
+    "updated": 1795179950583,
+    "id": "smwozsiyf",
+    "n": 48,
+    "created": 1795179950590,
+    "folder": "048-remove-this-chari",
+    "files": []
   }
 ]
