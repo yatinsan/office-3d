@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { M } from '../materials.js';
 import { box, cyl, plane, sofa, conePendant, pottedPlant, flowerPot } from '../props.js';
 import { solid, addBox } from '../colliders.js';
-import { placeModel } from '../models.js';
 import { slab, wall, glassWall, worldUV, LOBBY_CEIL, H, LOBBY_E, CAB_BACK, CAB_FRONT, CAB_X1, LOGO_X, LOGO_T, LOBBY_S } from './helpers.js';
 
 /** Thin dark inlay line on the east-facing logo wall, from (z0,y0) to (z1,y1). */
@@ -91,8 +90,7 @@ export function buildLobby(root) {
   conePendant(root, 9.1, 6.5, 2.15, LOBBY_CEIL, 1.3);
   box(root, M.white, 0.08, 0.08, 0.06, LOGO_X + 0.05, 2.85, 9.1); // CCTV dome
   solid(pottedPlant(root, 9.95, 8.95, { size: 0.4, h: 0.45 }));
-  // Modern armchair (Poly Haven CC0 glTF, public/models/) angled toward the sofa and the entrance
-  placeModel(root, 'models/modern_arm_chair_01/modern_arm_chair_01.gltf', { x: 8.95, z: 8.72, ry: -2.4, label: 'Armchair', onReady: (g) => solid(g, -0.12) });
+  // (the modern armchair that stood here was removed, suggestion 48)
 
   // ---- Building common hall beyond the glass: see src/world/hall.js (suggestions 23 + 24) ----
 }
