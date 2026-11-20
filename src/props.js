@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, rand } from './materials.js';
+import { lockerDoors } from './world/helpers.js';
 
 // ---------- primitive helpers ----------
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -283,13 +284,28 @@ export function cassetteAC(parent, x, z, y = 3.0) {
 export function lockers(parent, x, z0, z1, ry = 0, h = 2.4) {
   const len = z1 - z0;
   const g = group(parent, x, 0, (z0 + z1) / 2, ry); g.userData.label = 'Lockers';
-  box(g, M.white, 0.55, h, len, 0, h / 2, 0);
   const cols = Math.round(len / 0.5), rows = 5;
+  const cw = len / cols, ch = (h - 0.1) / rows;
+  // Hollow carcass so each compartment is a real box: back panel, shelves, dividers (no solid block behind the doors)
+  box(g, M.white, 0.02, h, len, -0.265, h / 2, 0);
+  box(g, M.white, 0.55, 0.1, len, 0, 0.05, 0);                                  // plinth
+  for (let r = 0; r <= rows; r++) box(g, M.white, 0.55, 0.02, len, 0, r === rows ? h - 0.01 : 0.1 + r * ch, 0);
+  for (let c = 0; c <= cols; c++) box(g, M.white, 0.55, h, 0.02, 0, h / 2, -len / 2 + c * cw + (c === cols ? -0.01 : c === 0 ? 0.01 : 0));
+  g.updateMatrixWorld(true);
   for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
-    const zz = -len / 2 + (c + 0.5) * (len / cols);
-    const yy = 0.1 + (r + 0.5) * ((h - 0.1) / rows);
-    box(g, M.whiteGloss, 0.01, (h - 0.1) / rows - 0.02, len / cols - 0.02, 0.28, yy, zz, { shadow: false });
-    box(g, M.metalDark, 0.02, 0.07, 0.07, 0.29, yy + 0.08, zz + len / cols / 2 - 0.08, { shadow: false, rx: Math.PI / 4 });
+    const zz = -len / 2 + (c + 0.5) * cw;
+    const yy = 0.1 + (r + 0.5) * ch;
+    if (rand() < 0.35) box(g, rand() < 0.5 ? M.bottleYellow : M.black, 0.22, 0.05 + rand() * 0.12, cw - 0.16, 0, 0.1 + r * ch + 0.02 + 0.03, zz, { shadow: false }); // a folder / box inside
+    // The door is its own group (not merged into the static world) hinged on its -z edge; src/doors.js swings it open.
+    const leaf = new THREE.Group();
+    leaf.position.copy(g.localToWorld(new THREE.Vector3(0.285, yy, zz - cw / 2 + 0.01)));
+    leaf.rotation.y = g.rotation.y;
+    box(leaf, M.whiteGloss, 0.01, ch - 0.02, cw - 0.02, 0, 0, cw / 2 - 0.01, { shadow: false });
+    box(leaf, M.metalDark, 0.02, 0.07, 0.07, 0.01, 0.08, cw - 0.09, { shadow: false, rx: Math.PI / 4 });
+    lockerDoors.push({
+      leaf, closed: g.rotation.y, open: g.rotation.y + 1.9,
+      center: g.localToWorld(new THREE.Vector3(0.285, yy, zz)),
+    });
   }
   return g;
 }

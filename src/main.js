@@ -75,7 +75,7 @@ player.controls.addEventListener('lock', () => overlay.classList.add('hidden'));
 player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) overlay.classList.remove('hidden'); });
 
 // ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
-const doors = initDoors({ scene, player });
+const doors = initDoors({ scene, player, camera });
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));

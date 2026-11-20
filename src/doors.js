@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M } from './materials.js';
 import { box } from './props.js';
 import { colliders } from './colliders.js';
-import { doorLeaves, MEET_DOOR } from './world/helpers.js';
+import { doorLeaves, lockerDoors, MEET_DOOR } from './world/helpers.js';
 
 /**
  * Doors you can open: walk up and press F. Kept out of the static mesh merge so the leaves can move.
@@ -59,7 +59,7 @@ function handleMarker(parent, x, y, z) {
   return m;
 }
 
-export function initDoors({ scene, player }) {
+export function initDoors({ scene, player, camera }) {
   const doors = [];
 
   // ---- Frameless glass double doors in the west window wall (x = 0), both leaves swing inward ----
@@ -94,21 +94,58 @@ export function initDoors({ scene, player }) {
     doors.push({ name: d.name, x: d.x, z: d.z, t: 0, target: 0, block: d.block, marker, apply(t) { d.leaf.rotation.y = d.closed + (d.open - d.closed) * t; } });
   }
 
+  // ---- Locker doors: each one opens separately; F works on the one you are looking at ----
+  const noMarker = { visible: false, material: { opacity: 1 } };
+  const lockers = lockerDoors.map((d) => {
+    scene.add(d.leaf);
+    return { name: 'locker door', x: d.center.x, z: d.center.z, center: d.center, t: 0, target: 0, block: null, marker: noMarker,
+      apply(t) { d.leaf.rotation.y = d.closed + (d.open - d.closed) * t; } };
+  });
+  doors.push(...lockers);
+  const _v = new THREE.Vector3(), _dir = new THREE.Vector3();
+  const aimedLocker = () => {
+    camera.getWorldDirection(_dir);
+    let best = null, bestDot = 0.96;
+    for (const d of lockers) {
+      _v.copy(d.center).sub(camera.position);
+      const dist = _v.length();
+      if (dist > 1.8) continue;
+      const dot = _v.normalize().dot(_dir);
+      if (dot > bestDot) { bestDot = dot; best = d; }
+    }
+    return best;
+  };
+
   const nearest = () => {
+    const lk = aimedLocker();
+    if (lk) return lk;
     let best = null, bestD = REACH;
     for (const d of doors) {
+      if (d.center) continue;
       const dist = Math.hypot(player.pos.x - d.x, player.pos.z - d.z);
       if (dist < bestD) { bestD = dist; best = d; }
     }
     return best;
   };
 
+  const toggle = (d) => {
+    d.target = d.target ? 0 : 1;
+    if (d.target && d.block) { const i = colliders.indexOf(d.block); if (i >= 0) colliders.splice(i, 1); }
+  };
   addEventListener('keydown', (e) => {
     if (e.code !== 'KeyF' || player.state.paused || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const d = nearest();
-    if (!d) return;
-    d.target = d.target ? 0 : 1;
-    if (d.target) { const i = colliders.indexOf(d.block); if (i >= 0) colliders.splice(i, 1); }
+    if (d) toggle(d);
+  });
+  // Mouse click opens/closes the locker door you are looking at (ignore drags used for looking around)
+  let downX = 0, downY = 0;
+  addEventListener('mousedown', (e) => { downX = e.clientX; downY = e.clientY; });
+  addEventListener('click', (e) => {
+    if (e.button !== 0 || player.state.paused) return;
+    if (!player.controls.isLocked && !player.state.dragMode) return;
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5 && !player.controls.isLocked) return;
+    const d = aimedLocker();
+    if (d) toggle(d);
   });
 
   function update(dt) {
@@ -122,14 +159,14 @@ export function initDoors({ scene, player }) {
       if (d.t === d.target) continue;
       d.t = d.target > d.t ? Math.min(1, d.t + dt * SPEED) : Math.max(0, d.t - dt * SPEED);
       d.apply(d.t * d.t * (3 - 2 * d.t));
-      if (d.t === 0 && !colliders.includes(d.block)) colliders.push(d.block); // closed again → solid
+      if (d.block && d.t === 0 && !colliders.includes(d.block)) colliders.push(d.block); // closed again → solid
     }
   }
 
   /** HUD hint when standing next to a door. */
   function prompt() {
     const d = nearest();
-    return d ? `F ${d.target ? 'close' : 'open'} ${d.name.toLowerCase()}` : '';
+    return d ? `${d.center ? 'F / click' : 'F'} ${d.target ? 'close' : 'open'} ${d.name.toLowerCase()}` : '';
   }
 
   return { update, prompt };

@@ -68,6 +68,8 @@ export function wall(parent, x0, z0, x1, z1, { h = H, mat = M.wall, t = 0.2, y0 
  */
 /** Openable door leaves collected while the world is built (see glassWall). */
 export const doorLeaves = [];
+/** Individual locker doors (see lockers() in props.js); src/doors.js opens/closes the one you look at with F. */
+export const lockerDoors = [];
 
 export function glassWall(parent, { x0, z0, x1, z1, h = 3.0, door = null, transom = 2.3, frost = false, panel = 1.1, swing = 1, name = 'door' }) {
   const alongX = z0 === z1;
