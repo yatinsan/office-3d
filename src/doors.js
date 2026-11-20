@@ -128,10 +128,22 @@ export function initDoors({ scene, player, camera }) {
     return best;
   };
 
-  const toggle = (d) => {
-    d.target = d.target ? 0 : 1;
+  // Open World sync: every door has a fixed id (its index; the list is built identically on every client)
+  const changeCbs = [];
+  const setTarget = (d, v) => {
+    d.target = v ? 1 : 0;
     if (d.target && d.block) { const i = colliders.indexOf(d.block); if (i >= 0) colliders.splice(i, 1); }
   };
+  const toggle = (d) => {
+    setTarget(d, !d.target);
+    const id = doors.indexOf(d);
+    for (const cb of changeCbs) cb(id, d.target);
+  };
+  /** Another player opened / closed a door: apply it locally without broadcasting it again. */
+  const setOpen = (id, open) => { const d = doors[id]; if (d && !!d.target !== !!open) setTarget(d, open); };
+  const snapshot = () => doors.map((d) => d.target);
+  const applySnapshot = (arr) => { if (Array.isArray(arr)) arr.forEach((v, id) => setOpen(id, v)); };
+  const onChange = (cb) => changeCbs.push(cb);
   addEventListener('keydown', (e) => {
     if (e.code !== 'KeyF' || player.state.paused || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const d = nearest();
@@ -171,5 +183,5 @@ export function initDoors({ scene, player, camera }) {
 
   /** Door by its name (e.g. 'entrance door'), so other modules can open, close or lock it. */
   const byName = (name) => doors.find((d) => d.name === name);
-  return { update, prompt, byName, toggle };
+  return { update, prompt, byName, toggle, setOpen, snapshot, applySnapshot, onChange };
 }

@@ -98,7 +98,7 @@ const hunt = initHunt({ scene, camera, player });
 // Scavenger Hunt is temporarily hidden (see MULTIPLAYER.md). To bring it back, uncomment the next line.
 // modes.register(hunt);
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
-const online = initOnline({ scene, camera, player, panel: overlay, touch: !!touchUI, start: () => launch() });
+const online = initOnline({ scene, camera, player, panel: overlay, doors, touch: !!touchUI, start: () => launch() });
 modes.register(online);
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----
@@ -239,4 +239,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer } });
+Object.assign(window, { __office: { scene, camera, player, renderer, doors } });

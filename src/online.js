@@ -109,7 +109,7 @@ const CSS = `
   #ow-ptt svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 `;
 
-export function initOnline({ scene, camera, player, panel, touch = false, start = () => {} }) {
+export function initOnline({ scene, camera, player, panel, doors = null, touch = false, start = () => {} }) {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
@@ -365,8 +365,9 @@ export function initOnline({ scene, camera, player, panel, touch = false, start 
     if (p.initiator) {
       pc.addTransceiver('audio', { direction: 'sendrecv' });
       useChannel(p, pc.createDataChannel('pos', { ordered: false, maxRetransmits: 0 }));
+      useDoorChannel(p, pc.createDataChannel('door')); // reliable + ordered: a lost "open" would leave doors out of sync
     } else {
-      pc.ondatachannel = (e) => useChannel(p, e.channel);
+      pc.ondatachannel = (e) => (e.channel.label === 'door' ? useDoorChannel(p, e.channel) : useChannel(p, e.channel));
     }
     return p;
   }
@@ -408,10 +409,29 @@ export function initOnline({ scene, camera, player, panel, touch = false, start 
       } catch {}
     };
   }
+  // ---------- Door sync: open / close events + the open doors for someone who just joined ----------
+  function useDoorChannel(p, dd) {
+    p.dd = dd;
+    dd.onopen = () => { if (doors) try { dd.send(JSON.stringify({ t: 'all', s: doors.snapshot() })); } catch {} };
+    dd.onmessage = (e) => {
+      if (!doors) return;
+      try {
+        const m = JSON.parse(e.data);
+        if (m.t === 'door') doors.setOpen(m.id, m.open);
+        // a snapshot only OPENS doors: a newcomer's all-closed list must not shut the doors that are open
+        else if (m.t === 'all' && Array.isArray(m.s)) m.s.forEach((v, id) => { if (v) doors.setOpen(id, 1); });
+      } catch {}
+    };
+  }
+  doors?.onChange((id, open) => {
+    const msg = JSON.stringify({ t: 'door', id, open: open ? 1 : 0 });
+    for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(msg); } catch {} }
+  });
   function drop(id) {
     const p = peers.get(id);
     if (!p) return;
     peers.delete(id);
+    try { p.dd?.close(); } catch {}
     try { p.dc?.close(); } catch {}
     try { p.pc.close(); } catch {}
     if (p.audioEl) { p.audioEl.srcObject = null; p.audioEl.remove(); }
