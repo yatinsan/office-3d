@@ -20,6 +20,7 @@ const ICONS = {
   chair: svg('<path d="M7 3v9"/><path d="M7 12h10v3H7z"/><path d="M12 15v4"/><path d="M8 21h8"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
   fullscreen: svg('<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>'),
+  menu: svg('<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>'),
 };
 
 /** Fullscreen + landscape lock (Android Chrome). iOS Safari can't lock, so the portrait overlay asks to rotate instead. Call from a tap. */
@@ -40,7 +41,8 @@ export function initTouch({ player, camera }) {
     <button class="tb tb-jump" type="button" aria-label="Jump">${ICONS.jump}</button>
     <button class="tb tb-act off" type="button" aria-label="Use"></button>
     <button class="tb tb-hit" type="button" aria-label="Punch">${ICONS.fist}</button>
-    <button class="tb tb-fs off" type="button" aria-label="Full screen">${ICONS.fullscreen}</button>`;
+    <button class="tb tb-fs off" type="button" aria-label="Full screen">${ICONS.fullscreen}</button>
+    <button class="tb tb-menu" type="button" aria-label="Menu">${ICONS.menu}</button>`;
   // portrait guard: lives on the body (not in #touch) so it also covers the start menu; the game is landscape only
   const rot = document.createElement('div');
   rot.className = 't-rotate';
@@ -59,6 +61,7 @@ export function initTouch({ player, camera }) {
     .tb:active, .tb.on { opacity: .9; background: rgba(236,200,40,.7); color: #111; }
     .tb.off { display: none; }
     .tb-fs { top: max(12px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); width: 40px; height: 40px; opacity: .75; }
+    .tb-menu { top: max(12px, env(safe-area-inset-top)); left: max(18px, env(safe-area-inset-left)); width: 40px; height: 40px; opacity: .75; }
     .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-hit { right: max(72px, calc(env(safe-area-inset-right) + 54px)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(82px, calc(env(safe-area-inset-bottom) + 58px)); width: 40px; height: 40px;
@@ -144,9 +147,15 @@ export function initTouch({ player, camera }) {
     b.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
     b.addEventListener('click', (e) => e.preventDefault());
   };
-  press('.tb-jump', () => player.jump());
+  // JUMP sends the same Space key a keyboard would, so the balcony lookout (and normal jump in controls.js) both see it.
+  press('.tb-jump', () => {
+    dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+  });
   press('.tb-hit', () => api.onHit?.());
   press('.tb-fs', () => goLandscape());
+  // MENU button: sends the same Esc a keyboard would, so the pause menu opens (and seat / pool / games close the same way)
+  press('.tb-menu', () => dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true })));
   const act = root.querySelector('.tb-act');
   let actKey = null, actIcon = '';
   let heldKey = null;
