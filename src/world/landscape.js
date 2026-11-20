@@ -19,6 +19,9 @@ let seed = 5660;
 const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
 const range = (a, b) => a + rnd() * (b - a);
 
+/** Handles for src/weather.js: the sky dome + tower matte get tinted, `snow` materials whiten in winter. */
+export const LAND = { sky: null, matte: null, snow: [] };
+
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 1, ...extra });
 
 export function buildLandscape(root) {
@@ -56,12 +59,14 @@ export function buildLandscape(root) {
     new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false, toneMapped: false }));
   sky.renderOrder = -1;
   root.add(sky);
+  LAND.sky = sky;
 
   // ---- Ground under the canopy ----
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), std('#34462a'));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = GROUND;
   root.add(ground);
+  LAND.snow.push(ground.material);
 
   // Geometry buckets, one merged mesh per material at the end.
   const buckets = new Map();
@@ -101,6 +106,7 @@ export function buildLandscape(root) {
   const leaf = ['#34452a', '#3d4f30', '#475a37', '#516440', '#38492d'].map((col) => std(col, { flatShading: true }));
   const fronds = ['#43552f', '#4d6136', '#3b4c2a', '#566b3c'].map((col) => std(col, { side: THREE.DoubleSide, roughness: 0.85 }));
   const bark = std('#4f4a40');
+  LAND.snow.push(...leaf, ...fronds);
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 
   const palm = (x, z, h = range(9, 17), base = GROUND) => {
@@ -151,6 +157,7 @@ export function buildLandscape(root) {
   hill(-1100, 60, 500, 35, 240);
   function hill(hx, hz, rx, ry, rz) {
     const body = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), std('#3f5230', { flatShading: true }));
+    LAND.snow.push(body.material);
     body.scale.set(rx, ry, rz);
     body.position.set(hx, GROUND - 2, hz);
     root.add(body);
@@ -170,6 +177,7 @@ export function buildLandscape(root) {
   const tile = std('#6e4234', { roughness: 0.9 });
   const sheet = std('#8f9496', { roughness: 0.6, metalness: 0.3 });
   const glassDark = std('#56606a', { roughness: 0.4 });
+  LAND.snow.push(white, offWhite, tile, sheet);
   const cube = new THREE.BoxGeometry(1, 1, 1).toNonIndexed();
   const roof = new THREE.CylinderGeometry(0.5, 0.5, 1, 3, 1).toNonIndexed(); // triangular prism
   roof.rotateZ(Math.PI / 2); roof.rotateX(-Math.PI / 2); // ridge along local x, apex up
@@ -203,6 +211,7 @@ export function buildLandscape(root) {
   matte.position.set(V.x - SKY_D, (yAt(PY0) + yAt(PY1)) / 2, (zAt(PX0) + zAt(PX1)) / 2);
   matte.renderOrder = 1;
   root.add(matte);
+  LAND.matte = matte;
   // skyline.png was made by cutting the sky out of IMG_5660 along a traced roof line (sky keyed by
   // colour difference near the roofs, soft fade at the bottom so the 3D palms take over).
 

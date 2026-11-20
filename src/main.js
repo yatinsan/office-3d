@@ -11,6 +11,7 @@ import { initArcade } from './arcade.js';
 import { initTouch, isTouchDevice } from './touch.js';
 import { initModes } from './modes.js';
 import { initHunt } from './hunt.js';
+import { initWeather } from './weather.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -34,7 +35,8 @@ scene.environmentIntensity = 0.45;
 const camera = new THREE.PerspectiveCamera(78, innerWidth / innerHeight, 0.05, 1500); // wider, closer to the phone photos
 
 // ---- Lights ----
-scene.add(new THREE.HemisphereLight('#f6f7ff', '#7a7066', 0.8));
+const hemi = new THREE.HemisphereLight('#f6f7ff', '#7a7066', 0.8);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff3e2', 1.5);
 sun.position.set(-22, 20, 4);
 sun.target.position.set(5, 0, 10);
@@ -91,6 +93,9 @@ const modes = initModes({ list: overlay.querySelector('.modes') });
 const hunt = initHunt({ scene, camera, player });
 modes.register(hunt);
 
+// ---- Time of day + weather (Esc menu): day / sunset / night, clear / rain / storm / winter, with ambient sound ----
+const weather = initWeather({ scene, renderer, camera, hemi, sun, fill, panel: overlay.querySelector('.m-main') });
+
 // ---- Dev mode: suggestions (C / X / L, pins) only while on. Toggle with P or the switch on the start card ----
 let dev = false;
 try { dev = localStorage.getItem('pixbit-devmode') === '1'; } catch {}
@@ -146,6 +151,7 @@ renderer.setAnimationLoop(() => {
   ladies.update(dt);
   arcade.update(dt);
   modes.update(dt, overlay.classList.contains('hidden'));
+  weather.update(dt, { outdoor: zoneAt(player.pos.x, player.pos.z) === 'Terrace', active: overlay.classList.contains('hidden') });
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
@@ -158,4 +164,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer } });
+Object.assign(window, { __office: { scene, camera, player, renderer, weather } });
