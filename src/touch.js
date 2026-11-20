@@ -17,6 +17,7 @@ const ICONS = {
   finger: svg('<path d="M12 11v3a6 6 0 0 1-1.5 4"/><path d="M8 13v-2a4 4 0 0 1 8 0v1"/><path d="M5 12v-1a7 7 0 0 1 14 0v2"/><path d="M16 14.5c0 2-.5 3.8-1.5 5.5"/><path d="M12 14c0 2.5-.6 4.5-2 6"/>'),
   fist: svg('<path d="M7 11V7a1.5 1.5 0 0 1 3 0v3m0-1V6a1.5 1.5 0 0 1 3 0v3m0-.5V7a1.5 1.5 0 0 1 3 0v4m0-1a1.5 1.5 0 0 1 3 0v4a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-2-4a1.6 1.6 0 0 1 2.6-1.8L7 14"/>'),
   rotate: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
+  chair: svg('<path d="M7 3v9"/><path d="M7 12h10v3H7z"/><path d="M12 15v4"/><path d="M8 21h8"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
 };
 
@@ -153,7 +154,7 @@ export function initTouch({ player, camera }) {
     setAction(prompt) {
       let icon = '', key = null;
       if (/^F (open|close|collect|hold)/.test(prompt)) { key = 'KeyF'; icon = /unlock/.test(prompt) ? 'finger' : prompt.startsWith('F close') ? 'doorClose' : 'doorOpen'; }
-      else if (prompt) { key = 'KeyE'; icon = 'tv'; }
+      else if (prompt) { key = 'KeyE'; icon = /^E (sit|stand)/.test(prompt) ? 'chair' : 'tv'; }
       actKey = key;
       act.classList.toggle('off', !key);
       if (icon !== actIcon) { act.innerHTML = icon ? ICONS[icon] : ''; act.setAttribute('aria-label', prompt); actIcon = icon; }

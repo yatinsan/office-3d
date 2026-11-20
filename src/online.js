@@ -271,6 +271,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const me = makeAvatar('', myColor, { self: true });
   scene.add(me.group);
   const meDir = new THREE.Vector3();
+  let selfSeated = false, lowNet = false, netT = 0; // seated at a desk (src/seat.js): we barely move, so we send much less
   function updateSelf(dt, reach = null) {
     if (creating) { // third-person front view of your character while you pick a name + colour
       const fx = -Math.sin(camAng), fz = -Math.cos(camAng);
@@ -281,7 +282,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       return;
     }
     camera.getWorldDirection(meDir);
-    me.target(player.pos.x, Math.max(0, camera.position.y - EYE), player.pos.z, Math.atan2(-meDir.x, -meDir.z), false);
+    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, Math.atan2(-meDir.x, -meDir.z), false);
+    me.setSeated(selfSeated);
     me.setReach(reach?.aim, reach?.k || 0);
     me.update(dt);
   }
@@ -415,9 +417,10 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     dc.onclose = () => refreshStatus();
     dc.onmessage = (e) => {
       try {
-        const [x, y, z, yaw, talk, mu, ko] = JSON.parse(e.data);
+        const [x, y, z, yaw, talk, mu, ko, sit] = JSON.parse(e.data);
         p.avatar.target(x, y, z, yaw, !!talk, !!mu);
         p.avatar.setKnocked(!!ko);
+        p.avatar.setSeated(!!sit);
       } catch {}
     };
   }
@@ -564,6 +567,14 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   }
   addEventListener('pointerdown', () => { if (on && listener) ensureListener(); });
 
+  /** Slow link: the browser says data saver / 2g / 3g, or a peer's send buffer is backing up. */
+  function slowLink() {
+    const c = navigator.connection;
+    if (c && (c.saveData || /(^|-)(slow-)?[23]g$/.test(c.effectiveType || ''))) return true;
+    for (const p of peers.values()) if (p.dc && p.dc.bufferedAmount > 16384) return true;
+    return false;
+  }
+
   // ---------- Sending my position ----------
   const dir = new THREE.Vector3();
   let sendT = 0, lastSent = '', heartbeat = 0;
@@ -571,8 +582,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0]);
-    if (!force && msg === lastSent && heartbeat < 1) return;
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0]);
+    if (!force && msg === lastSent && heartbeat < (selfSeated ? 3 : 1)) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
   }
@@ -627,11 +638,17 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       meterTick(dt);
       for (const p of peers.values()) p.avatar.update(dt);
       sendT += dt; heartbeat += dt;
-      if (sendT >= 1 / SEND_HZ) { sendT = 0; sendPos(); }
+      if ((netT += dt) > 1) { netT = 0; lowNet = slowLink(); }
+      // seated = 2 messages a second; a slow link halves what is left (1 Hz seated, 5 Hz walking)
+      const hz = selfSeated ? (lowNet ? 1 : 2) : (lowNet ? 5 : SEND_HZ);
+      if (sendT >= 1 / hz) { sendT = 0; sendPos(); }
       if (hudNote && (hudT += dt) > 5) { hudNote = ''; hudT = 0; drawHud(); }
     },
     prompt() { return ''; },
     updateSelf,
+    /** sitting at a desk (src/seat.js): tell the others, and send far less */
+    setSeated(v) { selfSeated = !!v; if (on) sendPos(true); },
+    lowConnection: () => lowNet,
     // fighting hooks (src/combat.js)
     running: () => on && !!uid && !creating,
     peers: () => peers.values(),
@@ -752,6 +769,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
   // fighting: a punch is a quick fist strike with one arm; a hit makes the body flash red and flinch; knocked = lying on the back
   const PUNCH_LEN = 0.28, HURT_LEN = 0.45;
   let punchT = -1, punchSide = 'L', hurtT = -1, koTarget = 0, koK = 0, hlx = 0, hlz = -1, lunge = 0;
+  let seatTarget = 0, seatK = 0;
+  const SIT_DROP = 0.32;
   const tagY = tag.position.y, iconY = sIcon.position.y;
   return {
     group,
@@ -768,6 +787,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
       }
     },
     setKnocked(k) { koTarget = k ? 1 : 0; },
+    /** sitting on a desk chair: hips drop, legs point forward, hands on the keyboard */
+    setSeated(s) { seatTarget = s ? 1 : 0; },
     setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
@@ -852,9 +873,16 @@ export function makeAvatar(name, color, { self = false } = {}) {
       if (koK > 0) {
         legL.rotation.x = legR.rotation.x = 0; armL.rotation.x = armR.rotation.x = 0.2; armL.rotation.z = -0.5 * koK; armR.rotation.z = 0.5 * koK;
       }
-      tag.position.set(0, tagY - 0.9 * koK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK, -0.9 * koK);
+      seatK += (seatTarget - seatK) * (1 - Math.exp(-10 * dt));
+      if (Math.abs(seatTarget - seatK) < 0.002) seatK = seatTarget;
+      if (seatK > 0 && koK === 0) {
+        legL.rotation.x = legR.rotation.x = 1.45 * seatK;   // thighs forward (the figure faces -z)
+        armL.rotation.x = armR.rotation.x = -0.9 * seatK;   // hands out to the keyboard
+        armL.rotation.z = 0.12 * seatK; armR.rotation.z = -0.12 * seatK;
+      }
+      tag.position.set(0, tagY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK);
       const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
-      group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK, cur.z - Math.cos(yaw) * lunge);
+      group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK - SIT_DROP * seatK, cur.z - Math.cos(yaw) * lunge);
       group.rotation.y = yaw;
       group.rotation.x = lean + koK * (Math.PI / 2);
       group.rotation.z = sway;

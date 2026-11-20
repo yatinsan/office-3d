@@ -89,6 +89,19 @@ export function officeChair(parent, x, z, ry = 0, { exec = false } = {}) {
   return g;
 }
 
+/**
+ * Every desk chair that faces a monitor, in world space (the scene is merged later, so objects can't be looked up).
+ * x,z = chair centre; sx,sy,sz = centre of the monitor screen; nx,nz = direction the screen faces (toward the sitter).
+ */
+export const SEATS = [];
+function registerSeat(chair, mon) {
+  chair.updateWorldMatrix(true, false); mon.updateWorldMatrix(true, false);
+  const c = new THREE.Vector3(), s = new THREE.Vector3(0, 0.35, -0.058);
+  const n = new THREE.Vector3(0, 0, 1).transformDirection(mon.matrixWorld);
+  chair.getWorldPosition(c); mon.localToWorld(s);
+  SEATS.push({ x: c.x, z: c.z, sx: s.x, sy: s.y, sz: s.z, nx: n.x, nz: n.z });
+}
+
 /** Visitor cantilever chair (glass cabins). Faces +z. */
 export function visitorChair(parent, x, z, ry = 0) {
   const g = group(parent, x, 0, z, ry); g.userData.label = 'Visitor chair';
@@ -160,9 +173,10 @@ export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solid
       const sz = z0 + (i + 0.5) * (len / n);
       // screen near the desk centre line (or the wall), facing the sitter on this side
       const sx = sides.length === 2 ? side * 0.22 : -side * (width / 2 - 0.2);
-      workstation(g, sx, sz, side * Math.PI / 2, k++);
+      const mon = workstation(g, sx, sz, side * Math.PI / 2, k++);
       const chairX = cx + side * (width / 2 + chairOff);
-      officeChair(parent, chairX, sz, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      const chair = officeChair(parent, chairX, sz, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      registerSeat(chair, mon);
       if (solidFn) solidFn(chairX - 0.2, sz - 0.2, chairX + 0.2, sz + 0.2);
     }
   }

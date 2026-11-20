@@ -16,6 +16,7 @@ import { initOnline } from './online.js';
 import { initBalconyJump } from './balconyJump.js';
 import { initPool } from './pool.js';
 import { initCombat } from './combat.js';
+import { initSeat } from './seat.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -104,6 +105,7 @@ const hunt = initHunt({ scene, camera, player });
 const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
 const combat = initCombat({ camera, player, online, pool }); // left click: punch the player you face; get hit, black out, wake up
+const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
 if (touchUI) touchUI.onHit = () => combat.attack();
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----
@@ -232,13 +234,14 @@ renderer.setAnimationLoop(() => {
   ladies.update(dt);
   arcade.update(dt);
   pool.update(dt); // after player.update: owns the camera while you play
+  seat.update(dt); // same while you sit at a desk
   combat.update(dt); // knocked out: owns the camera height / tilt
   modes.update(dt, overlay.classList.contains('hidden'));
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || pool.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
+    const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
       promptEl.textContent = near || '';
