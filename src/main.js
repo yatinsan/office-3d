@@ -13,6 +13,7 @@ import { initModes } from './modes.js';
 import { initMenu } from './menu.js';
 import { initHunt } from './hunt.js';
 import { initOnline } from './online.js';
+import { initBalconyJump } from './balconyJump.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -87,6 +88,7 @@ const doors = initDoors({ scene, player, camera });
 const unlock = initUnlock({ scene, player, camera, doors }); // fingerprint entry lock on the reception entrance door (suggestion 47)
 const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
+const balconyJump = initBalconyJump({ camera, player, touch: !!touchUI }); // terrace rail: Space to jump -> video cutscene
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => showMenu());
 
@@ -214,6 +216,7 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
   player.update(dt);
+  balconyJump.update(dt); // after player.update: owns the camera tilt during the cutscene
   doors.update(dt);
   unlock.update(dt);
   ladies.update(dt);
