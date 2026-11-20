@@ -560,7 +560,7 @@ export function initOnline({ scene, camera, player, panel, touch = false, start 
       if (myName) connect(); else setStatus('Click <b>Play</b> to create your character and join');
     },
     /** The menu asks before starting the game: Open World needs a name first. */
-    intro() { openCreator(true); },
+    intro() { if (myName) return false; openCreator(true); return true; }, // returning players (saved name) skip it: change it in the menu's Character section
     stop() {
       on = false; held = false; refreshMic(); box.classList.remove('show'); showHud(false); pttBtn.classList.remove('show');
       closeCreator(false);

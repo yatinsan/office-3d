@@ -111,8 +111,8 @@ const menu = initMenu({
 /** Pick a mode (or keep the current one) and start playing. Open World asks for a name + colour first. */
 function begin(id) {
   if (id) modes.choose(id);
-  if (modes.current.intro) modes.current.intro(); // Open World: character screen first (name + colour), its Done calls launch()
-  else launch();
+  // Open World: the character screen (name + colour) opens only for a new player; its Done calls launch()
+  if (!(modes.current.intro && modes.current.intro())) launch();
 }
 function launch() {
   started = true;
@@ -150,6 +150,7 @@ const mainPage = () => ({
   title: 'Pixbit Office',
   items: [
     { label: 'Play', hint: 'Pick your character, then walk the office with other people', action: () => (modes.list.length === 1 ? begin(modes.list[0].id) : menu.push(playPage)) },
+    { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
     { label: 'Settings', hint: 'Mic, dev mode and controls', action: () => menu.push(settingsPage) },
   ],
 });
