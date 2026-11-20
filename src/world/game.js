@@ -122,7 +122,6 @@ export function buildGameRoom(root) {
       pt.add(pk);
     }
     // the balls are live meshes owned by src/pool.js (they move, so they can't be part of the merged static world)
-    cyl(pt, G.cue, 0.006, 0.012, 1.45, px - 0.35, 0.9, pz - 0.2, { rx: Math.PI / 2 - 0.03, seg: 8 }); // cue lying on the rail
     addBox(px - pw / 2 - 0.1, pz - pl / 2 - 0.1, px + pw / 2 + 0.1, pz + pl / 2 + 0.1); }
   { const lamp = grp(g, 'Pool light');                                                 // long pendant over the table
     box(lamp, M.black, 0.32, 0.12, 1.7, px, 1.85, pz);
