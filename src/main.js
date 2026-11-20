@@ -14,6 +14,7 @@ import { initMenu } from './menu.js';
 import { initHunt } from './hunt.js';
 import { initOnline } from './online.js';
 import { initBalconyJump } from './balconyJump.js';
+import { initPool } from './pool.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -89,6 +90,7 @@ const unlock = initUnlock({ scene, player, camera, doors, touch: !!touchUI }); /
 const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const balconyJump = initBalconyJump({ camera, player, touch: !!touchUI }); // terrace rail: Space to jump -> video cutscene
+const pool = initPool({ scene, camera, player, touch: !!touchUI }); // game room pool table: E to play, hold R to re-rack
 const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer });
 suggest.onResumeFailed(() => showMenu());
 
@@ -98,7 +100,7 @@ const hunt = initHunt({ scene, camera, player });
 // Scavenger Hunt is temporarily hidden (see MULTIPLAYER.md). To bring it back, uncomment the next line.
 // modes.register(hunt);
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
-const online = initOnline({ scene, camera, player, panel: overlay, doors, touch: !!touchUI, start: () => launch() });
+const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----
@@ -222,12 +224,13 @@ renderer.setAnimationLoop(() => {
   unlock.update(dt);
   ladies.update(dt);
   arcade.update(dt);
+  pool.update(dt); // after player.update: owns the camera while you play
   modes.update(dt, overlay.classList.contains('hidden'));
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
+    const near = arcade.prompt() || pool.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
       promptEl.textContent = near || '';
@@ -239,4 +242,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer, doors } });
+Object.assign(window, { __office: { scene, camera, player, renderer, doors, pool } });

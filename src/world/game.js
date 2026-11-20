@@ -13,7 +13,10 @@ import { slab, wall, H, MEET_X1, MEET_Z1, GAME_X1, GAME_Z1 } from './helpers.js'
 // TV screen in the PS5 corner; src/arcade.js draws the game menu + games onto it (suggestion 18).
 export const TV = { x: 0.088, y: 1.4, z: 25.35, w: 1.68, h: 0.94 };
 
-const std = (o) => new THREE.MeshStandardMaterial(o);
+// Pool table (long axis along z): centre, felt size, ball radius, felt top. src/pool.js plays on it.
+export const POOL = { px: 5.0, pz: 25.0, pl: 2.3, pw: 1.25, r: 0.028, y: 0.82 };
+
+const std = (o) =>new THREE.MeshStandardMaterial(o);
 const G = {
   navy: std({ color: '#1e2740', roughness: 0.9 }),
   ledPurple: std({ color: '#b46cff', emissive: '#9b4dff', emissiveIntensity: 2.2 }),
@@ -28,7 +31,8 @@ const G = {
 };
 
 const ballColors = ['#f2c21b', '#1f4fb4', '#c8281f', '#5b2a86', '#ef7a1a', '#1d7a3c', '#7a1f1f', '#111111'];
-const ballMats = ballColors.map((c) => std({ color: c, roughness: 0.2, metalness: 0.05 }));
+export const ballMats = ballColors.map((c) => std({ color: c, roughness: 0.2, metalness: 0.05 }));
+export const cueBallMat = G.ps5White;
 
 const neonTex = (() => {
   const c = document.createElement('canvas'); c.width = 512; c.height = 160;
@@ -100,7 +104,7 @@ export function buildGameRoom(root) {
   for (const [z, mat] of [[23.8, G.beanRed], [26.65, G.beanBlue]]) solid(beanBag(g, 1.35, z, mat), -0.15);
 
   // ---- Pool table (long axis along z) ----
-  const px = 5.0, pz = 25.0, pl = 2.3, pw = 1.25;
+  const { px, pz, pl, pw } = POOL;
   { const pt = grp(g, 'Pool table');
     box(pt, G.railWood, pw + 0.2, 0.2, pl + 0.2, px, 0.7, pz);                            // body
     box(pt, G.felt, pw, 0.02, pl, px, 0.81, pz, { shadow: false });                     // playing surface
@@ -117,16 +121,7 @@ export function buildGameRoom(root) {
       pk.position.set(px + sx * (pw / 2 - 0.04), 0.865, pz + sz * (pl / 2 - 0.04));
       pt.add(pk);
     }
-    // racked balls (triangle) + the cue ball
-    const r = 0.028, ballGeo = new THREE.SphereGeometry(r, 14, 10);
-    let k = 0;
-    for (let row = 0; row < 5; row++) for (let i = 0; i <= row; i++) {
-      const b = new THREE.Mesh(ballGeo, ballMats[k++ % ballMats.length]);
-      b.position.set(px + (i - row / 2) * r * 2.05, 0.82 + r, pz + 0.45 + row * r * 1.8);
-      b.castShadow = true; pt.add(b);
-    }
-    const cueBall = new THREE.Mesh(ballGeo, G.ps5White);
-    cueBall.position.set(px + 0.05, 0.82 + r, pz - 0.6); cueBall.castShadow = true; pt.add(cueBall);
+    // the balls are live meshes owned by src/pool.js (they move, so they can't be part of the merged static world)
     cyl(pt, G.cue, 0.006, 0.012, 1.45, px - 0.35, 0.9, pz - 0.2, { rx: Math.PI / 2 - 0.03, seg: 8 }); // cue lying on the rail
     addBox(px - pw / 2 - 0.1, pz - pl / 2 - 0.1, px + pw / 2 + 0.1, pz + pl / 2 + 0.1); }
   { const lamp = grp(g, 'Pool light');                                                 // long pendant over the table

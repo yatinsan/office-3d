@@ -112,7 +112,7 @@ const CSS = `
   #ow-ptt svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 `;
 
-export function initOnline({ scene, camera, player, panel, doors = null, touch = false, start = () => {} }) {
+export function initOnline({ scene, camera, player, panel, doors = null, pool = null, touch = false, start = () => {} }) {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
@@ -422,11 +422,16 @@ export function initOnline({ scene, camera, player, panel, doors = null, touch =
   // ---------- Door sync: open / close events + the open doors for someone who just joined ----------
   function useDoorChannel(p, dd) {
     p.dd = dd;
-    dd.onopen = () => { if (doors) try { dd.send(JSON.stringify({ t: 'all', s: doors.snapshot() })); } catch {} };
+    dd.onopen = () => {
+      if (doors) try { dd.send(JSON.stringify({ t: 'all', s: doors.snapshot() })); } catch {}
+      const ps = pool?.snapshot(); // the pool table, if anyone has played
+      if (ps) try { dd.send(JSON.stringify(ps)); } catch {}
+    };
     dd.onmessage = (e) => {
-      if (!doors) return;
       try {
         const m = JSON.parse(e.data);
+        if (m.t === 'pool') { pool?.applyRemote(m); return; }
+        if (!doors) return;
         if (m.t === 'door') doors.setOpen(m.id, m.open);
         // a snapshot only OPENS doors: a newcomer's all-closed list must not shut the doors that are open
         else if (m.t === 'all' && Array.isArray(m.s)) m.s.forEach((v, id) => { if (v) doors.setOpen(id, 1); });
@@ -436,6 +441,10 @@ export function initOnline({ scene, camera, player, panel, doors = null, touch =
   doors?.onChange((id, open) => {
     const msg = JSON.stringify({ t: 'door', id, open: open ? 1 : 0 });
     for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(msg); } catch {} }
+  });
+  pool?.onChange((msg) => {
+    const s = JSON.stringify(msg);
+    for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(s); } catch {} }
   });
   function drop(id) {
     const p = peers.get(id);
