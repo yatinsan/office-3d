@@ -18,7 +18,7 @@ const EYE = 1.65;
  * pain flash and a sound; after MAX_HP hits they black out, fall, stay down a few seconds and slowly wake up.
  * Hits are counted on the victim's side; everybody sees the punch, the flinch and the fall through the avatars.
  */
-export function initCombat({ camera, player, online, pool = null }) {
+export function initCombat({ camera, player, online, pool = null, games = null }) {
   const pain = document.createElement('div'); pain.id = 'pain';
   const black = document.createElement('div'); black.id = 'blackout';
   // GTA-style "WASTED" card, here "YOU ARE TERMINATED": big red slab text over the black screen
@@ -54,6 +54,7 @@ export function initCombat({ camera, player, online, pool = null }) {
     let best = null, bestScore = 0;
     for (const p of online.peers()) {
       if (!p.avatar.visible || p.avatar.knocked) continue;
+      if (games && !games.canHit(p.id)) continue; // a running game: only its players can hit each other
       v.copy(p.avatar.group.position); v.y += 1.1; v.sub(camera.position);
       const d = v.length();
       if (d > REACH || d < 0.01) continue;
@@ -95,7 +96,7 @@ export function initCombat({ camera, player, online, pool = null }) {
     sfx.hurt();
     if (hp <= 0) { phase = 'fall'; phaseT = 0; hp = MAX_HP; player.state.stunned = true; online.setKnocked(true); setTimeout(sfx.thud, 450); }
   }
-  online.onHit(receive);
+  online.onHit((from) => { if (games && games.onHit(from ? from.id : null)) return; receive(from); }); // a game's punch is a tag, not damage
 
   /** terminated: freeze, black out with the text, then teleport to the hall outside the front door facing it */
   function terminate() {

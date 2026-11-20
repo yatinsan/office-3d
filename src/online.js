@@ -349,6 +349,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   function disconnect() {
     for (const u of unsubs) u(); unsubs = [];
     for (const id of [...peers.keys()]) drop(id);
+    gameHook.reset();
     if (fb && uid) { fb.remove(path(`players/${uid}`)); fb.remove(path(`signal/${uid}`)); }
     uid = null;
   }
@@ -431,11 +432,14 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       if (doors) try { dd.send(JSON.stringify({ t: 'all', s: doors.snapshot() })); } catch {}
       const ps = pool?.snapshot(); // the pool table, if anyone has played
       if (ps) try { dd.send(JSON.stringify(ps)); } catch {}
+      const gs = gameHook.snap(); // the games list (src/games.js), so a newcomer sees open / running games
+      if (gs && gs.length) try { dd.send(JSON.stringify({ t: 'game', op: 'snap', games: gs })); } catch {}
     };
     dd.onmessage = (e) => {
       try {
         const m = JSON.parse(e.data);
         if (m.t === 'pool') { pool?.applyRemote(m); return; }
+        if (m.t === 'game') { gameHook.msg(p.id, m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
           if (m.to && m.to === uid) onHitMe(p);
@@ -459,6 +463,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   });
   // fighting (src/combat.js): hits travel over the event channel; my knocked-out flag rides on the position message
   let onHitMe = () => {}, selfKo = false;
+  // games (src/games.js): messages {t:'game'} are routed there; it also hears about peers leaving and gives the list to newcomers
+  let gameHook = { msg() {}, gone() {}, reset() {}, snap: () => null };
   const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
   function broadcast(msg) {
     const s = JSON.stringify(msg);
@@ -468,6 +474,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     const p = peers.get(id);
     if (!p) return;
     peers.delete(id);
+    gameHook.gone(id);
     try { p.dd?.close(); } catch {}
     try { p.dc?.close(); } catch {}
     try { p.pc.close(); } catch {}
@@ -653,6 +660,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     running: () => on && !!uid && !creating,
     peers: () => peers.values(),
     me, broadcast, uid: () => uid,
+    get name() { return myName; },
+    hookGames: (h) => { gameHook = { ...gameHook, ...h }; },
     onHit: (fn) => { onHitMe = fn; },
     setKnocked: (k) => { selfKo = !!k; sendPos(true); },
     // menu hooks
@@ -711,7 +720,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   tag.renderOrder = 10;
   tag.visible = !self;
   group.add(tag);
-  let curName = name, curColor = color, talk = false, muted = false;
+  let curName = name, curColor = color, talk = false, muted = false, badge = null; // badge: ring colour while playing a game
   // status icon above the name tag: an animated speaker while talking, a tiny red mic with a slash while muted
   const sCanvas = document.createElement('canvas'); sCanvas.width = 128; sCanvas.height = 128;
   const sTex = new THREE.CanvasTexture(sCanvas); sTex.colorSpace = THREE.SRGBColorSpace;
@@ -753,6 +762,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
     const x0 = (512 - w) / 2;
     g.fillStyle = 'rgba(0,0,0,.55)';
     g.beginPath(); g.roundRect(x0, 20, w, 88, 44); g.fill();
+    if (badge) { g.strokeStyle = badge; g.lineWidth = 7; g.stroke(); }
     g.fillStyle = curColor; g.beginPath(); g.arc(x0 + 36, 64, 12, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'left';
     g.fillText(curName, x0 + 58, 66, w - 70);
@@ -789,6 +799,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
     setKnocked(k) { koTarget = k ? 1 : 0; },
     /** sitting on a desk chair: hips drop, legs point forward, hands on the keyboard */
     setSeated(s) { seatTarget = s ? 1 : 0; },
+    /** a coloured ring round the name tag = this player is in a running game (null removes it) */
+    setBadge(c) { if (c !== badge) { badge = c; drawTag(); } },
     setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },

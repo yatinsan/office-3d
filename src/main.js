@@ -17,6 +17,7 @@ import { initBalconyJump } from './balconyJump.js';
 import { initPool } from './pool.js';
 import { initCombat } from './combat.js';
 import { initSeat } from './seat.js';
+import { initGames } from './games.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -104,7 +105,8 @@ const hunt = initHunt({ scene, camera, player });
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
 const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
-const combat = initCombat({ camera, player, online, pool }); // left click: punch the player you face; get hit, black out, wake up
+const games = initGames({ online, player }); // G: create / join / start games (Hide and Seek); everybody else can watch
+const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
 const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
 if (touchUI) touchUI.onHit = () => combat.attack();
 
@@ -166,6 +168,7 @@ const pausePage = () => ({
   back: resume,
   items: [
     { label: 'Resume', action: resume },
+    { label: 'Games', hint: 'Create or join a game (press G in the world)', action: () => { resume(); games.open(); } },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
     { label: 'Settings', hint: 'Mic, dev mode and controls', action: () => menu.push(settingsPage) },
     { label: 'Quit', hint: 'Back to the start screen', action: quit },
@@ -236,6 +239,7 @@ renderer.setAnimationLoop(() => {
   pool.update(dt); // after player.update: owns the camera while you play
   seat.update(dt); // same while you sit at a desk
   combat.update(dt); // knocked out: owns the camera height / tilt
+  games.update(dt);
   modes.update(dt, overlay.classList.contains('hidden'));
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
