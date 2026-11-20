@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { blocked } from './colliders.js';
 import { FIREBASE_CONFIG, ROOM, isConfigured } from './firebase-config.js';
+import { impact as impactSfx } from './sfx.js';
 
 /**
  * Open World: walk the office with other people, and hold V to talk (proximity voice).
@@ -414,8 +415,9 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     dc.onclose = () => refreshStatus();
     dc.onmessage = (e) => {
       try {
-        const [x, y, z, yaw, talk, mu] = JSON.parse(e.data);
+        const [x, y, z, yaw, talk, mu, ko] = JSON.parse(e.data);
         p.avatar.target(x, y, z, yaw, !!talk, !!mu);
+        p.avatar.setKnocked(!!ko);
       } catch {}
     };
   }
@@ -431,6 +433,12 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       try {
         const m = JSON.parse(e.data);
         if (m.t === 'pool') { pool?.applyRemote(m); return; }
+        if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
+          p.avatar.punch(m.side === 'R' ? 'R' : 'L');
+          if (m.to && m.to === uid) onHitMe(p);
+          else if (m.to) { const q = peers.get(m.to); if (q) { q.avatar.hurt(p.avatar.group.position.x, p.avatar.group.position.z); soundNear(q.avatar); } }
+          return;
+        }
         if (!doors) return;
         if (m.t === 'door') doors.setOpen(m.id, m.open);
         // a snapshot only OPENS doors: a newcomer's all-closed list must not shut the doors that are open
@@ -446,6 +454,13 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     const s = JSON.stringify(msg);
     for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(s); } catch {} }
   });
+  // fighting (src/combat.js): hits travel over the event channel; my knocked-out flag rides on the position message
+  let onHitMe = () => {}, selfKo = false;
+  const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
+  function broadcast(msg) {
+    const s = JSON.stringify(msg);
+    for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(s); } catch {} }
+  }
   function drop(id) {
     const p = peers.get(id);
     if (!p) return;
@@ -556,7 +571,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0, lastMuted ? 1 : 0]);
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0]);
     if (!force && msg === lastSent && heartbeat < 1) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
@@ -617,6 +632,12 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     },
     prompt() { return ''; },
     updateSelf,
+    // fighting hooks (src/combat.js)
+    running: () => on && !!uid && !creating,
+    peers: () => peers.values(),
+    me, broadcast, uid: () => uid,
+    onHit: (fn) => { onHitMe = fn; },
+    setKnocked: (k) => { selfKo = !!k; sendPos(true); },
     // menu hooks
     edit: () => openCreator(false),
     get micMode() { return micMode; },
@@ -632,6 +653,7 @@ const SKIN = '#f1d3b8', PANTS = '#2b3550', SHOES = '#1c1c20';
 /** self: your own body in first person: no head, chest or name tag, pinned to you with no smoothing. */
 export function makeAvatar(name, color, { self = false } = {}) {
   const group = new THREE.Group();
+  group.rotation.order = 'YXZ'; // turn first, then lean / fall (a knocked-out body lies on its back)
   const mat = (c, r = 0.65, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
   const shirtMat = mat(color, 0.6), skinMat = mat(SKIN, 0.7), pantsMat = mat(PANTS, 0.8), shoeMat = mat(SHOES, 0.5);
   const add = (parent, geo, m, x, y, z) => {
@@ -727,8 +749,25 @@ export function makeAvatar(name, color, { self = false } = {}) {
   let reachK = 0;
   const reachAim = new THREE.Vector3(), sh = new THREE.Vector3(), dir = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
   const qPoint = new THREE.Quaternion(), qInv = new THREE.Quaternion();
+  // fighting: a punch is a quick fist strike with one arm; a hit makes the body flash red and flinch; knocked = lying on the back
+  const PUNCH_LEN = 0.28, HURT_LEN = 0.45;
+  let punchT = -1, punchSide = 'L', hurtT = -1, koTarget = 0, koK = 0, hlx = 0, hlz = -1, lunge = 0;
+  const tagY = tag.position.y, iconY = sIcon.position.y;
   return {
     group,
+    get visible() { return started && group.visible; },
+    get knocked() { return koTarget > 0; },
+    /** throw a punch with the left ('L') or right ('R') fist */
+    punch(side) { punchSide = side === 'R' ? 'R' : 'L'; punchT = 0; },
+    /** got hit by someone at world (ax, az): red flash + flinch away from them */
+    hurt(ax, az) {
+      hurtT = 0; hlx = 0; hlz = -1; // default: from the front
+      if (ax !== undefined) {
+        const dx = ax - cur.x, dz = az - cur.z, c = Math.cos(yaw), s = Math.sin(yaw), l = Math.hypot(dx, dz) || 1;
+        hlx = (dx * c - dz * s) / l; hlz = (dx * s + dz * c) / l; // puncher's direction in my own space (-z = in front)
+      }
+    },
+    setKnocked(k) { koTarget = k ? 1 : 0; },
     setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
@@ -770,9 +809,55 @@ export function makeAvatar(name, color, { self = false } = {}) {
         armR.quaternion.slerp(qPoint, reachK);
         armR.scale.y = 1 + (Math.min(1.9, Math.max(1, dist / ARM)) - 1) * reachK; // stretch the last bit if the reader is out of reach
       }
-      const bob = air ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
-      group.position.set(cur.x, cur.y + bob, cur.z);
+      // punch: strike arm swings up to the front and back, the other arm pulls in, the shoulders twist
+      let lean = 0, sway = 0;
+      lunge = 0;
+      if (punchT >= 0) {
+        punchT += dt;
+        const p = punchT / PUNCH_LEN;
+        if (p >= 1) punchT = -1;
+        else {
+          // wind up (fist pulled back), then snap straight out, the body steps in and twists behind it, then recover
+          const wind = p < 0.3 ? Math.sin((p / 0.3) * Math.PI) : 0;
+          const strike = p > 0.2 ? Math.sin(((p - 0.2) / 0.8) * Math.PI) : 0;
+          const s = Math.sin(p * Math.PI);
+          const hit = punchSide === 'L' ? armL : armR, guard = punchSide === 'L' ? armR : armL, sg = punchSide === 'L' ? 1 : -1;
+          hit.rotation.x = 0.55 * wind - 1.75 * strike; hit.rotation.z = sg * 0.1 * strike;
+          guard.rotation.x = -1.15 * s; guard.rotation.z = -sg * 0.4 * s; // other fist stays up by the chin
+          torso.rotation.y = sg * 0.2 * wind - sg * 0.5 * strike;
+          lean = -0.14 * strike;
+          lunge = 0.22 * strike;
+        }
+      }
+      if (punchT < 0) torso.rotation.y = 0;
+      // hurt: red flash, body snaps back, head jerks
+      let flash = 0;
+      if (hurtT >= 0) {
+        hurtT += dt;
+        const h = hurtT / HURT_LEN;
+        if (h >= 1) hurtT = -1;
+        else {
+          // knocked away from where the punch came from: front hit = snaps back, side hit = sways to the other side
+          flash = 1 - h;
+          const k = Math.sin(Math.min(1, h * 1.4) * Math.PI);
+          lean += -0.32 * hlz * k; sway = 0.3 * hlx * k;
+          head.rotation.x = -0.5 * hlz * flash; head.rotation.y = 0.5 * hlx * flash;
+        }
+      }
+      if (hurtT < 0) { head.rotation.x = 0; head.rotation.y = 0; }
+      shirtMat.emissive.setRGB(flash * 0.85, 0, 0); skinMat.emissive.setRGB(flash * 0.85, 0, 0); pantsMat.emissive.setRGB(flash * 0.6, 0, 0);
+      // knocked out: falls onto its back, gets up again slowly
+      koK += (koTarget - koK) * (1 - Math.exp(-(koTarget ? 7 : 2.2) * dt));
+      if (Math.abs(koTarget - koK) < 0.002) koK = koTarget;
+      if (koK > 0) {
+        legL.rotation.x = legR.rotation.x = 0; armL.rotation.x = armR.rotation.x = 0.2; armL.rotation.z = -0.5 * koK; armR.rotation.z = 0.5 * koK;
+      }
+      tag.position.set(0, tagY - 0.9 * koK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK, -0.9 * koK);
+      const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
+      group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK, cur.z - Math.cos(yaw) * lunge);
       group.rotation.y = yaw;
+      group.rotation.x = lean + koK * (Math.PI / 2);
+      group.rotation.z = sway;
     },
     dispose() {
       if (voice) { try { voice.disconnect(); } catch {} }

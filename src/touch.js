@@ -15,6 +15,7 @@ const ICONS = {
   doorOpen: svg('<path d="M4 21h16"/><path d="M6 21V3h9v2"/><path d="M15 21V5l-5 1.5V21"/><path d="M11.8 13h.01"/><path d="M18 9l2 2-2 2"/>'),
   doorClose: svg('<path d="M4 21h16"/><path d="M6 21V3h12v18"/><path d="M15 12h.01"/>'),
   finger: svg('<path d="M12 11v3a6 6 0 0 1-1.5 4"/><path d="M8 13v-2a4 4 0 0 1 8 0v1"/><path d="M5 12v-1a7 7 0 0 1 14 0v2"/><path d="M16 14.5c0 2-.5 3.8-1.5 5.5"/><path d="M12 14c0 2.5-.6 4.5-2 6"/>'),
+  fist: svg('<path d="M7 11V7a1.5 1.5 0 0 1 3 0v3m0-1V6a1.5 1.5 0 0 1 3 0v3m0-.5V7a1.5 1.5 0 0 1 3 0v4m0-1a1.5 1.5 0 0 1 3 0v4a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-2-4a1.6 1.6 0 0 1 2.6-1.8L7 14"/>'),
   rotate: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
 };
@@ -35,7 +36,8 @@ export function initTouch({ player, camera }) {
   root.innerHTML = `
     <div class="tj-base"><div class="tj-knob"></div></div>
     <button class="tb tb-jump" type="button" aria-label="Jump">${ICONS.jump}</button>
-    <button class="tb tb-act off" type="button" aria-label="Use"></button>`;
+    <button class="tb tb-act off" type="button" aria-label="Use"></button>
+    <button class="tb tb-hit" type="button" aria-label="Punch">${ICONS.fist}</button>`;
   // portrait guard: lives on the body (not in #touch) so it also covers the start menu; the game is landscape only
   const rot = document.createElement('div');
   rot.className = 't-rotate';
@@ -54,6 +56,7 @@ export function initTouch({ player, camera }) {
     .tb:active, .tb.on { opacity: .9; background: rgba(236,200,40,.7); color: #111; }
     .tb.off { display: none; }
     .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
+    .tb-hit { right: max(72px, calc(env(safe-area-inset-right) + 54px)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(82px, calc(env(safe-area-inset-bottom) + 58px)); width: 40px; height: 40px;
       background: rgba(236,200,40,.3); border-color: rgba(255,255,255,.55); opacity: .65; }
     .t-rotate { display: none; position: fixed; inset: 0; z-index: 60; background: #111; color: #fff; font: 600 16px system-ui, sans-serif;
@@ -132,6 +135,7 @@ export function initTouch({ player, camera }) {
     b.addEventListener('click', (e) => e.preventDefault());
   };
   press('.tb-jump', () => player.jump());
+  press('.tb-hit', () => api.onHit?.());
   const act = root.querySelector('.tb-act');
   let actKey = null, actIcon = '';
   let heldKey = null;
@@ -142,7 +146,8 @@ export function initTouch({ player, camera }) {
     if (heldKey) { dispatchEvent(new KeyboardEvent('keyup', { code: heldKey, bubbles: true })); heldKey = null; }
   });
 
-  return {
+  const api = {
+    onHit: null,
     show(on) { root.classList.toggle('off', !on); if (on) goLandscape(); },
     /** Show the context button for the current prompt ('' hides it). Door prompts start with "F", TV ones with "E" / TV state. */
     setAction(prompt) {
@@ -154,4 +159,5 @@ export function initTouch({ player, camera }) {
       if (icon !== actIcon) { act.innerHTML = icon ? ICONS[icon] : ''; act.setAttribute('aria-label', prompt); actIcon = icon; }
     },
   };
+  return api;
 }

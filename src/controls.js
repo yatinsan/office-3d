@@ -21,7 +21,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   camera.rotation.set(0, yaw, 0, 'YXZ');
 
   // Fallback for embedded browsers that block Pointer Lock: click-and-drag to look.
-  const state = { dragMode: false, paused: false }; // paused: a form is open, ignore movement keys
+  const state = { dragMode: false, paused: false, stunned: false }; // paused: a form is open, ignore movement keys; stunned: knocked out
   let dragging = false, lastX = 0, lastY = 0;
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
   domElement.addEventListener('mousedown', (e) => { if (state.dragMode) { dragging = true; lastX = e.clientX; lastY = e.clientY; } });
@@ -34,7 +34,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     camera.quaternion.setFromEuler(euler);
     lastX = e.clientX; lastY = e.clientY;
   });
-  const active = () => !state.paused && (controls.isLocked || state.dragMode);
+  const active = () => !state.paused && !state.stunned && (controls.isLocked || state.dragMode);
 
   addEventListener('keydown', (e) => {
     keys[e.code] = true;

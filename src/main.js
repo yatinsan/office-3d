@@ -15,6 +15,7 @@ import { initHunt } from './hunt.js';
 import { initOnline } from './online.js';
 import { initBalconyJump } from './balconyJump.js';
 import { initPool } from './pool.js';
+import { initCombat } from './combat.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -102,6 +103,8 @@ const hunt = initHunt({ scene, camera, player });
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
 const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
+const combat = initCombat({ camera, player, online, pool }); // left click: punch the player you face; get hit, black out, wake up
+if (touchUI) touchUI.onHit = () => combat.attack();
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----
 const controlsEl = document.querySelector('.m-controls');
@@ -136,7 +139,7 @@ const settingsPage = () => ({
   title: 'Settings',
   items: [
     { label: micLabel, hint: 'Push to talk (hold V) or always-on mic. Press T in game to switch.', action() { online.setMicMode(online.micMode === 'ptt' ? 'open' : 'ptt'); menu.refresh(); } },
-    { label: () => 'Dev mode: ' + (dev ? 'On' : 'Off'), hint: 'Suggestions tools (C / X / L). Press P in game to switch.', action() { setDev(!dev); menu.refresh(); } },
+    ...(DEV_BUILD ? [{ label: () => 'Dev mode: ' + (dev ? 'On' : 'Off'), hint: 'Suggestions tools (C / X / L). Press P in game to switch.', action() { setDev(!dev); menu.refresh(); } }] : []),
     { label: 'Controls', hint: 'Keys and mouse', action: () => menu.push({ title: 'Controls', extra: controlsEl, items: [{ label: 'Back', action: () => menu.back() }] }) },
     { label: 'Back', action: () => menu.back() },
   ],
@@ -174,16 +177,20 @@ function showMenu() {
 showMenu();
 
 // ---- Dev mode: suggestions (C / X / L, pins) only while on. Toggle with P or in Settings ----
+// Only available in the development server (`npm run dev`); production builds never show it.
+const DEV_BUILD = import.meta.env.DEV;
+document.body.classList.toggle('dev-build', DEV_BUILD);
 let dev = false;
-try { dev = localStorage.getItem('pixbit-devmode') === '1'; } catch {}
+try { dev = DEV_BUILD && localStorage.getItem('pixbit-devmode') === '1'; } catch {}
 function setDev(on) {
+  on = DEV_BUILD && on;
   dev = on;
   document.body.classList.toggle('dev', on);
   suggest.setEnabled(on);
   setHallDevSigns(on);
   try { localStorage.setItem('pixbit-devmode', on ? '1' : '0'); } catch {}
 }
-addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
+addEventListener('keydown', (e) => { if (DEV_BUILD && e.code === 'KeyP' &&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
 setDev(dev);
 
 // ---- Quality toggle ----
@@ -225,6 +232,7 @@ renderer.setAnimationLoop(() => {
   ladies.update(dt);
   arcade.update(dt);
   pool.update(dt); // after player.update: owns the camera while you play
+  combat.update(dt); // knocked out: owns the camera height / tilt
   modes.update(dt, overlay.classList.contains('hidden'));
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
