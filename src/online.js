@@ -17,7 +17,7 @@ const FB = 'https://www.gstatic.com/firebasejs/11.0.2/';
 const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
 const SEND_HZ = 15;
 const COLORS = ['#e8505b', '#f9a73e', '#ecc828', '#4fbf6f', '#2fa4d9', '#7b68ee', '#e26fc4', '#3fc1b0'];
-const NAME_KEY = 'pixbit-online-name', COLOR_KEY = 'pixbit-online-color';
+const NAME_KEY = 'pixbit-online-name', COLOR_KEY = 'pixbit-online-color', MIC_KEY = 'pixbit-online-mic';
 const EYE = 1.65;
 
 const CSS = `
@@ -28,7 +28,15 @@ const CSS = `
   .ow input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,.25); background: rgba(20,20,24,.7);
     color: #fff; font: 600 15px system-ui, sans-serif; outline: none; }
   .ow input:focus { border-color: #ecc828; }
+  .ow input::placeholder { color: rgba(255,255,255,.45); font-weight: 500; }
+  .ow input.need { border-color: #ff6b6b; box-shadow: 0 0 0 3px rgba(255,107,107,.25); animation: ow-shake .35s; }
+  @keyframes ow-shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
   .ow-dot { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); cursor: pointer; }
+  .ow-seg { display: flex; gap: 6px; flex: 1; }
+  .ow-seg button { flex: 1; padding: 7px 8px; border-radius: 10px; cursor: pointer; background: rgba(30,30,34,.6); border: 1.5px solid rgba(255,255,255,.2);
+    color: #fff; font: 700 13px system-ui, sans-serif; white-space: nowrap; }
+  .ow-seg button:hover { border-color: rgba(255,255,255,.5); }
+  .ow-seg button.on { background: linear-gradient(180deg, #ffd52e, #e9b800); border-color: #ffe36b; color: #111; }
   .ow-status { font: 500 13px system-ui, sans-serif; color: rgba(255,255,255,.75); }
   .ow-status b { color: #7ee08f; }
   .ow-status.err b { color: #ff8a80; }
@@ -36,6 +44,7 @@ const CSS = `
     padding: 6px 14px; border-radius: 20px; background: rgba(0,0,0,.5); color: #fff; font: 600 13px system-ui, sans-serif; pointer-events: none; }
   #ow-hud.show { display: flex; }
   #ow-hud .mic { width: 10px; height: 10px; border-radius: 50%; background: #777; }
+  #ow-hud.live .mic { background: #7ee08f; }
   #ow-hud.talk .mic { background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
   #ow-hud kbd { background: #333; border: 1px solid #666; border-radius: 4px; padding: 0 5px; font: 700 11px system-ui; }
   #ow-ptt { position: fixed; z-index: 7; right: max(84px, calc(env(safe-area-inset-right) + 66px)); bottom: max(26px, env(safe-area-inset-bottom));
@@ -43,6 +52,7 @@ const CSS = `
     display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
   #ow-ptt.show { display: flex; }
   #ow-ptt.on { background: rgba(255,77,77,.8); }
+  #ow-ptt.muted::after { content: ''; position: absolute; width: 34px; height: 2.5px; background: #fff; transform: rotate(-45deg); border-radius: 2px; }
   #ow-ptt svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 `;
 
@@ -52,25 +62,45 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
   let myName = '', myColor = '';
   try { myName = localStorage.getItem(NAME_KEY) || ''; myColor = localStorage.getItem(COLOR_KEY) || ''; } catch {}
-  if (!myName) myName = 'Guest ' + Math.floor(100 + Math.random() * 900);
   if (!COLORS.includes(myColor)) myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
   const box = document.createElement('div');
   box.className = 'ow';
   box.innerHTML = `
-    <div class="ow-row"><label for="ow-name">Name</label><input id="ow-name" maxlength="18" autocomplete="off" spellcheck="false">
+    <div class="ow-row"><label for="ow-name">Name</label><input id="ow-name" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Type your name to join">
       <span class="ow-dot" title="Change colour"></span></div>
+    <div class="ow-row"><label>Mic</label><div class="ow-seg"><button type="button" data-m="ptt">Push to talk</button><button type="button" data-m="open">Always on</button></div></div>
     <div class="ow-row"><label>Online</label><span class="ow-status"></span></div>`;
   panel.insertBefore(box, panel.querySelector('.m-hint'));
   const nameIn = box.querySelector('input'), dot = box.querySelector('.ow-dot'), statusEl = box.querySelector('.ow-status');
   nameIn.value = myName; dot.style.background = myColor;
   box.addEventListener('click', (e) => e.stopPropagation()); // don't start the game while editing
-  nameIn.addEventListener('keydown', (e) => { if (e.code !== 'Escape') e.stopPropagation(); if (e.code === 'Enter') nameIn.blur(); });
-  nameIn.addEventListener('keyup', (e) => e.stopPropagation());
-  nameIn.addEventListener('change', () => {
-    myName = nameIn.value.trim().slice(0, 18) || myName; nameIn.value = myName;
-    try { localStorage.setItem(NAME_KEY, myName); } catch {}
-    publishMe();
+  nameIn.addEventListener('keydown', (e) => {
+    if (e.code !== 'Escape') e.stopPropagation();
+    if (e.code === 'Enter' || e.code === 'NumpadEnter') { // Enter = save the name and start playing
+      e.preventDefault();
+      if (saveName()) { nameIn.blur(); panel.closest('#overlay')?.click(); } else needName();
+    }
   });
+  nameIn.addEventListener('keyup', (e) => e.stopPropagation());
+  nameIn.addEventListener('input', () => nameIn.classList.remove('need'));
+  nameIn.addEventListener('change', saveName);
+  /** Take the typed name; join the world the first time a name is set. Returns false while it's empty. */
+  function saveName() {
+    const n = nameIn.value.trim().replace(/\s+/g, ' ').slice(0, 18);
+    nameIn.value = n;
+    if (!n) return false;
+    const first = !myName || !uid;
+    myName = n;
+    try { localStorage.setItem(NAME_KEY, myName); } catch {}
+    if (on && first && !uid && !connecting) connect(); else publishMe();
+    return true;
+  }
+  /** Nudge the player to type a name: focus the box, flash it red, say why. */
+  function needName() {
+    nameIn.classList.remove('need'); void nameIn.offsetWidth; nameIn.classList.add('need');
+    setStatus('<b>Enter your name</b> to join the world', true);
+    setTimeout(() => nameIn.focus(), 0);
+  }
   dot.addEventListener('click', () => {
     myColor = COLORS[(COLORS.indexOf(myColor) + 1) % COLORS.length]; dot.style.background = myColor;
     try { localStorage.setItem(COLOR_KEY, myColor); } catch {}
@@ -85,11 +115,12 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
   pttBtn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
   document.body.appendChild(pttBtn);
-  pttBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); setTalk(true); });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, () => setTalk(false));
+  // push to talk: hold the button; always on: tap it to mute / unmute
+  pttBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, () => setHeld(false));
 
   // ---------- State ----------
-  let on = false, fb = null, db = null, uid = null, unsubs = [];
+  let on = false, fb = null, db = null, uid = null, unsubs = [], connecting = false;
   const peers = new Map(); // uid -> { pc, dc, avatar, name, color, initiator, pendingIce, audioEl }
   let listener = null;    // THREE.AudioListener on the camera, made on first use
   let mic = null, micAsked = false, talking = false;
@@ -111,6 +142,11 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   const path = (p) => fb.ref(db, `rooms/${ROOM}/${p}`);
 
   async function connect() {
+    if (!myName) { needName(); return; }
+    connecting = true;
+    try { await doConnect(); } finally { connecting = false; }
+  }
+  async function doConnect() {
     if (!isConfigured() && !window.__owFake) { setStatus('<b>Not set up yet</b> · add your Firebase config (see MULTIPLAYER.md)', true); return; }
     setStatus('Connecting…');
     try {
@@ -246,8 +282,13 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       mic = s.getAudioTracks()[0];
-      mic.enabled = talking;
+      mic.enabled = false;
       for (const p of peers.values()) for (const t of p.pc.getTransceivers()) if (t.receiver.track.kind === 'audio' && t.currentDirection !== 'stopped') t.sender.replaceTrack(mic);
+      // level meter, so "always on" only shows the talking dot while you actually speak
+      const ctx = ensureListener().context;
+      micSrc = ctx.createMediaStreamSource(new MediaStream([mic]));
+      meter = ctx.createAnalyser(); meter.fftSize = 512;
+      micSrc.connect(meter);
     } catch (e) {
       console.warn('[online] mic', e);
       hudNote = 'Microphone blocked: allow it in the browser to talk';
@@ -255,20 +296,52 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     return mic;
   }
   let hudNote = '';
-  function setTalk(v) {
-    if (!on || v === talking) return;
-    talking = v;
+
+  // Mic mode: 'ptt' = hold V (or the mic button) to talk; 'open' = mic is live while you're in the game, V / mic button mutes.
+  let micMode = 'ptt', held = false, muted = false, inGame = false, speaking = false, quietT = 0, micSrc = null, meter = null;
+  try { if (localStorage.getItem(MIC_KEY) === 'open') micMode = 'open'; } catch {}
+  const segBtns = box.querySelectorAll('.ow-seg button');
+  function drawSeg() { for (const b of segBtns) b.classList.toggle('on', b.dataset.m === micMode); }
+  for (const b of segBtns) b.addEventListener('click', () => {
+    micMode = b.dataset.m; muted = false; held = false;
+    try { localStorage.setItem(MIC_KEY, micMode); } catch {}
+    if (micMode === 'open') getMic().then(refreshMic); // ask for the mic now, from the menu, not mid-game
+    drawSeg(); refreshMic(); refreshStatus();
+  });
+  drawSeg();
+  const live = () => on && (micMode === 'ptt' ? held : inGame && !muted);
+  /** Turn the mic track on/off from the current mode + keys, and tell the others whether I'm talking. */
+  function refreshMic() {
+    const want = live();
     ensureListener();
-    if (v && !mic) getMic().then(() => { if (mic) mic.enabled = talking; });
-    if (mic) mic.enabled = v;
-    pttBtn.classList.toggle('on', v);
-    sendPos(true);
+    if (want && !mic) getMic().then(() => { if (mic) refreshMic(); });
+    if (mic) mic.enabled = want;
+    const t = micMode === 'ptt' ? want : want && speaking;
+    pttBtn.classList.toggle('on', micMode === 'ptt' ? held : want);
+    pttBtn.classList.toggle('muted', micMode === 'open' && muted);
+    pttBtn.setAttribute('aria-label', micMode === 'ptt' ? 'Hold to talk' : muted ? 'Unmute' : 'Mute');
+    if (t !== talking) { talking = t; sendPos(true); }
     drawHud();
   }
+  function setHeld(v) { if (micMode === 'ptt' && v !== held) { held = v; refreshMic(); } }
+  function setMuted(v) { if (micMode === 'open' && v !== muted) { muted = v; refreshMic(); } }
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || player.state.paused;
-  addEventListener('keydown', (e) => { if (e.code === 'KeyV' && !e.repeat && !typing(e)) setTalk(true); });
-  addEventListener('keyup', (e) => { if (e.code === 'KeyV') setTalk(false); });
-  addEventListener('blur', () => setTalk(false));
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyV' || e.repeat || typing(e) || !on) return;
+    if (micMode === 'ptt') setHeld(true); else setMuted(!muted);
+  });
+  addEventListener('keyup', (e) => { if (e.code === 'KeyV') setHeld(false); });
+  addEventListener('blur', () => setHeld(false));
+  const buf = new Float32Array(512);
+  function meterTick(dt) { // "always on": talking dot follows your voice level, with a short hang so it doesn't flicker
+    if (micMode !== 'open' || !meter || !live()) { if (speaking) { speaking = false; refreshMic(); } return; }
+    meter.getFloatTimeDomainData(buf);
+    let sum = 0; for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const loud = Math.sqrt(sum / buf.length) > 0.02;
+    if (loud) quietT = 0; else quietT += dt;
+    const sp = loud || quietT < 0.4;
+    if (sp !== speaking) { speaking = sp; refreshMic(); }
+  }
   addEventListener('pointerdown', () => { if (on && listener) ensureListener(); });
 
   // ---------- Sending my position ----------
@@ -289,28 +362,37 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     if (!on || !uid) return;
     const n = connectedCount(), seen = peers.size;
     const lost = seen - n;
-    setStatus(`<b>Connected</b> · ${n + 1} in the world${lost ? ` · ${lost} joining…` : ''} · hold <b>V</b> to talk`);
+    setStatus(`<b>Connected</b> · ${n + 1} in the world${lost ? ` · ${lost} joining…` : ''} · ${micMode === 'ptt' ? 'hold <b>V</b> to talk' : 'mic on in game, <b>V</b> mutes'}`);
     drawHud();
   }
   function drawHud() {
     hud.classList.toggle('talk', talking);
+    hud.classList.toggle('live', !talking && micMode === 'open' && live() && !!mic);
     const n = connectedCount() + 1;
-    hud.querySelector('.txt').innerHTML = hudNote || (talking ? 'Talking…' : `${n} online · hold <kbd>V</kbd> to talk`);
+    const idle = micMode === 'ptt' ? `${n} online · hold <kbd>V</kbd> to talk`
+      : muted ? `${n} online · mic muted · <kbd>V</kbd> to unmute` : `${n} online · mic on · <kbd>V</kbd> to mute`;
+    const blocked = micAsked && !mic; // the browser refused the microphone
+    hud.querySelector('.txt').innerHTML = hudNote || (blocked ? `${n} online · microphone blocked: allow it in the browser to talk` : talking ? 'Talking…' : idle);
   }
 
   return {
     id: 'online', name: 'Open World',
-    desc: 'Explore with other people online. Hold V to talk.',
+    desc: 'Explore with other people online and talk: push to talk or always-on mic.',
     start() {
       on = true; box.classList.add('show'); hud.classList.add('show'); if (touch) pttBtn.classList.add('show');
-      drawHud(); connect();
+      drawHud();
+      if (myName) connect(); else needName();
     },
+    /** The menu asks before starting the game: Open World needs a name first. */
+    canStart() { if (myName) return true; needName(); return false; },
     stop() {
-      on = false; setTalk(false); box.classList.remove('show'); hud.classList.remove('show'); pttBtn.classList.remove('show');
+      on = false; held = false; refreshMic(); box.classList.remove('show'); hud.classList.remove('show'); pttBtn.classList.remove('show');
       disconnect();
     },
-    update(dt) {
+    update(dt, active) {
       if (!on) return;
+      if (!!active !== inGame) { inGame = !!active; if (!inGame) held = false; refreshMic(); } // menu open = mic off
+      meterTick(dt);
       for (const p of peers.values()) p.avatar.update(dt);
       sendT += dt; heartbeat += dt;
       if (sendT >= 1 / SEND_HZ) { sendT = 0; sendPos(); }

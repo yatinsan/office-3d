@@ -62,6 +62,7 @@ const overlay = document.getElementById('overlay');
 const touchUI = isTouchDevice() ? initTouch({ player, camera }) : null;
 if (touchUI) touchUI.show(false);
 overlay.addEventListener('click', () => {
+  if (modes.current.canStart && !modes.current.canStart()) return; // e.g. Open World waits for a name
   if (touchUI) { enableDragMode(); touchUI.show(true); return; } // phones: no pointer lock, use the on-screen controls
   try {
     const p = player.controls.domElement.requestPointerLock();
