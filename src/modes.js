@@ -1,50 +1,38 @@
 /**
- * Game modes: the Esc / start menu lists them as big buttons (Free Walk + any registered game). The picked mode is remembered.
+ * Game modes: Free Walk + any registered game (Open World). The menu's Play page lists them.
  * A mode is { id, name, desc, start(), stop(), update(dt, active) }. Free Walk is built in and does nothing.
- * Clicking a mode button selects it and lets the click bubble to the overlay, which starts the game.
+ *   choose(id)  pick a mode (remembered), without starting it
+ *   play()      start the chosen mode
+ *   quit()      stop the running mode (back to the start menu)
  */
 const KEY = 'pixbit-gamemode';
 
-const ICONS = {
-  free: '<path d="M8 21l3-6 3 3v3"/><path d="M11 15l1-5-3 2-1 3"/><path d="M12 10l3 2h3"/><circle cx="13.5" cy="5" r="2"/>',
-  hunt: '<circle cx="6.5" cy="15.5" r="3.5"/><circle cx="17.5" cy="15.5" r="3.5"/><path d="M10 15h4M5 12l2-7h3v10M19 12l-2-7h-3v10"/>',
-  online: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
-  play: '<path d="M7 4l13 8-13 8z"/>',
-};
-
-export function initModes({ list, defaultId = 'free' }) {
+export function initModes({ defaultId = 'free' } = {}) {
   const modes = [{ id: 'free', name: 'Free Walk', desc: 'Just explore the office', start() {}, stop() {}, update() {} }];
-  let current = modes[0];
+  let current = modes[0], running = false;
 
-  function render() {
-    list.innerHTML = '';
-    for (const m of [...modes.filter((x) => x.id !== 'free'), ...modes.filter((x) => x.id === 'free')]) { // Free Walk last
-      const on = m === current;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'mode-btn' + (on ? ' on' : '');
-      b.innerHTML = `<svg viewBox="0 0 24 24">${on ? ICONS.play : (ICONS[m.id] || ICONS.play)}</svg>
-        <span class="name">${on ? 'Play · ' : ''}${m.name}<span class="desc">${m.desc || ''}</span></span><span class="arrow">&rsaquo;</span>`;
-      b.addEventListener('click', () => select(m.id)); // bubbles to the overlay → starts the game
-      list.appendChild(b);
-    }
-  }
-
-  function select(id) {
+  function choose(id) {
     const m = modes.find((x) => x.id === id) || modes[0];
-    if (m !== current) { current.stop(); current = m; m.start(); }
+    if (running && m !== current) { current.stop(); running = false; }
+    current = m;
     try { localStorage.setItem(KEY, m.id); } catch {}
-    render();
   }
+  function play() { if (!running) { running = true; current.start(); } }
+  function quit() { if (running) { current.stop(); running = false; } }
 
   function register(mode) {
     modes.push(mode);
     let saved = null;
     try { saved = localStorage.getItem(KEY); } catch {}
-    render();
-    if (saved === mode.id || (mode.id === defaultId && saved !== 'free')) select(mode.id); // default mode unless the player picked Free Walk
+    if (saved === mode.id || mode.id === defaultId) current = mode; // Free Walk is hidden for now, so the default always wins
   }
 
-  render();
-  return { register, select, update: (dt, active) => current.update(dt, active), get current() { return current; } };
+  return {
+    register, choose, play, quit,
+    update: (dt, active) => { if (running) current.update(dt, active); },
+    get current() { return current; },
+    get running() { return running; },
+    /** Modes listed in the Play menu. Free Walk is hidden for now: remove the filter to bring it back. */
+    get list() { return modes.filter((x) => x.id !== 'free'); },
+  };
 }

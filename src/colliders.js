@@ -16,6 +16,9 @@ export function solid(obj, pad = 0) {
   return obj;
 }
 
+/** True if a circle of radius r at (x,z) touches a solid box. */
+export function blocked(x, z, r) { return !!hits(x, z, r); }
+
 function hits(x, z, r) {
   for (const c of colliders) {
     if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return c;

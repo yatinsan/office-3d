@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { blocked } from './colliders.js';
 import { FIREBASE_CONFIG, ROOM, isConfigured } from './firebase-config.js';
 
 /**
@@ -43,6 +44,7 @@ const CSS = `
   .ow-edit:hover { border-color: #ecc828; }
   .ow-edit .ow-who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ow-edit .go { color: #ecc828; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  body.char-open #zone, body.char-open #crosshair { display: none; }
   #ow-char { position: fixed; z-index: 12; right: 4vw; top: 50%; transform: translateY(-50%); width: 310px; box-sizing: border-box; padding: 22px; display: none;
     flex-direction: column; gap: 10px; border-radius: 18px; color: #fff; background: rgba(20,20,24,.72); border: 1px solid rgba(255,255,255,.14);
     box-shadow: -4px -4px 0 -1px #ecc828, 0 20px 50px rgba(0,0,0,.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-family: system-ui, sans-serif; }
@@ -66,16 +68,38 @@ const CSS = `
   .ow-status { font: 500 13px system-ui, sans-serif; color: rgba(255,255,255,.75); }
   .ow-status b { color: #7ee08f; }
   .ow-status.err b { color: #ff8a80; }
-  #ow-hud { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 8; display: none; align-items: center; gap: 10px;
-    padding: 6px 14px; border-radius: 20px; background: rgba(0,0,0,.5); color: #fff; font: 600 13px system-ui, sans-serif; pointer-events: none; }
+  #ow-online { position: fixed; left: 14px; top: 14px; z-index: 8; display: none; pointer-events: none; }
+  #ow-online.show { display: flex; }
+  #ow-online svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+  #ow-online .dot { width: 8px; height: 8px; border-radius: 50%; background: #7ee08f; box-shadow: 0 0 8px #7ee08f; }
+  #ow-online.warn .dot { background: #ffb84d; box-shadow: 0 0 8px #ffb84d; }
+  #ow-online.bad .dot { background: #ff5c5c; box-shadow: 0 0 8px #ff5c5c; }
+  #ow-hud { position: fixed; right: 14px; bottom: 46px; z-index: 8; display: none; align-items: center; gap: 8px; }
   #ow-hud.show { display: flex; }
-  #ow-hud .mic { width: 10px; height: 10px; border-radius: 50%; background: #777; }
-  #ow-hud.live .mic { background: #7ee08f; }
-  #ow-hud.talk .mic { background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
-  #ow-hud .ow-mode { pointer-events: auto; cursor: pointer; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(236,200,40,.7);
-    background: rgba(236,200,40,.15); color: #ecc828; font: 700 12px system-ui, sans-serif; white-space: nowrap; }
-  #ow-hud .ow-mode:hover { background: rgba(236,200,40,.3); }
-  #ow-hud kbd { background: #333; border: 1px solid #666; border-radius: 4px; padding: 0 5px; font: 700 11px system-ui; }
+  #ow-mic { --lvl: 0; cursor: pointer; pointer-events: auto; padding: 7px; border-radius: 50%; user-select: none; -webkit-user-select: none; font-weight: 800; letter-spacing: 1.5px; }
+  #ow-mic .lbl { display: none; }
+  #ow-mic .ico { width: 34px; height: 34px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; position: relative;
+    background: rgba(255,255,255,.1); color: #cfcfd4; transition: background .15s, color .15s;
+    box-shadow: 0 0 0 calc(var(--lvl) * 7px) rgba(126,224,143,.28); }
+  #ow-mic .ico svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  #ow-mic .ico .slash { display: none; position: absolute; width: 22px; height: 2.5px; background: currentColor; border-radius: 2px; transform: rotate(-45deg); }
+  #ow-mic.live .ico { background: rgba(126,224,143,.2); color: #7ee08f; }
+  #ow-mic.live { color: #b8f0c2; }
+  #ow-mic.talk .ico { background: rgba(126,224,143,.35); color: #7ee08f; animation: ow-pulse 1s ease-in-out infinite; }
+  #ow-mic.talk { color: #b8f0c2; }
+  #ow-mic.muted .ico, #ow-mic.bad .ico { background: rgba(255,77,77,.2); color: #ff6b6b; }
+  #ow-mic.muted, #ow-mic.bad { color: #ff9a9a; border-color: rgba(255,92,92,.45); }
+  #ow-mic.muted .slash, #ow-mic.bad .slash { display: block; }
+  #ow-mic.ptt-on .ico { background: #ecc828; color: #111; }
+  #ow-mic.ptt-on { color: #ecc828; border-color: rgba(236,200,40,.6); }
+  #ow-mic kbd { display: none; font-weight: 700; letter-spacing: 0; padding: 0 6px; font-size: 10px; line-height: 15px; transition: transform .08s, background .08s; }
+  #ow-mic.ptt-on kbd { transform: translateY(2px); border-bottom-width: 1px; background: #ecc828; color: #111; }
+  @media (hover: none) and (pointer: coarse) { #ow-mic { display: none; } }
+  @keyframes ow-pulse { 50% { transform: scale(1.1); } }
+  #ow-hud .ow-mode { display: none; pointer-events: auto; cursor: pointer; padding: 6px 11px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+    background: rgba(14,14,18,.62); color: rgba(255,255,255,.75); font: 700 12px system-ui, sans-serif; white-space: nowrap; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  #ow-hud .ow-mode:hover { border-color: #ecc828; color: #ecc828; }
+  #ow-hud .ow-mode kbd { margin-left: 4px; }
   #ow-ptt { position: fixed; z-index: 7; right: max(84px, calc(env(safe-area-inset-right) + 66px)); bottom: max(26px, env(safe-area-inset-bottom));
     width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(20,20,20,.5); color: #fff;
     display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -85,7 +109,7 @@ const CSS = `
   #ow-ptt svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 `;
 
-export function initOnline({ scene, camera, player, panel, touch = false }) {
+export function initOnline({ scene, camera, player, panel, touch = false, start = () => {} }) {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
@@ -99,7 +123,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
       <button type="button" class="ow-edit ow-gear" style="flex:none"><span class="go">Settings</span></button></div>
     <div class="ow-set" style="display:none"><div class="ow-row"><label>Mic</label><div class="ow-seg"><button type="button" data-m="ptt">Push to talk</button><button type="button" data-m="open">Always on</button></div></div></div>
     <div class="ow-row"><label>Online</label><span class="ow-status"></span></div>`;
-  panel.insertBefore(box, panel.querySelector('.m-hint'));
+  // the menu (src/menu.js) shows the Character / mic rows now; `box` stays detached and only keeps the status text + mic buttons' state
   const statusEl = box.querySelector('.ow-status'), editBtn = box.querySelector('.ow-edit'), dot = box.querySelector('.ow-dot'), whoEl = box.querySelector('.ow-who');
   const setEl = box.querySelector('.ow-set'), gearBtn = box.querySelector('.ow-gear');
   gearBtn.addEventListener('click', () => { const open = setEl.style.display === 'none'; setEl.style.display = open ? 'block' : 'none'; gearBtn.classList.toggle('on', open); });
@@ -140,31 +164,45 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   nameIn.addEventListener('input', () => { nameIn.classList.remove('need'); if (preview) preview.setLook(nameIn.value.trim() || 'Your name', null); });
   charEl.querySelector('.done').addEventListener('click', finishCreator);
   charEl.querySelector('.back').addEventListener('click', () => closeCreator(true));
-  addEventListener('keydown', (e) => { if (e.code === 'Escape' && creating) closeCreator(true); });
+  addEventListener('keydown', (e) => { if (e.code === 'Escape' && creating) { e.stopImmediatePropagation(); closeCreator(true); } });
 
-  let creating = false, preview = null, camYaw = 0;
+  let creating = false, preview = null, camYaw = 0, camDist = 3.4, avYaw = 0;
   const savedPos = new THREE.Vector3(), savedQuat = new THREE.Quaternion();
-  function openCreator() {
+  let savedFov = 78, camAng = 0;
+  const CHAR_FOV = 40; // narrow lens for the character screen: the wide game lens makes the figure tiny and the room stretched
+  let startAfter = false;
+  /** after = true: Done starts the game (first visit via Play); false: Done returns to the menu. */
+  function openCreator(after = false) {
     if (creating) return;
-    creating = true;
+    creating = true; startAfter = after;
     camera.getWorldDirection(meDir); camYaw = Math.atan2(-meDir.x, -meDir.z);
+    // put the camera in front of the character, in the direction with the most free room (never inside a wall)
+    let best = -1;
+    for (let k = 0; k < 16; k++) {
+      const a = camYaw + (k % 2 ? -1 : 1) * Math.ceil(k / 2) * (Math.PI / 8), fx = -Math.sin(a), fz = -Math.cos(a);
+      let d = 0; while (d < 3.4 && !blocked(player.pos.x + fx * (d + 0.2), player.pos.z + fz * (d + 0.2), 0.3)) d += 0.2;
+      if (d - k * 0.02 > best) { best = d - k * 0.02; camDist = Math.max(1.6, d); avYaw = Math.atan2(-fx, -fz); camAng = a; }
+    }
     savedPos.copy(camera.position); savedQuat.copy(camera.quaternion);
+    savedFov = camera.fov;
+    camera.fov = Math.min(70, Math.max(CHAR_FOV, 2 * Math.atan(1.45 / camDist) * 180 / Math.PI)); camera.updateProjectionMatrix(); // frame the whole figure + name tag
     nameIn.value = myName; nameIn.classList.remove('need');
     preview = makeAvatar(myName || 'Your name', myColor);
     scene.add(preview.group);
     me.group.visible = false;
     setDraft(myColor);
     const ov = overlayEl(); if (ov) ov.classList.add('hidden');
-    charEl.classList.add('show');
+    charEl.classList.add('show'); document.body.classList.add('char-open');
     setTimeout(() => nameIn.focus(), 0);
   }
   /** back = true: discard changes and return to the menu. */
   function closeCreator(back) {
     if (!creating) return;
     creating = false;
-    charEl.classList.remove('show'); nameIn.blur();
+    charEl.classList.remove('show'); document.body.classList.remove('char-open'); nameIn.blur();
     scene.remove(preview.group); preview.dispose(); preview = null;
     camera.position.copy(savedPos); camera.quaternion.copy(savedQuat);
+    camera.fov = savedFov; camera.updateProjectionMatrix();
     me.group.visible = true;
     const ov = overlayEl(); if (back && ov) ov.classList.remove('hidden');
   }
@@ -175,8 +213,9 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     me.setLook(null, myColor);
     saveName();
     drawWho();
+    if (!startAfter) { closeCreator(true); return; }
     closeCreator(false);
-    const ov = overlayEl(); if (ov) ov.click(); // start playing in first person
+    start(); // first visit: start playing in first person
   }
   /** Take the typed name; join the world the first time a name is set. Returns false while it's empty. */
   function saveName() {
@@ -194,19 +233,28 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     nameIn.classList.remove('need'); void nameIn.offsetWidth; nameIn.classList.add('need');
     setTimeout(() => nameIn.focus(), 0);
   }
-  function setStatus(html, err = false) { statusEl.innerHTML = html; statusEl.classList.toggle('err', err); }
+  function setStatus(html, err = false) { statusEl.innerHTML = html; statusEl.classList.toggle('err', err); netErr = err; if (typeof drawHud === 'function' && typeof hud !== 'undefined') drawHud(); }
 
   // ---------- In-game HUD pill + touch talk button ----------
+  const MIC_SVG = '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  const onlineChip = document.createElement('div'); onlineChip.id = 'ow-online'; onlineChip.className = 'chip';
+  onlineChip.innerHTML = '<span class="dot"></span><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.6 0 4.4 1.8 4.4 4.4"/></svg><span class="txt"></span>';
+  const onlineTxt = onlineChip.querySelector('.txt');
+  document.body.appendChild(onlineChip);
   const hud = document.createElement('div'); hud.id = 'ow-hud';
-  hud.innerHTML = '<span class="mic"></span><span class="txt"></span><button type="button" class="ow-mode"></button>';
-  const modeChip = hud.querySelector('.ow-mode');
+  hud.innerHTML = `<div id="ow-mic" class="chip" role="button"><span class="ico">${MIC_SVG}<i class="slash"></i></span><span class="lbl"></span><kbd>V</kbd></div><button type="button" class="ow-mode"></button>`;
+  const modeChip = hud.querySelector('.ow-mode'), micChip = hud.querySelector('#ow-mic'), micLbl = micChip.querySelector('.lbl'), micKey = micChip.querySelector('kbd');
   document.body.appendChild(hud);
+  let netErr = false;
+  const showHud = (v) => { hud.classList.toggle('show', v); onlineChip.classList.toggle('show', v); };
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
-  pttBtn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  pttBtn.innerHTML = MIC_SVG;
   document.body.appendChild(pttBtn);
   // push to talk: hold the button; always on: tap it to mute / unmute
   pttBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, () => setHeld(false));
+  micChip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) micChip.addEventListener(ev, () => setHeld(false));
 
   // ---------- Your own body, seen when you look down (every mode, in your colour) ----------
   const me = makeAvatar('', myColor, { self: true });
@@ -214,10 +262,10 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   const meDir = new THREE.Vector3();
   function updateSelf(dt, reach = null) {
     if (creating) { // third-person front view of your character while you pick a name + colour
-      const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
-      preview.target(player.pos.x, 0, player.pos.z, camYaw, false);
+      const fx = -Math.sin(camAng), fz = -Math.cos(camAng);
+      preview.target(player.pos.x, 0, player.pos.z, avYaw, false);
       preview.update(dt);
-      camera.position.set(player.pos.x + fx * 2.4, 1.35, player.pos.z + fz * 2.4);
+      camera.position.set(player.pos.x + fx * camDist, 1.25, player.pos.z + fz * camDist);
       camera.lookAt(player.pos.x, 1.0, player.pos.z);
       return;
     }
@@ -231,7 +279,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   let on = false, fb = null, db = null, uid = null, unsubs = [], connecting = false;
   const peers = new Map(); // uid -> { pc, dc, avatar, name, color, initiator, pendingIce, audioEl }
   let listener = null;    // THREE.AudioListener on the camera, made on first use
-  let mic = null, micAsked = false, talking = false;
+  let mic = null, micAsked = false, talking = false, lastMuted = false;
 
   // ---------- Firebase (lobby + handshake) ----------
   async function loadFirebase() {
@@ -355,8 +403,8 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     dc.onclose = () => refreshStatus();
     dc.onmessage = (e) => {
       try {
-        const [x, y, z, yaw, talk] = JSON.parse(e.data);
-        p.avatar.target(x, y, z, yaw, !!talk);
+        const [x, y, z, yaw, talk, mu] = JSON.parse(e.data);
+        p.avatar.target(x, y, z, yaw, !!talk, !!mu);
       } catch {}
     };
   }
@@ -436,7 +484,8 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     pttBtn.classList.toggle('on', micMode === 'ptt' ? held : want);
     pttBtn.classList.toggle('muted', micMode === 'open' && muted);
     pttBtn.setAttribute('aria-label', micMode === 'ptt' ? 'Hold to talk' : muted ? 'Unmute' : 'Mute');
-    if (t !== talking) { talking = t; sendPos(true); }
+    const mu = micMode === 'open' && muted;
+    if (t !== talking || mu !== lastMuted) { talking = t; lastMuted = mu; sendPos(true); }
     drawHud();
   }
   function setHeld(v) { if (micMode === 'ptt' && v !== held) { held = v; refreshMic(); } }
@@ -450,10 +499,11 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   addEventListener('blur', () => setHeld(false));
   const buf = new Float32Array(512);
   function meterTick(dt) { // "always on": talking dot follows your voice level, with a short hang so it doesn't flicker
-    if (micMode !== 'open' || !meter || !live()) { if (speaking) { speaking = false; refreshMic(); } return; }
+    if (micMode !== 'open' || !meter || !live()) { micChip.style.setProperty('--lvl', '0'); if (speaking) { speaking = false; refreshMic(); } return; }
     meter.getFloatTimeDomainData(buf);
     let sum = 0; for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-    const loud = Math.sqrt(sum / buf.length) > 0.02;
+    const rms = Math.sqrt(sum / buf.length), loud = rms > 0.02;
+    micChip.style.setProperty('--lvl', Math.min(1, rms * 10).toFixed(2));
     if (loud) quietT = 0; else quietT += dt;
     const sp = loud || quietT < 0.4;
     if (sp !== speaking) { speaking = sp; refreshMic(); }
@@ -467,7 +517,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0]);
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0, lastMuted ? 1 : 0]);
     if (!force && msg === lastSent && heartbeat < 1) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
@@ -483,29 +533,36 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     drawHud();
   }
   function drawHud() {
+    const n = connectedCount() + 1, lost = peers.size - (n - 1);
+    onlineChip.classList.toggle('warn', !!uid && lost > 0);
+    onlineChip.classList.toggle('bad', netErr);
+    onlineTxt.textContent = uid ? `${n} online${lost > 0 ? ` · ${lost} joining…` : ''}` : netErr ? 'Not connected' : 'Connecting…';
     modeChip.innerHTML = `${micMode === 'ptt' ? 'Push to talk' : 'Always on'}${touch ? '' : ' <kbd>T</kbd>'}`;
     modeChip.title = 'Switch between push to talk and always-on mic';
-    hud.classList.toggle('talk', talking);
-    hud.classList.toggle('live', !talking && micMode === 'open' && live() && !!mic);
-    const n = connectedCount() + 1;
-    const idle = micMode === 'ptt' ? `${n} online · hold <kbd>V</kbd> to talk`
-      : muted ? `${n} online · mic muted · <kbd>V</kbd> to unmute` : `${n} online · mic on · <kbd>V</kbd> to mute`;
     const blocked = micAsked && !mic; // the browser refused the microphone
-    hud.querySelector('.txt').innerHTML = hudNote || (blocked ? `${n} online · microphone blocked: allow it in the browser to talk` : talking ? 'Talking…' : idle);
+    const muteNow = micMode === 'open' && muted;
+    micChip.classList.toggle('bad', blocked);
+    micChip.classList.toggle('muted', !blocked && muteNow);
+    micChip.classList.toggle('talk', !blocked && talking);
+    micChip.classList.toggle('live', !blocked && !talking && !muteNow && micMode === 'open' && live() && !!mic);
+    micChip.classList.toggle('ptt-on', !blocked && micMode === 'ptt' && held);
+    micLbl.textContent = blocked ? 'MIC BLOCKED' : micMode === 'ptt' ? (held ? 'TALKING' : 'PUSH TO TALK') : muteNow ? 'MUTED' : talking ? 'TALKING' : 'MIC ON';
+    micKey.style.display = touch ? 'none' : '';
+    micChip.title = blocked ? 'Allow the microphone in your browser to talk' : micMode === 'ptt' ? 'Hold V to talk' : muteNow ? 'Click or press V to unmute' : 'Click or press V to mute';
   }
 
   return {
     id: 'online', name: 'Open World',
     desc: 'Explore with other people online and talk: push to talk or always-on mic.',
     start() {
-      on = true; box.classList.add('show'); hud.classList.add('show'); if (touch) pttBtn.classList.add('show');
+      on = true; box.classList.add('show'); showHud(true); if (touch) pttBtn.classList.add('show');
       drawHud();
       if (myName) connect(); else setStatus('Click <b>Play</b> to create your character and join');
     },
     /** The menu asks before starting the game: Open World needs a name first. */
-    canStart() { if (myName) return true; openCreator(); return false; },
+    intro() { openCreator(true); },
     stop() {
-      on = false; held = false; refreshMic(); box.classList.remove('show'); hud.classList.remove('show'); pttBtn.classList.remove('show');
+      on = false; held = false; refreshMic(); box.classList.remove('show'); showHud(false); pttBtn.classList.remove('show');
       closeCreator(false);
       disconnect();
     },
@@ -521,6 +578,12 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     },
     prompt() { return ''; },
     updateSelf,
+    // menu hooks
+    edit: () => openCreator(false),
+    get micMode() { return micMode; },
+    setMicMode: (m) => setMode(m),
+    statusHtml: () => (on && statusEl.innerHTML) || '',
+    get hasName() { return !!myName; },
   };
 }
 let hudT = 0;
@@ -570,19 +633,51 @@ export function makeAvatar(name, color, { self = false } = {}) {
   tag.renderOrder = 10;
   tag.visible = !self;
   group.add(tag);
-  let curName = name, curColor = color, talk = false;
+  let curName = name, curColor = color, talk = false, muted = false;
+  // status icon above the name tag: an animated speaker while talking, a tiny red mic with a slash while muted
+  const sCanvas = document.createElement('canvas'); sCanvas.width = 128; sCanvas.height = 128;
+  const sTex = new THREE.CanvasTexture(sCanvas); sTex.colorSpace = THREE.SRGBColorSpace;
+  const sIcon = new THREE.Sprite(new THREE.SpriteMaterial({ map: sTex, depthTest: false, transparent: true }));
+  sIcon.scale.set(0.34, 0.34, 1); sIcon.position.y = 2.55; sIcon.renderOrder = 11; sIcon.visible = false;
+  group.add(sIcon);
+  let sT = 0, sDraw = 0;
+  function drawStatus() {
+    const g = sCanvas.getContext('2d');
+    g.clearRect(0, 0, 128, 128);
+    sIcon.visible = !self && (talk || muted);
+    if (!sIcon.visible) return;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    if (talk) {
+      g.fillStyle = 'rgba(0,0,0,.6)'; g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.beginPath(); g.moveTo(26, 52); g.lineTo(42, 52); g.lineTo(62, 36); g.lineTo(62, 92); g.lineTo(42, 76); g.lineTo(26, 76); g.closePath(); g.fill();
+      const ph = (sT * 3.2) % 4; // waves light up one after another, then restart
+      g.lineWidth = 7;
+      for (let i = 0; i < 3; i++) {
+        const a = i < ph ? 1 : 0.18, r = 16 + i * 13;
+        g.strokeStyle = `rgba(126,224,143,${a})`;
+        g.beginPath(); g.arc(62, 64, r, -0.75, 0.75); g.stroke();
+      }
+    } else {
+      g.fillStyle = 'rgba(0,0,0,.6)'; g.beginPath(); g.arc(64, 64, 34, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#ff5c5c'; g.lineWidth = 6;
+      g.beginPath(); g.roundRect(55, 40, 18, 30, 9); g.stroke();
+      g.beginPath(); g.moveTo(46, 62); g.arc(64, 62, 18, Math.PI, 0, true); g.moveTo(64, 82); g.lineTo(64, 90); g.stroke();
+      g.lineWidth = 7; g.beginPath(); g.moveTo(44, 90); g.lineTo(84, 38); g.stroke();
+    }
+    sTex.needsUpdate = true;
+  }
   function drawTag() {
     const g = canvas.getContext('2d');
     g.clearRect(0, 0, 512, 128);
     g.font = '700 54px system-ui, sans-serif';
-    const w = Math.min(500, g.measureText(curName).width + (talk ? 110 : 60));
+    const w = Math.min(500, g.measureText(curName).width + 60);
     const x0 = (512 - w) / 2;
     g.fillStyle = 'rgba(0,0,0,.55)';
     g.beginPath(); g.roundRect(x0, 20, w, 88, 44); g.fill();
     g.fillStyle = curColor; g.beginPath(); g.arc(x0 + 36, 64, 12, 0, Math.PI * 2); g.fill();
-    if (talk) { g.fillStyle = '#ff4d4d'; g.beginPath(); g.arc(x0 + w - 36, 64, 14, 0, Math.PI * 2); g.fill(); }
     g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'left';
-    g.fillText(curName, x0 + 58, 66, w - (talk ? 120 : 70));
+    g.fillText(curName, x0 + 58, 66, w - 70);
     tex.needsUpdate = true;
   }
   drawTag();
@@ -599,10 +694,10 @@ export function makeAvatar(name, color, { self = false } = {}) {
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
     setVoice(v) { if (voice) { voice.disconnect?.(); head.remove(voice); } voice = v; head.add(v); },
-    target(x, y, z, yw, t) {
+    target(x, y, z, yw, t, m = false) {
       to.set(x, y, z); toYaw = yw;
       if (!started) { cur.copy(to); prev.copy(to); yaw = yw; started = true; group.visible = true; }
-      if (t !== talk) { talk = t; drawTag(); }
+      if (t !== talk || m !== muted) { talk = t; muted = m; drawStatus(); }
     },
     update(dt) {
       if (!started || dt <= 0) return;
@@ -623,6 +718,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
       armL.rotation.z = air ? -0.35 : 0; armR.rotation.z = air ? 0.35 : 0;
       armL.rotation.x += lift; armR.rotation.x += lift;
       talkT += dt;
+      if (talk && !self) { sT += dt; if ((sDraw += dt) > 0.08) { sDraw = 0; drawStatus(); } } // animate the speaker waves
       head.rotation.z = talk ? Math.sin(talkT * 7) * 0.03 : 0;  // a little nod while talking
       armR.scale.y = 1;
       if (reachK > 0) {

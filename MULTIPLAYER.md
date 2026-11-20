@@ -34,7 +34,14 @@ The config values are public by design; the rules are what stop people from writ
 
 ## Menu and character
 
-- **Open World is the default mode.** Clicking Play starts it. Free Walk is still in the menu.
-- **First visit:** Play opens a third-person front view of your character where you pick a name and a dress colour. After Done you walk in first person. The name and colour are remembered in this browser, so you only do this once.
-- **Esc menu → Edit character** reopens that screen to change the name or colour later.
-- **Scavenger Hunt is temporarily hidden.** Its code (`src/hunt.js`) is untouched. To bring it back, uncomment `modes.register(hunt);` in `src/main.js`.
+- **Start menu** (plain text, arrows + Enter, or hover + click): **Play**, **Settings**. Play opens the character screen every time (name + dress colour, pre-filled with your last choice), then starts **Open World**. **Free Walk is temporarily hidden** (see `list` in `src/modes.js`); with two or more modes Play shows a mode page again.
+- **Esc in game** opens the pause menu: **Resume**, **Character**, **Settings**, **Quit**. Quit disconnects, puts you back at the spawn and shows the start menu again.
+- **Settings:** mic mode (push to talk / always on), dev mode, and a Controls page.
+- **Character screen:** every time you press Play (not Resume) you get a third-person front view to pick a name and a dress colour; Done starts the game in first person. The name and colour are remembered in this browser and pre-filled. **Character** in the pause menu reopens the screen mid-game.
+- **Scavenger Hunt is temporarily hidden.** Its code (`src/hunt.js`) is untouched. To bring it back, uncomment `modes.register(hunt);` in `src/main.js` (and add it to the Play page if you want it listed).
+
+## In-game HUD
+
+- **Top left:** online count (green; amber while people are still "joining", red when not connected).
+- **Bottom centre:** mic chip (LIVE / TALKING / MUTED / PUSH TO TALK / MIC BLOCKED; the ring pulses with your voice, click it or press V to mute) and a small chip to switch push to talk / always on (T).
+- **Above other players:** an animated speaker while they talk, and a small red mic-with-slash while they are muted in always-on mode. The position message carries a sixth `muted` field; older clients ignore it.
