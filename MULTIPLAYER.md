@@ -31,3 +31,10 @@ The config values are public by design; the rules are what stop people from writ
 - `src/online.js`: Open World mode: lobby, WebRTC peers, avatars with name tags, push to talk.
 - `src/firebase-config.js`: your Firebase project settings and the room name.
 - `database.rules.json`: Realtime Database security rules to paste into the console.
+
+## Menu and character
+
+- **Open World is the default mode.** Clicking Play starts it. Free Walk is still in the menu.
+- **First visit:** Play opens a third-person front view of your character where you pick a name and a dress colour. After Done you walk in first person. The name and colour are remembered in this browser, so you only do this once.
+- **Esc menu → Edit character** reopens that screen to change the name or colour later.
+- **Scavenger Hunt is temporarily hidden.** Its code (`src/hunt.js`) is untouched. To bring it back, uncomment `modes.register(hunt);` in `src/main.js`.

@@ -21,6 +21,18 @@
     .m-controls { width: 300px; padding: 20px 24px; border-radius: 18px; background: rgba(20,20,24,.55); border: 1px solid rgba(255,255,255,.12);
       box-shadow: -4px -4px 0 -1px #ecc828, 0 20px 50px rgba(0,0,0,.5); cursor: default; }
     .m-controls h2 { margin: 0 0 12px; padding-bottom: 10px; font-size: 18px; color: #ecc828; border-bottom: 1px solid rgba(255,255,255,.1); }
+    /* controls panel is hidden by default; the Controls button in the menu toggles it */
+    .m-controls { display: none; }
+    #overlay.show-controls .m-main { display: none; }
+    #overlay.show-controls .m-controls { display: block; width: min(460px, 92vw); max-height: 92vh; overflow: auto; padding: 26px 30px; }
+    #overlay.show-controls .m-controls h2 { font-size: 24px; }
+    #overlay.show-controls .keys { font-size: 16px; gap: 12px 24px; }
+    #ctrlback { display: none; margin-top: 20px; padding: 10px 22px; border-radius: 12px; cursor: pointer; font: 800 15px system-ui, sans-serif; color: #111;
+      background: linear-gradient(180deg, #ffd52e, #e9b800); border: 1.5px solid #ffe36b; }
+    #overlay.show-controls #ctrlback { display: inline-block; }
+    #ctrlbtn { margin-top: 12px; padding: 7px 16px; border-radius: 10px; cursor: pointer; background: rgba(30,30,34,.6); border: 1.5px solid rgba(255,255,255,.25);
+      color: #fff; font: 700 13px system-ui, sans-serif; }
+    #ctrlbtn:hover, #overlay.show-controls #ctrlbtn { border-color: #ecc828; color: #ecc828; }
     .keys { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; align-items: center; font-size: 14px; color: #ddd; }
     .keys > span:nth-child(odd) { white-space: nowrap; }
     /* right: title + mode buttons */
@@ -54,7 +66,6 @@
     /* small / landscape-phone screens: drop the controls panel, shrink the title */
     @media (max-width: 860px), (max-height: 560px) {
       #overlay { gap: 0; }
-      .m-controls { display: none; }
       .m-main { width: min(420px, 92vw); }
       .m-main h1 { font-size: 36px; }
       .m-sub { font-size: 14px; margin-top: 4px; padding-bottom: 0; }
@@ -93,6 +104,7 @@
         <span><kbd>Q</kbd></span><span>High / low quality</span>
         <span><kbd>Esc</kbd></span><span>Menu</span>
       </div>
+      <button type="button" id="ctrlback">&larr; Back (Esc)</button>
     </div>
     <div class="m-main">
       <div class="m-logo">&#9670;</div>
@@ -100,6 +112,7 @@
       <div class="m-sub">Walk around the office in 3D</div>
       <div class="modes"></div>
       <div class="m-hint">Pick a mode, or click anywhere to <b>play</b></div>
+      <button type="button" id="ctrlbtn">Controls</button>
       <div class="credit">Developed by <b>Yatin</b></div>
     </div>
   </div>

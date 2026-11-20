@@ -12,13 +12,13 @@ const ICONS = {
   play: '<path d="M7 4l13 8-13 8z"/>',
 };
 
-export function initModes({ list }) {
+export function initModes({ list, defaultId = 'free' }) {
   const modes = [{ id: 'free', name: 'Free Walk', desc: 'Just explore the office', start() {}, stop() {}, update() {} }];
   let current = modes[0];
 
   function render() {
     list.innerHTML = '';
-    for (const m of modes) {
+    for (const m of [...modes.filter((x) => x.id !== 'free'), ...modes.filter((x) => x.id === 'free')]) { // Free Walk last
       const on = m === current;
       const b = document.createElement('button');
       b.type = 'button';
@@ -42,7 +42,7 @@ export function initModes({ list }) {
     let saved = null;
     try { saved = localStorage.getItem(KEY); } catch {}
     render();
-    if (saved === mode.id) select(mode.id);
+    if (saved === mode.id || (mode.id === defaultId && saved !== 'free')) select(mode.id); // default mode unless the player picked Free Walk
   }
 
   render();

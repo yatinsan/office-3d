@@ -59,6 +59,12 @@ scene.add(world);
 // ---- Player ----
 const player = createPlayer(camera, renderer.domElement, { spawn: SPAWN, yaw: SPAWN.yaw });
 const overlay = document.getElementById('overlay');
+// Controls: a separate page inside the menu. Back button or Esc returns to the menu.
+const showControls = (on) => overlay.classList.toggle('show-controls', on);
+document.getElementById('ctrlbtn').addEventListener('click', (e) => { e.stopPropagation(); showControls(true); });
+document.querySelector('.m-controls').addEventListener('click', (e) => e.stopPropagation()); // don't start the game from the controls page
+document.getElementById('ctrlback').addEventListener('click', () => showControls(false));
+addEventListener('keydown', (e) => { if (e.code === 'Escape' && overlay.classList.contains('show-controls')) showControls(false); });
 const touchUI = isTouchDevice() ? initTouch({ player, camera }) : null;
 if (touchUI) touchUI.show(false);
 overlay.addEventListener('click', () => {
@@ -89,9 +95,10 @@ const suggest = initSuggestions({ scene, camera, player, world, zoneAt, renderer
 suggest.onResumeFailed(() => overlay.classList.remove('hidden'));
 
 // ---- Game modes (Esc menu): Free Walk + Scavenger Hunt ----
-const modes = initModes({ list: overlay.querySelector('.modes') });
+const modes = initModes({ list: overlay.querySelector('.modes'), defaultId: 'online' });
 const hunt = initHunt({ scene, camera, player });
-modes.register(hunt);
+// Scavenger Hunt is temporarily hidden (see MULTIPLAYER.md). To bring it back, uncomment the next line.
+// modes.register(hunt);
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
 const online = initOnline({ scene, camera, player, panel: overlay.querySelector('.m-main'), touch: !!touchUI });
 modes.register(online);

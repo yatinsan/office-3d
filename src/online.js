@@ -37,6 +37,32 @@ const CSS = `
     color: #fff; font: 700 13px system-ui, sans-serif; white-space: nowrap; }
   .ow-seg button:hover { border-color: rgba(255,255,255,.5); }
   .ow-seg button.on { background: linear-gradient(180deg, #ffd52e, #e9b800); border-color: #ffe36b; color: #111; }
+  .ow-edit { flex: 1; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; text-align: left;
+    background: rgba(30,30,34,.6); border: 1.5px solid rgba(255,255,255,.25); color: #fff; font: 700 14px system-ui, sans-serif; }
+  .ow-gear.on { border-color: #ecc828; }
+  .ow-edit:hover { border-color: #ecc828; }
+  .ow-edit .ow-who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ow-edit .go { color: #ecc828; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  #ow-char { position: fixed; z-index: 12; right: 4vw; top: 50%; transform: translateY(-50%); width: 310px; box-sizing: border-box; padding: 22px; display: none;
+    flex-direction: column; gap: 10px; border-radius: 18px; color: #fff; background: rgba(20,20,24,.72); border: 1px solid rgba(255,255,255,.14);
+    box-shadow: -4px -4px 0 -1px #ecc828, 0 20px 50px rgba(0,0,0,.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-family: system-ui, sans-serif; }
+  #ow-char.show { display: flex; }
+  #ow-char h3 { margin: 0; font-size: 20px; color: #ecc828; }
+  #ow-char p { margin: 0 0 4px; font-size: 13px; color: rgba(255,255,255,.65); }
+  #ow-char label { font: 700 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 1px; color: #ecc828; margin-top: 4px; }
+  #ow-char input[type=text] { padding: 10px 12px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,.25); background: rgba(10,10,14,.7);
+    color: #fff; font: 600 16px system-ui, sans-serif; outline: none; }
+  #ow-char input[type=text]:focus { border-color: #ecc828; }
+  #ow-char input.need { border-color: #ff6b6b; box-shadow: 0 0 0 3px rgba(255,107,107,.25); animation: ow-shake .35s; }
+  #ow-char .sw { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #ow-char .sw button { width: 30px; height: 30px; border-radius: 50%; padding: 0; cursor: pointer; border: 2px solid rgba(255,255,255,.35); }
+  #ow-char .sw button.on { border-color: #fff; box-shadow: 0 0 0 2px #ecc828; }
+  #ow-char .sw input[type=color] { width: 34px; height: 34px; padding: 0; border: 0; background: none; cursor: pointer; }
+  #ow-char .acts { display: flex; gap: 8px; margin-top: 10px; }
+  #ow-char .acts button { flex: 1; padding: 11px; border-radius: 12px; cursor: pointer; font: 800 15px system-ui, sans-serif; color: #fff;
+    background: rgba(40,40,46,.8); border: 1.5px solid rgba(255,255,255,.25); }
+  #ow-char .acts .done { flex: 2; background: linear-gradient(180deg, #ffd52e, #e9b800); border-color: #ffe36b; color: #111; }
+  @media (max-width: 700px) { #ow-char { right: 50%; transform: translateX(50%); top: auto; bottom: 12px; width: min(340px, 94vw); padding: 14px; } }
   .ow-status { font: 500 13px system-ui, sans-serif; color: rgba(255,255,255,.75); }
   .ow-status b { color: #7ee08f; }
   .ow-status.err b { color: #ff8a80; }
@@ -65,28 +91,93 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
   let myName = '', myColor = '';
   try { myName = localStorage.getItem(NAME_KEY) || ''; myColor = localStorage.getItem(COLOR_KEY) || ''; } catch {}
-  if (!COLORS.includes(myColor)) myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+  if (!/^#[0-9a-f]{6}$/i.test(myColor)) myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
   const box = document.createElement('div');
   box.className = 'ow';
   box.innerHTML = `
-    <div class="ow-row"><label for="ow-name">Name</label><input id="ow-name" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Type your name to join">
-      <span class="ow-dot" title="Change colour"></span></div>
-    <div class="ow-row"><label>Mic</label><div class="ow-seg"><button type="button" data-m="ptt">Push to talk</button><button type="button" data-m="open">Always on</button></div></div>
+    <div class="ow-row"><label>Menu</label><button type="button" class="ow-edit"><span class="ow-dot"></span><span class="ow-who"></span><span class="go">Character</span></button>
+      <button type="button" class="ow-edit ow-gear" style="flex:none"><span class="go">Settings</span></button></div>
+    <div class="ow-set" style="display:none"><div class="ow-row"><label>Mic</label><div class="ow-seg"><button type="button" data-m="ptt">Push to talk</button><button type="button" data-m="open">Always on</button></div></div></div>
     <div class="ow-row"><label>Online</label><span class="ow-status"></span></div>`;
   panel.insertBefore(box, panel.querySelector('.m-hint'));
-  const nameIn = box.querySelector('input'), dot = box.querySelector('.ow-dot'), statusEl = box.querySelector('.ow-status');
-  nameIn.value = myName; dot.style.background = myColor;
-  box.addEventListener('click', (e) => e.stopPropagation()); // don't start the game while editing
+  const statusEl = box.querySelector('.ow-status'), editBtn = box.querySelector('.ow-edit'), dot = box.querySelector('.ow-dot'), whoEl = box.querySelector('.ow-who');
+  const setEl = box.querySelector('.ow-set'), gearBtn = box.querySelector('.ow-gear');
+  gearBtn.addEventListener('click', () => { const open = setEl.style.display === 'none'; setEl.style.display = open ? 'block' : 'none'; gearBtn.classList.toggle('on', open); });
+  box.addEventListener('click', (e) => e.stopPropagation()); // don't start the game while using the menu rows
+  const overlayEl = () => panel.closest('#overlay');
+  function drawWho() { dot.style.background = myColor; whoEl.textContent = myName || 'New'; }
+  drawWho();
+  editBtn.addEventListener('click', () => openCreator());
+
+  // ---------- Character screen: third-person front view + name + dress colour (first visit, and Esc menu -> Edit character) ----------
+  const charEl = document.createElement('div');
+  charEl.id = 'ow-char';
+  charEl.innerHTML = `
+    <h3>Your character</h3><p>Pick a name and a dress colour</p>
+    <label for="ow-name">Name</label><input type="text" id="ow-name" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Type your name">
+    <label>Dress colour</label><div class="sw"></div>
+    <div class="acts"><button type="button" class="back">Back</button><button type="button" class="done">Done</button></div>`;
+  document.body.appendChild(charEl);
+  const nameIn = charEl.querySelector('input[type=text]'), swEl = charEl.querySelector('.sw');
+  let draftColor = myColor;
+  const swBtns = COLORS.map((c) => {
+    const b = document.createElement('button'); b.type = 'button'; b.style.background = c; b.dataset.c = c; b.title = c; swEl.appendChild(b);
+    b.addEventListener('click', () => setDraft(c)); return b;
+  });
+  const pick = document.createElement('input'); pick.type = 'color'; pick.title = 'Custom colour'; swEl.appendChild(pick);
+  pick.addEventListener('input', () => setDraft(pick.value));
+  function setDraft(c) {
+    draftColor = c; pick.value = c;
+    for (const b of swBtns) b.classList.toggle('on', b.dataset.c === c);
+    if (preview) preview.setLook(null, c);
+  }
+  charEl.addEventListener('click', (e) => e.stopPropagation());
   nameIn.addEventListener('keydown', (e) => {
     if (e.code !== 'Escape') e.stopPropagation();
-    if (e.code === 'Enter' || e.code === 'NumpadEnter') { // Enter = save the name and start playing
-      e.preventDefault();
-      if (saveName()) { nameIn.blur(); panel.closest('#overlay')?.click(); } else needName();
-    }
+    if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); finishCreator(); }
   });
   nameIn.addEventListener('keyup', (e) => e.stopPropagation());
-  nameIn.addEventListener('input', () => nameIn.classList.remove('need'));
-  nameIn.addEventListener('change', saveName);
+  nameIn.addEventListener('input', () => { nameIn.classList.remove('need'); if (preview) preview.setLook(nameIn.value.trim() || 'Your name', null); });
+  charEl.querySelector('.done').addEventListener('click', finishCreator);
+  charEl.querySelector('.back').addEventListener('click', () => closeCreator(true));
+  addEventListener('keydown', (e) => { if (e.code === 'Escape' && creating) closeCreator(true); });
+
+  let creating = false, preview = null, camYaw = 0;
+  const savedPos = new THREE.Vector3(), savedQuat = new THREE.Quaternion();
+  function openCreator() {
+    if (creating) return;
+    creating = true;
+    camera.getWorldDirection(meDir); camYaw = Math.atan2(-meDir.x, -meDir.z);
+    savedPos.copy(camera.position); savedQuat.copy(camera.quaternion);
+    nameIn.value = myName; nameIn.classList.remove('need');
+    preview = makeAvatar(myName || 'Your name', myColor);
+    scene.add(preview.group);
+    me.group.visible = false;
+    setDraft(myColor);
+    const ov = overlayEl(); if (ov) ov.classList.add('hidden');
+    charEl.classList.add('show');
+    setTimeout(() => nameIn.focus(), 0);
+  }
+  /** back = true: discard changes and return to the menu. */
+  function closeCreator(back) {
+    if (!creating) return;
+    creating = false;
+    charEl.classList.remove('show'); nameIn.blur();
+    scene.remove(preview.group); preview.dispose(); preview = null;
+    camera.position.copy(savedPos); camera.quaternion.copy(savedQuat);
+    me.group.visible = true;
+    const ov = overlayEl(); if (back && ov) ov.classList.remove('hidden');
+  }
+  function finishCreator() {
+    if (!nameIn.value.trim()) { needName(); return; }
+    myColor = draftColor;
+    try { localStorage.setItem(COLOR_KEY, myColor); } catch {}
+    me.setLook(null, myColor);
+    saveName();
+    drawWho();
+    closeCreator(false);
+    const ov = overlayEl(); if (ov) ov.click(); // start playing in first person
+  }
   /** Take the typed name; join the world the first time a name is set. Returns false while it's empty. */
   function saveName() {
     const n = nameIn.value.trim().replace(/\s+/g, ' ').slice(0, 18);
@@ -98,18 +189,11 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     if (on && first && !uid && !connecting) connect(); else publishMe();
     return true;
   }
-  /** Nudge the player to type a name: focus the box, flash it red, say why. */
   function needName() {
+    if (!creating) { openCreator(); return; }
     nameIn.classList.remove('need'); void nameIn.offsetWidth; nameIn.classList.add('need');
-    setStatus('<b>Enter your name</b> to join the world', true);
     setTimeout(() => nameIn.focus(), 0);
   }
-  dot.addEventListener('click', () => {
-    myColor = COLORS[(COLORS.indexOf(myColor) + 1) % COLORS.length]; dot.style.background = myColor;
-    me.setLook(null, myColor);
-    try { localStorage.setItem(COLOR_KEY, myColor); } catch {}
-    publishMe();
-  });
   function setStatus(html, err = false) { statusEl.innerHTML = html; statusEl.classList.toggle('err', err); }
 
   // ---------- In-game HUD pill + touch talk button ----------
@@ -129,6 +213,14 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   scene.add(me.group);
   const meDir = new THREE.Vector3();
   function updateSelf(dt, reach = null) {
+    if (creating) { // third-person front view of your character while you pick a name + colour
+      const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
+      preview.target(player.pos.x, 0, player.pos.z, camYaw, false);
+      preview.update(dt);
+      camera.position.set(player.pos.x + fx * 2.4, 1.35, player.pos.z + fz * 2.4);
+      camera.lookAt(player.pos.x, 1.0, player.pos.z);
+      return;
+    }
     camera.getWorldDirection(meDir);
     me.target(player.pos.x, Math.max(0, camera.position.y - EYE), player.pos.z, Math.atan2(-meDir.x, -meDir.z), false);
     me.setReach(reach?.aim, reach?.k || 0);
@@ -158,7 +250,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   const path = (p) => fb.ref(db, `rooms/${ROOM}/${p}`);
 
   async function connect() {
-    if (!myName) { needName(); return; }
+    if (!myName) return;
     connecting = true;
     try { await doConnect(); } finally { connecting = false; }
   }
@@ -372,6 +464,7 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
   const dir = new THREE.Vector3();
   let sendT = 0, lastSent = '', heartbeat = 0;
   function sendPos(force = false) {
+    if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = Math.atan2(-dir.x, -dir.z);
     const msg = JSON.stringify([+player.pos.x.toFixed(2), +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(2), talking ? 1 : 0]);
@@ -407,17 +500,19 @@ export function initOnline({ scene, camera, player, panel, touch = false }) {
     start() {
       on = true; box.classList.add('show'); hud.classList.add('show'); if (touch) pttBtn.classList.add('show');
       drawHud();
-      if (myName) connect(); else needName();
+      if (myName) connect(); else setStatus('Click <b>Play</b> to create your character and join');
     },
     /** The menu asks before starting the game: Open World needs a name first. */
-    canStart() { if (myName) return true; needName(); return false; },
+    canStart() { if (myName) return true; openCreator(); return false; },
     stop() {
       on = false; held = false; refreshMic(); box.classList.remove('show'); hud.classList.remove('show'); pttBtn.classList.remove('show');
+      closeCreator(false);
       disconnect();
     },
     update(dt, active) {
       if (!on) return;
-      if (!!active !== inGame) { inGame = !!active; if (!inGame) held = false; refreshMic(); } // menu open = mic off
+      const ig = !!active && !creating;
+      if (ig !== inGame) { inGame = ig; if (!inGame) held = false; refreshMic(); } // menu open = mic off
       meterTick(dt);
       for (const p of peers.values()) p.avatar.update(dt);
       sendT += dt; heartbeat += dt;
