@@ -34,7 +34,7 @@ export function initCombat({ camera, player, online, pool = null }) {
   document.body.append(pain, black, term);
 
   let hp = MAX_HP, regenT = 0, cooldown = 0, lastSide = null, lastPunchAt = -9, now = 0;
-  let painK = 0, kick = 0, awayX = 0, awayZ = 0, hitLog = [], teleported = false;
+  let painK = 0, kick = 0, awayX = 0, awayZ = 0, hitLog = [], teleported = false, pending = [];
   let phase = 'ok', phaseT = 0, immune = 0, koDown = 0, roll = 0, rollDir = 1;
   const v = new THREE.Vector3(), dir = new THREE.Vector3(), eul = new THREE.Euler(0, 0, 0, 'YXZ');
 
@@ -72,7 +72,7 @@ export function initCombat({ camera, player, online, pool = null }) {
     const t = target();
     online.me.punch(side);
     sfx.whoosh();
-    if (t) { t.avatar.hurt(camera.position.x, camera.position.z); setTimeout(() => sfx.impact(), 90); }
+    if (t) { t.avatar.hurt(camera.position.x, camera.position.z); setTimeout(() => sfx.impact(), 90); pending.push({ p: t, until: now + 1.5 }); }
     online.broadcast({ t: 'hit', side, to: t ? t.id : null, from: online.uid() });
   }
 
@@ -93,19 +93,13 @@ export function initCombat({ camera, player, online, pool = null }) {
     pain.style.background = `linear-gradient(${deg.toFixed(0)}deg, rgba(200,0,0,0) 25%, rgba(215,0,0,.9) 100%), radial-gradient(ellipse at center, rgba(200,0,0,0) 50%, rgba(200,0,0,.35) 100%)`;
     painK = 1; kick = 1; rollDir = Math.sin(deg * Math.PI / 180) >= 0 ? 1 : -1; // head snaps away from the side it came from
     sfx.hurt();
-    // knocked down a 2nd time within TERM_WINDOW: terminated, thrown out to the front door (anywhere in the building)
-    if (hp <= 0) {
-      hitLog = hitLog.filter((t) => now - t <= TERM_WINDOW);
-      hitLog.push(now);
-      if (hitLog.length >= TERM_HITS) { terminate(); return; }
-    }
     if (hp <= 0) { phase = 'fall'; phaseT = 0; hp = MAX_HP; player.state.stunned = true; online.setKnocked(true); setTimeout(sfx.thud, 450); }
   }
   online.onHit(receive);
 
   /** terminated: freeze, black out with the text, then teleport to the hall outside the front door facing it */
   function terminate() {
-    phase = 'term'; phaseT = 0; teleported = false; hitLog = []; hp = MAX_HP;
+    phase = 'term'; phaseT = 0; teleported = false; hitLog = []; pending = []; hp = MAX_HP;
     koDown = 0; kick = 0; painK = 0;
     player.state.stunned = true;
     sfx.thud();
@@ -139,6 +133,16 @@ export function initCombat({ camera, player, online, pool = null }) {
     now += dt;
     if (cooldown > 0) cooldown -= dt;
     if (immune > 0) immune -= dt;
+    // the PUNCHER is terminated, not the victim: knock someone down TERM_HITS times within TERM_WINDOW
+    if (phase === 'ok' && pending.length) {
+      pending = pending.filter((e) => {
+        // one of my punches put them down; only counts while I am inside the office (not in the hall past the fingerprint door)
+        if (e.p.avatar.knocked) { if (player.pos.x < LOBBY_E) hitLog.push(now); return false; }
+        return now < e.until;
+      });
+      hitLog = hitLog.filter((t) => now - t <= TERM_WINDOW);
+      if (hitLog.length >= TERM_HITS && player.pos.x < LOBBY_E) terminate();
+    }
     if (phase === 'ok') {
       if (hp < MAX_HP && (regenT += dt) > REGEN) { hp++; regenT = 0; }
     } else {

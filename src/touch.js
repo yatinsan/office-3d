@@ -19,6 +19,7 @@ const ICONS = {
   rotate: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
   chair: svg('<path d="M7 3v9"/><path d="M7 12h10v3H7z"/><path d="M12 15v4"/><path d="M8 21h8"/>'),
   tv: svg('<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M10 9l4 2-4 2z"/>'),
+  fullscreen: svg('<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>'),
 };
 
 /** Fullscreen + landscape lock (Android Chrome). iOS Safari can't lock, so the portrait overlay asks to rotate instead. Call from a tap. */
@@ -38,7 +39,8 @@ export function initTouch({ player, camera }) {
     <div class="tj-base"><div class="tj-knob"></div></div>
     <button class="tb tb-jump" type="button" aria-label="Jump">${ICONS.jump}</button>
     <button class="tb tb-act off" type="button" aria-label="Use"></button>
-    <button class="tb tb-hit" type="button" aria-label="Punch">${ICONS.fist}</button>`;
+    <button class="tb tb-hit" type="button" aria-label="Punch">${ICONS.fist}</button>
+    <button class="tb tb-fs off" type="button" aria-label="Full screen">${ICONS.fullscreen}</button>`;
   // portrait guard: lives on the body (not in #touch) so it also covers the start menu; the game is landscape only
   const rot = document.createElement('div');
   rot.className = 't-rotate';
@@ -56,6 +58,7 @@ export function initTouch({ player, camera }) {
     .tb svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     .tb:active, .tb.on { opacity: .9; background: rgba(236,200,40,.7); color: #111; }
     .tb.off { display: none; }
+    .tb-fs { top: max(12px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); width: 40px; height: 40px; opacity: .75; }
     .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-hit { right: max(72px, calc(env(safe-area-inset-right) + 54px)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(82px, calc(env(safe-area-inset-bottom) + 58px)); width: 40px; height: 40px;
@@ -73,10 +76,16 @@ export function initTouch({ player, camera }) {
   document.head.appendChild(css);
   document.body.appendChild(root);
   document.body.appendChild(rot);
-  // the first tap anywhere (menu, rotate screen) asks for fullscreen + landscape lock; needs a user gesture
-  const first = () => { goLandscape(); removeEventListener('touchend', first); };
-  addEventListener('touchend', first);
+  // any tap (menu, rotate screen, game) asks for fullscreen + landscape lock if we're not fullscreen; needs a user gesture.
+  // Not one-shot: the mic permission prompt (and other browser dialogs) can drop fullscreen mid-game, and it must come back on the next tap.
+  addEventListener('touchend', () => { if (!document.fullscreenElement) goLandscape(); }, { passive: true });
   rot.addEventListener('touchend', () => goLandscape());
+  // fullscreen button: shown only while the page is NOT fullscreen; tap it to go full screen
+  const fsBtn = root.querySelector('.tb-fs');
+  const syncFs = () => fsBtn.classList.toggle('off', !!document.fullscreenElement);
+  document.addEventListener('fullscreenchange', syncFs);
+  document.addEventListener('webkitfullscreenchange', syncFs);
+  syncFs();
 
   const base = root.querySelector('.tj-base'), knob = root.querySelector('.tj-knob');
   const R = 48;                       // joystick radius in px
@@ -137,6 +146,7 @@ export function initTouch({ player, camera }) {
   };
   press('.tb-jump', () => player.jump());
   press('.tb-hit', () => api.onHit?.());
+  press('.tb-fs', () => goLandscape());
   const act = root.querySelector('.tb-act');
   let actKey = null, actIcon = '';
   let heldKey = null;
