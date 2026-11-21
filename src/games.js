@@ -191,7 +191,7 @@ export function initGames({ online, player }) {
   /** show / clear the prop on one avatar. mine = my own body: it only gets hidden (the camera sits inside the prop) */
   function dress(avatar, g, uid, mine) {
     const t = g && typeOf(g), idx = t && t.props ? t.disguiseOf(g, uid) : null; // null = no disguise
-    if (propCache.get(avatar) === (idx ?? -1)) return;
+    if ((propCache.get(avatar) ?? -1) === (idx ?? -1)) return; // unchanged (and never touch an avatar that was never disguised)
     propCache.set(avatar, idx ?? -1);
     if (idx === null) avatar.setDisguise?.(null);
     else avatar.setDisguise?.(mine ? new THREE.Group() : t.makeProp(idx), t.props[idx].hit);

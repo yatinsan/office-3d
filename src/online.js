@@ -721,7 +721,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   tag.visible = !self;
   group.add(tag);
   let curName = name, curColor = color, talk = false, muted = false, badge = null; // badge: ring colour while playing a game
-  let disg = null, disgY = 0; // disguise (Prop Hunt): a prop shown instead of the body
+  let disg = null, disgY = 0, disgSaved = null; // disguise (Prop Hunt): a prop shown instead of the body
   // status icon above the name tag: an animated speaker while talking, a tiny red mic with a slash while muted
   const sCanvas = document.createElement('canvas'); sCanvas.width = 128; sCanvas.height = 128;
   const sTex = new THREE.CanvasTexture(sCanvas); sTex.colorSpace = THREE.SRGBColorSpace;
@@ -804,10 +804,17 @@ export function makeAvatar(name, color, { self = false } = {}) {
     setBadge(c) { if (c !== badge) { badge = c; drawTag(); } },
     /** Prop Hunt: show `obj` (a THREE.Object3D; hitY = how high to aim a punch) instead of the body, name tag and mic icon; null = back to normal */
     setDisguise(obj, hitY = 0.5) {
+      if (!obj && !disg) return; // nothing to clear: do not touch the body (your own first-person body hides its head and chest on purpose)
       if (disg) { group.remove(disg); disg = null; }
       disgY = obj ? hitY : 0;
-      if (obj) { disg = obj; group.add(obj); }
-      for (const c of group.children) if (c !== tag && c !== sIcon && c !== disg) c.visible = !disg;
+      if (obj) {
+        disgSaved = new Map(); // remember which parts were visible, so clearing the disguise restores exactly that
+        for (const c of group.children) if (c !== tag && c !== sIcon) { disgSaved.set(c, c.visible); c.visible = false; }
+        disg = obj; group.add(obj);
+      } else if (disgSaved) {
+        for (const [c, vis] of disgSaved) c.visible = vis;
+        disgSaved = null;
+      }
       tag.visible = !self && !disg;
       if (disg) sIcon.visible = false; else drawStatus();
     },
