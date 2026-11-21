@@ -78,7 +78,10 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     if (feetY === 0 && speed > 0.3) { bobT += dt * speed * 2.6; bob = Math.sin(bobT) * 0.035 * Math.min(1, speed / WALK); }
     else bob *= 0.85;
 
-    camera.position.set(pos.x, EYE + feetY + bob, pos.z);
+    // looking down: the head leans a little forward (same eye height), like a person bending their neck
+    const dn = Math.min(1, Math.max(0, -camera.rotation.x) / 0.8);
+    const fw = dn * 0.12;
+    camera.position.set(pos.x - Math.sin(camera.rotation.y) * fw, EYE + feetY + bob, pos.z - Math.cos(camera.rotation.y) * fw);
   }
 
   return { controls, update, pos, state, touch, jump };

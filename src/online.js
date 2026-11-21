@@ -888,6 +888,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
       talkT += dt;
       if (talk && !self) { sT += dt; if ((sDraw += dt) > 0.08) { sDraw = 0; drawStatus(); } } // animate the speaker waves
       pitchS += (toPitch * 0.8 - pitchS) * (1 - Math.exp(-12 * dt)); // head tilts up / down with where they look
+      const dn = Math.min(1, Math.max(0, -pitchS) / 0.8);        // looking down: the head pushes forward and drops a little
+      head.position.z = -0.1 * dn; head.position.y = 1.62 - 0.03 * dn;
       head.rotation.z = talk ? Math.sin(talkT * 7) * 0.03 : 0;  // a little nod while talking
       mouth.scale.y = talk ? 0.3 + Math.abs(Math.sin(talkT * 11)) * 0.7 : 0.25; // lips open and close
       eyes.scale.y = (talkT % 3.7) > 3.55 ? 0.1 : 1;            // blink every few seconds
