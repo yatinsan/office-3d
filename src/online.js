@@ -100,6 +100,25 @@ const CSS = `
   body:not(.ow-touch) #ow-ptt { display: none !important; }
   body.ow-touch #ow-online { right: calc(max(18px, env(safe-area-inset-right)) + 40px + 12px); top: max(17px, calc(env(safe-area-inset-top) + 5px)); } /* top right, just left of the full-screen button */
   @keyframes ow-pulse { 50% { transform: scale(1.1); } }
+  #ow-list { position: fixed; left: 14px; top: 46%; transform: translateY(-50%); z-index: 8; display: none; min-width: 170px; max-width: 240px; pointer-events: none;
+    background: rgba(10,10,12,.55); border-radius: 6px; overflow: hidden; font: 600 13px system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  #ow-list.show { display: block; }
+  body.ow-touch #ow-online { pointer-events: auto; cursor: pointer; }
+  body.ow-touch #ow-list:not(.open) { display: none !important; }
+  body.ow-touch #ow-list { top: max(112px, calc(env(safe-area-inset-top) + 100px)); transform: none; left: max(14px, env(safe-area-inset-left)); min-width: 0; max-width: 150px; font-size: 11px; }
+  body.ow-touch #ow-list .hd { padding: 4px 8px; font-size: 9px; }
+  body.ow-touch #ow-list .row { padding: 4px 8px; gap: 6px; }
+  body.ow-touch #ow-list .d { width: 7px; height: 7px; }
+  body.ow-touch #ow-list .s { width: 10px; height: 10px; }
+  #ow-list .hd { padding: 6px 12px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.65); background: rgba(0,0,0,.35); }
+  #ow-list .row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; border-left: 3px solid transparent; }
+  #ow-list .row.me { background: rgba(255,255,255,.08); }
+  #ow-list .row.talk { border-left-color: #7ee08f; }
+  #ow-list .d { width: 9px; height: 9px; border-radius: 50%; flex: none; background: #999; }
+  #ow-list .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #ow-list .s { width: 14px; height: 14px; flex: none; }
+  #ow-list .row.talk .s { border-radius: 50%; background: #7ee08f; box-shadow: 0 0 8px #7ee08f; animation: ow-pulse 1s ease-in-out infinite; }
+  #ow-list .row.mu .s { background: linear-gradient(135deg, transparent 44%, #ff6b6b 44%, #ff6b6b 56%, transparent 56%); }
   /* GTA-style feed: flat dark strips with a coloured edge, sliding in from the right edge, stacked under the online indicator */
   #ow-feed { position: fixed; right: 0; top: 56px; z-index: 8; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
   .ow-note { display: flex; align-items: center; gap: 10px; padding: 13px 26px 13px 18px; min-width: 300px; box-sizing: border-box; border-left: 5px solid var(--c, #7ee08f);
@@ -278,7 +297,26 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const modeChip = hud.querySelector('.ow-mode'), micChip = hud.querySelector('#ow-mic'), micLbl = micChip.querySelector('.lbl'), micKey = micChip.querySelector('kbd');
   document.body.appendChild(hud);
   let netErr = false;
-  const showHud = (v) => { hud.classList.toggle('show', v); onlineChip.classList.toggle('show', v); };
+  // players list on the right edge: everyone in the world, a speaker icon while they talk, a red slashed mic while muted
+  const listEl = document.createElement('div'); listEl.id = 'ow-list'; document.body.appendChild(listEl);
+  let listKey = '';
+  function drawList() {
+    const rows = [{ name: myName || 'You', color: myColor, me: true, talk: talking, mu: lastMuted }];
+    for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') rows.push({ name: p.name, color: p.color, talk: !!p.talk, mu: !!p.mu });
+    const key = JSON.stringify(rows);
+    if (key === listKey) return; listKey = key;
+    listEl.replaceChildren();
+    const head = document.createElement('div'); head.className = 'hd'; head.textContent = `Players · ${rows.length}`; listEl.appendChild(head);
+    for (const r of rows) {
+      const row = document.createElement('div'); row.className = 'row' + (r.me ? ' me' : '') + (r.talk ? ' talk' : '') + (r.mu ? ' mu' : '');
+      const d = document.createElement('span'); d.className = 'd'; if (/^#[0-9a-f]{6}$/i.test(r.color || '')) d.style.background = r.color;
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = r.name + (r.me ? ' (you)' : '');
+      const s = document.createElement('span'); s.className = 's';
+      row.append(d, n, s); listEl.appendChild(row);
+    }
+  }
+  onlineChip.addEventListener('pointerdown', (e) => { if (!touch) return; e.preventDefault(); e.stopPropagation(); listEl.classList.toggle('open'); }); // phones: tap the online count to show / hide the list
+  const showHud = (v) => { hud.classList.toggle('show', v); onlineChip.classList.toggle('show', v); listEl.classList.toggle('show', v); };
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
   pttBtn.innerHTML = MIC_SVG;
   document.body.appendChild(pttBtn);
@@ -479,6 +517,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       try {
         const [x, y, z, yaw, talk, mu, ko, sit, pitch] = JSON.parse(e.data);
         p.avatar.target(x, y, z, yaw, !!talk, !!mu, pitch || 0);
+        if (p.talk !== !!talk || p.mu !== !!mu) { p.talk = !!talk; p.mu = !!mu; drawList(); }
         p.avatar.setKnocked(!!ko);
         p.avatar.setSeated(!!sit);
       } catch {}
@@ -664,7 +703,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     drawHud();
   }
   function drawHud() {
-    const n = connectedCount() + 1, lost = peers.size - (n - 1);
+    drawList();
+    const n =connectedCount() + 1, lost = peers.size - (n - 1);
     onlineChip.classList.toggle('warn', !!uid && lost > 0);
     onlineChip.classList.toggle('bad', netErr);
     onlineTxt.textContent = uid ? `${n} online${lost > 0 ? ` · ${lost} joining…` : ''}` : netErr ? 'Not connected' : 'Connecting…';
@@ -853,11 +893,11 @@ export function makeAvatar(name, color, { self = false } = {}) {
     // dark glass pill with a little pointer toward the head
     g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 14; g.shadowOffsetY = 4;
     const bg = g.createLinearGradient(0, y0, 0, y0 + h); bg.addColorStop(0, 'rgba(38,42,56,.92)'); bg.addColorStop(1, 'rgba(16,18,26,.92)');
-    g.fillStyle = bg; g.beginPath(); g.roundRect(x0, y0, w, h, h / 2); g.fill();
+    g.fillStyle = bg; g.beginPath(); g.roundRect(x0, y0, w, h, 8); g.fill();
     g.beginPath(); g.moveTo(384 - 20, y0 + h - 2); g.lineTo(384, y0 + h + 24); g.lineTo(384 + 20, y0 + h - 2); g.closePath(); g.fill();
     g.restore();
     g.lineWidth = badge ? 8 : 3; g.strokeStyle = badge || 'rgba(255,255,255,.28)';
-    g.beginPath(); g.roundRect(x0, y0, w, h, h / 2); g.stroke();
+    g.beginPath(); g.roundRect(x0, y0, w, h, 8); g.stroke();
     // colour dot (the player's shirt colour) with a soft ring
     g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(x0 + 54, y0 + h / 2, 21, 0, Math.PI * 2); g.fill();
     g.fillStyle = curColor; g.beginPath(); g.arc(x0 + 54, y0 + h / 2, 16, 0, Math.PI * 2); g.fill();
