@@ -236,7 +236,7 @@ setDev(dev);
 // ---- Quality toggle ----
 let high = true;
 addEventListener('keydown', (e) => {
-  if (e.code !== 'KeyQ') return;
+  if (e.code !== 'KeyQ' || player.state.god) return; // Q = fly down in god mode
   high = !high;
   sun.castShadow = high;
   renderer.setPixelRatio(high ? Math.min(devicePixelRatio, 2) : 1);

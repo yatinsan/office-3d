@@ -39,8 +39,16 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   addEventListener('keydown', (e) => {
     keys[e.code] = true;
     if (e.code === 'Space') { crouch = 0; jump(); }
+    if (e.code === 'KeyM' && !e.repeat && !state.paused && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+      state.god = !state.god;
+      if (!state.god) { vy = 0; feetY = Math.max(0, feetY); vel.set(0, 0, 0); } // drop back down and walk again
+      const t = document.createElement('div');
+      t.textContent = state.god ? 'God mode ON — W/A/S/D fly, E up, Q down, Shift fast, M to exit' : 'God mode OFF';
+      t.style.cssText = 'position:fixed;top:14%;left:50%;transform:translateX(-50%);background:#000a;color:#fff;padding:8px 16px;border-radius:8px;font:14px sans-serif;z-index:99;pointer-events:none';
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+    }
   });
-  function jump() { if (active() && feetY <= 0.001) vy = JUMP_V; }
+  function jump() { if (active() && !state.god && feetY <= 0.001) vy = JUMP_V; }
   addEventListener('keyup', (e) => { keys[e.code] = false; });
   addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
@@ -70,6 +78,25 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     const k = 1 - Math.exp(-(feetY > 0 ? 3 : 12) * dt);
     vel.x += (wish.x - vel.x) * k;
     vel.z += (wish.z - vel.z) * k;
+
+    if (state.god) {
+      // God mode: free fly, no gravity, no collisions. W/S follow where you look, E up, Q down, Shift = fast.
+      const sp = (keys.ShiftLeft || keys.ShiftRight ? 16 : 7);
+      let ux = 0, uy = 0, uz = 0;
+      if (active()) {
+        camera.getWorldDirection(fwd); right.crossVectors(fwd, camera.up).normalize();
+        const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + touch.y;
+        const r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + touch.x;
+        ux = fwd.x * f + right.x * r; uy = fwd.y * f + (keys.KeyE ? 1 : 0) - (keys.KeyQ ? 1 : 0); uz = fwd.z * f + right.z * r;
+      }
+      const kg = 1 - Math.exp(-10 * dt);
+      vel.x += (ux * sp - vel.x) * kg; vel.z += (uz * sp - vel.z) * kg; vy += (uy * sp - vy) * kg;
+      pos.x += vel.x * dt; pos.z += vel.z * dt;
+      feetY += vy * dt;
+      bob = 0;
+      camera.position.set(pos.x, EYE + feetY + state.baseY, pos.z);
+      return;
+    }
 
     moveWithCollisions(pos, vel.x * dt, vel.z * dt, RADIUS);
 
