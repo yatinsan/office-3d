@@ -1,8 +1,10 @@
 import { colliders } from './colliders.js';
+import { GAME_X1, GAME_Z1, MEET_Z1 } from './world/helpers.js';
 
 // GTA-style minimap: a square at the right edge, walls only, rotates so "up" is where you look.
 const MW = 210, MH = 210; // css px: a circle
 const RANGE = 13;      // metres from the centre to the top / bottom edge of the map
+const GAME_C = { x: GAME_X1 / 2, z: (MEET_Z1 + GAME_Z1) / 2 }; // middle of the Game Room
 let walls = null; // walls + big blocks, no small furniture (built on first draw: the world fills `colliders` after this module loads)
 const getWalls = () => walls || (walls = colliders.filter((c) => Math.max(c.maxX - c.minX, c.maxZ - c.minZ) >= 1.2));
 
@@ -42,6 +44,19 @@ export function initMinimap({ camera, player, online }) {
     ctx.translate(W / 2, H / 2); ctx.scale(dpr, dpr);
     ctx.fillStyle = '#ecc828'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // game room: a little game-pad badge at its real spot on the map (not pinned: it only shows while the room is inside the map)
+    const s = MH / (RANGE * 2), c = Math.cos(yaw), sn = Math.sin(yaw), dx = GAME_C.x - px, dz = GAME_C.z - pz;
+    let ix = (dx * c - dz * sn) * s, iy = (dx * sn + dz * c) * s;
+    if (Math.hypot(ix, iy) > MH / 2 - 16) return; // only at its real spot: out of range = no icon
+    ctx.save(); ctx.translate(ix, iy); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(12,12,16,.85)'; ctx.strokeStyle = '#ecc828'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ecc828';
+    ctx.beginPath(); ctx.roundRect(-8, -4.5, 16, 9, 4); ctx.fill();                      // pad body
+    ctx.fillStyle = '#12121a';
+    ctx.fillRect(-5.5, -0.8, 4, 1.6); ctx.fillRect(-4.3, -2, 1.6, 4);                    // d-pad
+    ctx.beginPath(); ctx.arc(2.8, 1, 1, 0, 7); ctx.arc(5, -1, 1, 0, 7); ctx.fill();      // buttons
+    ctx.restore();
   }
 
   return {
