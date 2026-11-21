@@ -18,7 +18,7 @@ const EYE = 1.65;
  * pain flash and a sound; after MAX_HP hits they black out, fall, stay down a few seconds and slowly wake up.
  * Hits are counted on the victim's side; everybody sees the punch, the flinch and the fall through the avatars.
  */
-export function initCombat({ camera, player, online, pool = null }) {
+export function initCombat({ camera, player, online, pool = null, games = null }) {
   const pain = document.createElement('div'); pain.id = 'pain';
   const black = document.createElement('div'); black.id = 'blackout';
   // GTA-style "WASTED" card, here "YOU ARE TERMINATED": big red slab text over the black screen
@@ -38,7 +38,7 @@ export function initCombat({ camera, player, online, pool = null }) {
   let phase = 'ok', phaseT = 0, immune = 0, koDown = 0, roll = 0, rollDir = 1;
   const v = new THREE.Vector3(), dir = new THREE.Vector3(), eul = new THREE.Euler(0, 0, 0, 'YXZ');
 
-  const canFight = () => online.running() && !player.state.paused && phase === 'ok' && !pool?.isActive?.() && (player.controls.isLocked || player.state.dragMode);
+  const canFight = () => online.running() && !player.state.paused && !player.state.stunned && phase === 'ok' && !pool?.isActive?.() && (player.controls.isLocked || player.state.dragMode);
 
   /** left fist first (and after a pause), then random with a lean towards swapping arms */
   function pickSide() {
@@ -54,9 +54,11 @@ export function initCombat({ camera, player, online, pool = null }) {
     let best = null, bestScore = 0;
     for (const p of online.peers()) {
       if (!p.avatar.visible || p.avatar.knocked) continue;
-      v.copy(p.avatar.group.position); v.y += 1.1; v.sub(camera.position);
+      if (games && !games.canHit(p.id)) continue; // a running game: only its players can hit each other
+      const low = p.avatar.hitY; // disguised as a prop (Prop Hunt): aim lower, and be a bit more forgiving about the distance
+      v.copy(p.avatar.group.position); v.y += low || 1.1; v.sub(camera.position);
       const d = v.length();
-      if (d > REACH || d < 0.01) continue;
+      if (d > (low ? REACH + 0.6 : REACH) || d < 0.01) continue;
       const dot = v.divideScalar(d).dot(dir);
       if (dot < CONE) continue;
       const score = dot - d * 0.05;
@@ -68,12 +70,14 @@ export function initCombat({ camera, player, online, pool = null }) {
     if (cooldown > 0 || !canFight()) return;
     cooldown = COOLDOWN;
     sfx.unlock();
+    if (games?.shoot()) return; // a seeker with a gun (Prop Hunt) shoots instead of punching
     const side = pickSide();
     const t = target();
     online.me.punch(side);
     sfx.whoosh();
     if (t) { t.avatar.hurt(camera.position.x, camera.position.z); setTimeout(() => sfx.impact(), 90); pending.push({ p: t, until: now + 1.5 }); }
     online.broadcast({ t: 'hit', side, to: t ? t.id : null, from: online.uid() });
+    if (!t) games?.onMiss(); // a swing at nothing (Prop Hunt: costs the seeker a short stun)
   }
 
   /** someone hit me */
@@ -95,7 +99,7 @@ export function initCombat({ camera, player, online, pool = null }) {
     sfx.hurt();
     if (hp <= 0) { phase = 'fall'; phaseT = 0; hp = MAX_HP; player.state.stunned = true; online.setKnocked(true); setTimeout(sfx.thud, 450); }
   }
-  online.onHit(receive);
+  online.onHit((from) => { if (games && games.onHit(from ? from.id : null)) return; receive(from); }); // a game's punch is a tag, not damage
 
   /** terminated: freeze, black out with the text, then teleport to the hall outside the front door facing it */
   function terminate() {
