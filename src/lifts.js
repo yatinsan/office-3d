@@ -17,7 +17,7 @@ const FRONT =[0.1, 2.4];      // "in front of the doors" reach (m)
 const TRAVEL_TIME = 8;         // seconds the cabin takes from 4th to G (it passes 3, 2, 1 on the way: 2 s a floor)
 const FLOORS = ['4', '3', '2', '1', 'G'];
 
-export function initLifts({ scene, camera, player }) {
+export function initLifts({ scene, camera, player, navigate }) {
   const all = [...LIFTS, ...GROUND_LIFTS];
   for (const l of GROUND_LIGHTS) scene.add(l);
   const cabins = {};
@@ -75,15 +75,22 @@ export function initLifts({ scene, camera, player }) {
     + 'border:1px solid rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;';
   document.body.appendChild(card);
   let cardT = 0;
-  function showCard(icon, title, text, color, ms) {
-    card.innerHTML = `<div style="font-size:26px">${icon}</div><div style="font-weight:700;font-size:16px;color:${color};margin:2px 0 4px">${title}</div><div style="opacity:.9">${text}</div>`;
+  let asking = false;   // the locked card is waiting for Y / N
+  function showCard(icon, title, text, color, ms, extra = '') {
+    asking = !!extra;
+    card.innerHTML = `<div style="font-size:26px">${icon}</div><div style="font-weight:700;font-size:16px;color:${color};margin:2px 0 4px">${title}</div><div style="opacity:.9">${text}</div>${extra}`;
     card.style.opacity = '1'; card.style.transform = 'translate(-50%,0)';
-    clearTimeout(cardT); cardT = setTimeout(() => { card.style.opacity = '0'; card.style.transform = 'translate(-50%,-10px)'; }, ms);
+    clearTimeout(cardT); cardT = setTimeout(() => { asking = false; card.style.opacity = '0'; card.style.transform = 'translate(-50%,-10px)'; }, ms);
   }
 
   const free = () => !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden');
   addEventListener('keydown', (e) => {
     if (e.repeat || !free() || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (asking && (e.code === 'KeyY' || e.code === 'KeyN')) {   // answer to "show me the way?"
+      asking = false; clearTimeout(cardT); card.style.opacity = '0'; card.style.transform = 'translate(-50%,-10px)';
+      if (e.code === 'KeyY') { navigate?.(true); showCard('🧭', 'Route on the map', 'Follow the yellow dotted line on the minimap to the Game Room.', '#ffd34a', 4000); }
+      return;
+    }
     const L = current();
     if (!L) return;
     const s = S[L.n];
@@ -94,7 +101,8 @@ export function initLifts({ scene, camera, player }) {
       if (L.target) { if (inDoorway(L)) return; setOpen(L, false); } else setOpen(L, true);
       emit({ t: 'lift', op: 'door', n: L.n, floor: floorOf(L), open: L.target });
     } else if (e.code === 'KeyE' && inCabin(L) && s.at === floorOf(L) && s.phase === 'idle') {   // works with the doors open or shut
-      if (!unlocked) { showCard('🔒', 'Lift locked', 'Take a look around Pixbit first and visit the Game Room. The lift unlocks as soon as you get there.', '#ffd34a', 5000); return; }
+      if (!unlocked) { showCard('🔒', 'Lift locked', 'Take a look around Pixbit first and visit the Game Room. The lift unlocks as soon as you get there.', '#ffd34a', 9000,
+        '<div style="margin-top:10px;font-weight:600">Want a route to the Game Room on your map?</div><div style="margin-top:6px"><b style="color:#6ee7a0">Y</b> Yes, show me the way &nbsp;·&nbsp; <b style="color:#ff8a8a">N</b> No thanks</div>'); return; }
       go(L.n, 1 - s.at);
     }
   });
@@ -181,7 +189,7 @@ export function initLifts({ scene, camera, player }) {
     /** called when the player reaches the Game Room: unlocks the lifts (once, remembered) and shows a card */
     unlock() {
       if (unlocked) return;
-      unlocked = true;
+      unlocked = true; navigate?.(false);
       try { localStorage.setItem(LOCK_KEY, '1'); } catch {}
       showCard('🔓', 'Lift unlocked!', 'You found the Game Room. You can now ride the lifts between the floors.', '#6ee7a0', 5000);
     },

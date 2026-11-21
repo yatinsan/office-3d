@@ -1,5 +1,5 @@
 import { colliders, lvl } from './colliders.js';
-import { GAME_X1, GAME_Z1, MEET_Z1 } from './world/helpers.js';
+import { GAME_X1, GAME_Z1, MEET_Z1, GAME_DOOR, doorLeaves } from './world/helpers.js';
 
 // GTA-style minimap: a square at the right edge, walls only, rotates so "up" is where you look.
 const MW = 210, MH = 210; // css px: a circle
@@ -9,7 +9,53 @@ const walls = [null, null]; // walls + big blocks, no small furniture (built on 
 // one list per floor level (the ground floor is built under the 4th, same x/z)
 const getWalls = () => walls[lvl.cur] || (walls[lvl.cur] = colliders.filter((c) => (c.lv || 0) === lvl.cur && Math.max(c.maxX - c.minX, c.maxZ - c.minZ) >= 1.2));
 
+// ---- walking route to the Game Room: A* over a coarse grid of the 4th floor's colliders ----
+const CELL = 0.2, GX0 = -4, GZ0 = -2, GNX = 175, GNZ = 213, PAD = 0.12;
+function findRoute(sx, sz, tx, tz) {
+  const solid = new Uint8Array(GNX * GNZ);
+  const doorBlocks = new Set(doorLeaves.map((d) => d.block));
+  for (const c of colliders) {
+    if (doorBlocks.has(c)) continue;                     // shut cabin / hall doors: you can open them
+    if ((c.lv || 0) !== 0) continue;
+    if (c.minX === -0.08 && c.maxX === 0.08) continue;   // the glass doors in the west wall (terrace): shut, but you can open them
+    if (c.minX === GAME_DOOR[0] && c.maxX === GAME_DOOR[1] && Math.abs(c.minZ - MEET_Z1) < 0.01) continue; // the game room door: shut, but you can open it
+    const x0 = Math.max(0, Math.floor((c.minX - PAD - GX0) / CELL)), x1 = Math.min(GNX - 1, Math.floor((c.maxX + PAD - GX0) / CELL));
+    const z0 = Math.max(0, Math.floor((c.minZ - PAD - GZ0) / CELL)), z1 = Math.min(GNZ - 1, Math.floor((c.maxZ + PAD - GZ0) / CELL));
+    for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) solid[z * GNX + x] = 1;
+  }
+  const cell = (x, z) => [Math.min(GNX - 1, Math.max(0, Math.floor((x - GX0) / CELL))), Math.min(GNZ - 1, Math.max(0, Math.floor((z - GZ0) / CELL)))];
+  const [ax, az] = cell(sx, sz), [bx, bz] = cell(tx, tz);
+  const start = az * GNX + ax, goal = bz * GNX + bx;
+  solid[start] = 0; solid[goal] = 0;                       // never block the ends
+  const g = new Float32Array(GNX * GNZ).fill(1e9), from = new Int32Array(GNX * GNZ).fill(-1), done = new Uint8Array(GNX * GNZ);
+  const open = [[0, start]]; g[start] = 0;
+  const h = (i) => Math.hypot((i % GNX) - bx, ((i / GNX) | 0) - bz);
+  while (open.length) {
+    let bi = 0; for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i;
+    const [, cur] = open.splice(bi, 1)[0];
+    if (done[cur]) continue; done[cur] = 1;
+    if (cur === goal) break;
+    const cx = cur % GNX, cz = (cur / GNX) | 0;
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dz) continue;
+      const nx = cx + dx, nz = cz + dz;
+      if (nx < 0 || nz < 0 || nx >= GNX || nz >= GNZ) continue;
+      const n = nz * GNX + nx;
+      if (solid[n] || done[n] || (dx && dz && (solid[cz * GNX + nx] || solid[nz * GNX + cx]))) continue; // no corner cutting
+      const ng = g[cur] + (dx && dz ? 1.414 : 1);
+      if (ng < g[n]) { g[n] = ng; from[n] = cur; open.push([ng + h(n), n]); }
+    }
+  }
+  if (!done[goal]) return null;
+  const pts = [];
+  for (let i = goal; i !== -1; i = from[i]) pts.push({ x: GX0 + ((i % GNX) + 0.5) * CELL, z: GZ0 + (((i / GNX) | 0) + 0.5) * CELL });
+  return pts.reverse().filter((_, i, a) => i % 3 === 0 || i === a.length - 1);
+}
+
 export function initMinimap({ camera, player, online }) {
+  // the way from the lift: the fingerprint door -> the lounge balcony door -> the balcony -> along the terrace -> the meeting room -> the game room door
+  const WP = [[11.3, 8.1], [9.0, 8.1], [1.6, 5.7], [-2.8, 5.7], [-1.6, 20.8], [0.9, 20.8], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 - 0.6], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 + 0.9]];
+  let route = null, routeOn = false, routeT = 0, wpi = 0;
   const wrap = document.createElement('div');
   wrap.id = 'minimap';
   wrap.style.cssText = `position:fixed;left:14px;bottom:46px;opacity:.72;width:${MW}px;height:${MH}px;box-sizing:border-box;z-index:5;pointer-events:none;display:none;` +
@@ -41,6 +87,10 @@ export function initMinimap({ camera, player, online }) {
       ctx.fillStyle = d.color || '#7ee08f';
       ctx.beginPath(); ctx.arc(d.x, d.z, 0.45, 0, 7); ctx.fill();
     }
+    if (routeOn && route && route.length > 1 && !lvl.cur) {   // the way to the Game Room: a dashed yellow line
+      ctx.save(); ctx.shadowBlur = 0; ctx.strokeStyle = '#ecc828'; ctx.lineWidth = 0.28; ctx.setLineDash([0.6, 0.45]); ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(px, pz); for (const p of route) ctx.lineTo(p.x, p.z); ctx.stroke(); ctx.restore();
+    }
     // you: yellow arrow in the middle, always pointing up
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(W / 2, H / 2); ctx.scale(dpr, dpr);
@@ -64,8 +114,27 @@ export function initMinimap({ camera, player, online }) {
 
   return {
     show(on) { wrap.style.display = on ? 'block' : 'none'; },
+    /** turn the walking route to the Game Room on / off */
+    navigate(on) {
+      routeOn = on; route = null; routeT = 1;
+      const x = player.pos.x, z = player.pos.z;                // start at the first stop still ahead of you
+      wpi = x > 10.2 ? 0 : x < 0 ? (z > 8 ? 4 : 3) : z > 18.7 ? 6 : 2;
+    },
     update(dt, active) {
       wrap.style.display = active ? 'block' : 'none';
+      if (routeOn && !lvl.cur && (routeT += dt) >= 1) {       // re-plan once a second as you walk
+        routeT = 0;
+        const x = player.pos.x, z = player.pos.z;
+        wpi = Math.max(wpi, x < 0 ? (z > 8 ? 4 : 3) : x < 10.2 && z > 18.7 ? 6 : 0);   // never send you back to a stop you are already past
+        while (wpi < WP.length - 1 && Math.hypot(player.pos.x - WP[wpi][0], player.pos.z - WP[wpi][1]) < 1.3) wpi++;   // reached that stop
+        const pts = []; let fx = player.pos.x, fz = player.pos.z;
+        for (let i = wpi; i < WP.length; i++) {
+          const leg = findRoute(fx, fz, WP[i][0], WP[i][1]) || [{ x: WP[i][0], z: WP[i][1] }];   // no way found: a straight line for that bit
+          pts.push(...leg); fx = WP[i][0]; fz = WP[i][1];
+        }
+        route = pts;
+        if (player.pos.z > MEET_Z1 + 0.5 && player.pos.x < GAME_X1) routeOn = false; // arrived
+      }
       if (!active || (acc += dt) < 1 / 30) return;
       acc = 0; draw();
     },

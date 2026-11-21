@@ -118,7 +118,7 @@ const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, 
 modes.register(online);
 const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
-const lifts = initLifts({ scene, camera, player }); // E at any lift: ride to the ground floor and back (suggestion 54)
+const lifts = initLifts({ scene, camera, player, navigate: (on) => minimap.navigate(on) }); // E at any lift: ride to the ground floor and back (suggestion 54)
 online.hookLifts({ msg: (m) => lifts.apply(m), snap: () => lifts.snapshot() }); // lift calls / rides are sent to the others only when they happen
 lifts.onChange((m) => online.broadcast(m));
 const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge
