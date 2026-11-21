@@ -721,6 +721,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   tag.visible = !self;
   group.add(tag);
   let curName = name, curColor = color, talk = false, muted = false, badge = null; // badge: ring colour while playing a game
+  let disg = null, disgY = 0; // disguise (Prop Hunt): a prop shown instead of the body
   // status icon above the name tag: an animated speaker while talking, a tiny red mic with a slash while muted
   const sCanvas = document.createElement('canvas'); sCanvas.width = 128; sCanvas.height = 128;
   const sTex = new THREE.CanvasTexture(sCanvas); sTex.colorSpace = THREE.SRGBColorSpace;
@@ -731,7 +732,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   function drawStatus() {
     const g = sCanvas.getContext('2d');
     g.clearRect(0, 0, 128, 128);
-    sIcon.visible = !self && (talk || muted);
+    sIcon.visible = !self && !disg && (talk || muted);
     if (!sIcon.visible) return;
     g.lineCap = 'round'; g.lineJoin = 'round';
     if (talk) {
@@ -801,6 +802,18 @@ export function makeAvatar(name, color, { self = false } = {}) {
     setSeated(s) { seatTarget = s ? 1 : 0; },
     /** a coloured ring round the name tag = this player is in a running game (null removes it) */
     setBadge(c) { if (c !== badge) { badge = c; drawTag(); } },
+    /** Prop Hunt: show `obj` (a THREE.Object3D; hitY = how high to aim a punch) instead of the body, name tag and mic icon; null = back to normal */
+    setDisguise(obj, hitY = 0.5) {
+      if (disg) { group.remove(disg); disg = null; }
+      disgY = obj ? hitY : 0;
+      if (obj) { disg = obj; group.add(obj); }
+      for (const c of group.children) if (c !== tag && c !== sIcon && c !== disg) c.visible = !disg;
+      tag.visible = !self && !disg;
+      if (disg) sIcon.visible = false; else drawStatus();
+    },
+    /** punch aim height: a disguised player is low (a chair), a normal one is chest high (0 = not disguised) */
+    get hitY() { return disg ? disgY : 0; },
+    get disguised() { return !!disg; },
     setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },

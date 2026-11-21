@@ -38,7 +38,7 @@ export function initCombat({ camera, player, online, pool = null, games = null }
   let phase = 'ok', phaseT = 0, immune = 0, koDown = 0, roll = 0, rollDir = 1;
   const v = new THREE.Vector3(), dir = new THREE.Vector3(), eul = new THREE.Euler(0, 0, 0, 'YXZ');
 
-  const canFight = () => online.running() && !player.state.paused && phase === 'ok' && !pool?.isActive?.() && (player.controls.isLocked || player.state.dragMode);
+  const canFight = () => online.running() && !player.state.paused && !player.state.stunned && phase === 'ok' && !pool?.isActive?.() && (player.controls.isLocked || player.state.dragMode);
 
   /** left fist first (and after a pause), then random with a lean towards swapping arms */
   function pickSide() {
@@ -55,9 +55,10 @@ export function initCombat({ camera, player, online, pool = null, games = null }
     for (const p of online.peers()) {
       if (!p.avatar.visible || p.avatar.knocked) continue;
       if (games && !games.canHit(p.id)) continue; // a running game: only its players can hit each other
-      v.copy(p.avatar.group.position); v.y += 1.1; v.sub(camera.position);
+      const low = p.avatar.hitY; // disguised as a prop (Prop Hunt): aim lower, and be a bit more forgiving about the distance
+      v.copy(p.avatar.group.position); v.y += low || 1.1; v.sub(camera.position);
       const d = v.length();
-      if (d > REACH || d < 0.01) continue;
+      if (d > (low ? REACH + 0.6 : REACH) || d < 0.01) continue;
       const dot = v.divideScalar(d).dot(dir);
       if (dot < CONE) continue;
       const score = dot - d * 0.05;
@@ -75,6 +76,7 @@ export function initCombat({ camera, player, online, pool = null, games = null }
     sfx.whoosh();
     if (t) { t.avatar.hurt(camera.position.x, camera.position.z); setTimeout(() => sfx.impact(), 90); pending.push({ p: t, until: now + 1.5 }); }
     online.broadcast({ t: 'hit', side, to: t ? t.id : null, from: online.uid() });
+    if (!t) games?.onMiss(); // a swing at nothing (Prop Hunt: costs the seeker a short stun)
   }
 
   /** someone hit me */

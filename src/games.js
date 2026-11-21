@@ -1,4 +1,6 @@
+import * as THREE from 'three';
 import hideseek from './games/hideseek.js';
+import prophunt from './games/prophunt.js';
 import * as sfx from './sfx.js';
 
 /**
@@ -9,7 +11,7 @@ import * as sfx from './sfx.js';
  *
  * A game type (src/games/*.js) = { id, name, min, max, blurb, init, tick, onHit, hostTick, badge, hud, summary, ... }.
  */
-const TYPES = [hideseek];
+const TYPES = [hideseek, prophunt];
 const typeOf = (g) => TYPES.find((t) => t.id === g.type) || TYPES[0];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -58,6 +60,8 @@ export function initGames({ online, player }) {
   const me = () => online.uid();
   const now = () => performance.now();
   let open = false, view = 'list', idx = 0, cur = { info: [], items: [] }, frozen = false, hudT = 0, toastT = 0, resultT = 0;
+  let stunT = 0, stunApplied = false, keyQ = []; // stunT: seconds of "can't move / punch" left; keyQ: key presses for the game types (1-5, R, ...)
+  const propCache = new WeakMap(); // avatar -> disguise index currently shown (so changed() does not rebuild the prop every time)
 
   const myGame = () => { const m = me(); for (const g of games.values()) if (m && g.players[m]) return g; return null; };
   const playingOf = (uid) => { for (const g of games.values()) if (g.phase === 'playing' && g.players[uid]) return g; return null; };
@@ -77,7 +81,11 @@ export function initGames({ online, player }) {
     el: (g) => (now() - g.startMs) / 1000,
     toast,
     send: (op) => act(op),
-    freeze(v) { if (v !== frozen) { frozen = v; player.state.stunned = v; } },
+    freeze(v) { frozen = !!v; syncStun(); },
+    /** can't move or punch for `s` seconds */
+    stun(s) { stunT = Math.max(stunT, s); syncStun(); },
+    /** key presses since the last call (event.code strings); ignored while the games panel is open */
+    keys() { const k = keyQ; keyQ = []; return k; },
     blind(text, sub = '') {
       if (!text) { if (blindEl.style.display !== 'none') blindEl.style.display = 'none'; return; }
       const html = `${esc(text)}<small>${esc(sub)}</small>`;
@@ -85,13 +93,18 @@ export function initGames({ online, player }) {
       if (blindEl.innerHTML !== html) blindEl.innerHTML = html;
     },
   };
-  const stopEffects = () => { ctx.freeze(false); ctx.blind(null); };
+  /** player.state.stunned follows freeze / stun, and is only written when that changes (a knockout in combat.js sets it too) */
+  function syncStun() {
+    const want = frozen || stunT > 0;
+    if (want !== stunApplied) { stunApplied = want; player.state.stunned = want; }
+  }
+  const stopEffects = () => { frozen = false; stunT = 0; syncStun(); ctx.blind(null); keyQ = []; };
 
   // ---------- shared state: every client applies the same messages ----------
   const hydrate = (r) => ({ id: r.id, type: r.type, host: r.host, hostName: r.hostName, players: { ...r.players }, phase: r.phase, seed: r.seed || 0,
-    order: r.order || [], seekers: r.seekers || [], run: {}, startMs: r.el != null ? now() - r.el * 1000 : 0 });
+    order: r.order || [], seekers: r.seekers || [], disguise: r.disguise || {}, run: {}, startMs: r.el != null ? now() - r.el * 1000 : 0 });
   const plain = (g) => ({ id: g.id, type: g.type, host: g.host, hostName: g.hostName, players: g.players, phase: g.phase, seed: g.seed, order: g.order, seekers: g.seekers,
-    el: g.phase === 'playing' ? ctx.el(g) : null });
+    disguise: g.disguise, el: g.phase === 'playing' ? ctx.el(g) : null });
 
   function removePlayer(g, uid) {
     if (!g.players[uid]) return;
@@ -99,7 +112,7 @@ export function initGames({ online, player }) {
     const ids = Object.keys(g.players).sort();
     if (!ids.length) { games.delete(g.id); return; }
     if (g.host === uid) { g.host = ids[0]; g.hostName = g.players[g.host]; } // the lowest id takes over as referee
-    if (g.phase === 'playing') { g.seekers = g.seekers.filter((s) => s !== uid); typeOf(g).onLeave?.(g); }
+    if (g.phase === 'playing') { g.seekers = g.seekers.filter((s) => s !== uid); delete g.disguise?.[uid]; typeOf(g).onLeave?.(g); }
   }
   function finish(g, result) {
     if (!games.delete(g.id)) return;
@@ -114,7 +127,7 @@ export function initGames({ online, player }) {
     switch (m.op) {
       case 'create':
         if (m.g && m.g.host === from && !games.has(m.g.id) && TYPES.some((x) => x.id === m.g.type) && m.g.players && m.g.players[from]) {
-          games.set(m.g.id, hydrate({ ...m.g, phase: 'open', seed: 0, order: [], seekers: [], el: null }));
+          games.set(m.g.id, hydrate({ ...m.g, phase: 'open', seed: 0, order: [], seekers: [], disguise: {}, el: null }));
           if (from !== me()) toast(`${m.g.hostName} created ${typeOf(m.g).name}. Press G to join`, 3200);
         }
         break;
@@ -134,6 +147,9 @@ export function initGames({ online, player }) {
         break;
       case 'caught':
         if (g && g.phase === 'playing' && m.uid === from) { t.caught?.(g, from); if (t.caughtText && from !== me()) toast(t.caughtText(g.players[from] || 'Someone'), 2200); }
+        break;
+      case 'disguise': // Prop Hunt: a hider picked a prop (p) and may be frozen in place (f)
+        if (g && g.phase === 'playing' && m.uid === from && g.players[from] && t.props && Number.isInteger(m.p) && m.p >= 0 && m.p < t.props.length) g.disguise[from] = { p: m.p, f: m.f ? 1 : 0 };
         break;
       case 'end':
         if (g && g.phase === 'playing' && from === g.host) finish(g, m.result);
@@ -165,9 +181,24 @@ export function initGames({ online, player }) {
     return typeOf(a).onHit(a, ctx, from) || true;
   }
 
-  // ---------- badges + scoreboard ----------
+  /** a swing that hit nobody: the game I am in may punish it (Prop Hunt) */
+  function onMiss() {
+    const a = playingOf(me());
+    if (a) typeOf(a).onMiss?.(a, ctx);
+  }
+
+  // ---------- badges, disguises + scoreboard ----------
+  /** show / clear the prop on one avatar. mine = my own body: it only gets hidden (the camera sits inside the prop) */
+  function dress(avatar, g, uid, mine) {
+    const t = g && typeOf(g), idx = t && t.props ? t.disguiseOf(g, uid) : null; // null = no disguise
+    if (propCache.get(avatar) === (idx ?? -1)) return;
+    propCache.set(avatar, idx ?? -1);
+    if (idx === null) avatar.setDisguise?.(null);
+    else avatar.setDisguise?.(mine ? new THREE.Group() : t.makeProp(idx), t.props[idx].hit);
+  }
   function changed() {
-    for (const p of online.peers()) { const g = playingOf(p.id); p.avatar.setBadge?.(g ? typeOf(g).badge(g, p.id) : null); }
+    for (const p of online.peers()) { const g = playingOf(p.id); p.avatar.setBadge?.(g ? typeOf(g).badge(g, p.id) : null); dress(p.avatar, g, p.id, false); }
+    if (online.me) dress(online.me, playingOf(me()), me(), true);
     drawHud();
     if (open) render();
   }
@@ -242,7 +273,7 @@ export function initGames({ online, player }) {
 
   addEventListener('keydown', (e) => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-    if (!open) { if (e.code === 'KeyG' && !e.repeat) openPanel(); return; }
+    if (!open) { if (e.code === 'KeyG' && !e.repeat) openPanel(); else if (!e.repeat && !player.state.paused && keyQ.length < 8) keyQ.push(e.code); return; }
     const n = cur.items.length;
     if (e.code === 'KeyG' || e.code === 'Escape') close();
     else if (e.code === 'ArrowDown' || e.code === 'KeyS') { idx = (idx + 1) % n; render(); }
@@ -255,7 +286,8 @@ export function initGames({ online, player }) {
 
   function update(dt) {
     const m = me();
-    if (!m) { if (frozen) stopEffects(); return; }
+    if (!m) { if (frozen || stunT > 0) stopEffects(); return; }
+    if (stunT > 0) { stunT -= dt; syncStun(); }
     for (const g of games.values()) {
       if (g.phase !== 'playing') continue;
       const t = typeOf(g);
@@ -265,5 +297,5 @@ export function initGames({ online, player }) {
     if ((hudT += dt) > 0.25) { hudT = 0; drawHud(); }
   }
 
-  return { update, open: openPanel, close, canHit, onHit, get isOpen() { return open; } };
+  return { update, open: openPanel, close, canHit, onHit, onMiss, get isOpen() { return open; } };
 }
