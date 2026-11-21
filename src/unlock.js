@@ -59,7 +59,19 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
   icon.position.set(READER.x + 0.06, READER.y + 0.24, READER.z);
   icon.renderOrder = 20;
   icon.visible = false; // (the lock now lives in the wall panel only)
-  const ledMat = new THREE.MeshStandardMaterial({ color: '#ff3b30', emissive: '#ff3b30', emissiveIntensity: 1.6 });
+  // padlock version of the handle's key marker
+  const mk = document.createElement('canvas'); mk.width = mk.height = 128;
+  const mg = mk.getContext('2d');
+  mg.fillStyle = 'rgba(15,18,24,.72)'; mg.strokeStyle = '#ecc828'; mg.lineWidth = 8;
+  mg.beginPath(); mg.roundRect(10, 10, 108, 108, 26); mg.fill(); mg.stroke();
+  mg.strokeStyle = '#ecc828'; mg.fillStyle = '#ecc828'; mg.lineWidth = 9; mg.lineCap = 'round';
+  mg.beginPath(); mg.moveTo(47, 62); mg.lineTo(47, 50); mg.arc(64, 50, 17, Math.PI, 0); mg.lineTo(81, 62); mg.stroke();
+  mg.beginPath(); mg.roundRect(36, 60, 56, 40, 7); mg.fill();
+  mg.fillStyle = 'rgba(15,18,24,.9)'; mg.beginPath(); mg.arc(64, 76, 6, 0, Math.PI * 2); mg.fill(); mg.fillRect(61, 78, 6, 12);
+  const markTex = new THREE.CanvasTexture(mk); markTex.colorSpace = THREE.SRGBColorSpace;
+  const hm = door.marker.material, keyMap = hm.map; // the door handle's own marker: F normally, a padlock while locked
+  door.askToOpen = true; // keep that marker visible on the handle while locked (src/doors.js)
+  const ledMat =new THREE.MeshStandardMaterial({ color: '#ff3b30', emissive: '#ff3b30', emissiveIntensity: 1.6 });
   const led = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.012, 0.03), ledMat);
   led.position.set(READER.x + 0.018, READER.y + 0.055, READER.z);
   scene.add(led);
@@ -136,7 +148,7 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
   let state = 'locked'; // locked → open → (closing) → locked
   let progress = 0, holding = false, timer = 0;
 
-  // hold F only works right at the reader; standing at the door just tells you to use the fingerprint reader
+  // hold E only works right at the reader; standing at the door just tells you to use the fingerprint reader
   const inZone = () => outside() && Math.hypot(player.pos.x - READER.x, player.pos.z - READER.z) < 0.9;
   const atDoor = () => outside() && Math.hypot(player.pos.x - LOBBY_E, player.pos.z - DOOR_Z) < 1.4;
   const inDoorway = () => player.pos.x > LOBBY_E - 0.6 && player.pos.x < LOBBY_E + 0.6 && Math.abs(player.pos.z - DOOR_Z) < 0.75;
@@ -150,10 +162,10 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
 
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName);
   addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyF' || e.repeat || player.state.paused || typing(e)) return;
+    if (e.code !== 'KeyE' || e.repeat || player.state.paused || typing(e)) return;
     if (state === 'locked' && inZone()) holding = true;
   });
-  addEventListener('keyup', (e) => { if (e.code === 'KeyF') holding = false; });
+  addEventListener('keyup', (e) => { if (e.code === 'KeyE') holding = false; });
   addEventListener('blur', () => { holding = false; });
 
   function update(dt) {
@@ -195,10 +207,12 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
     const dReader = Math.hypot(player.pos.x - READER.x, player.pos.z - READER.z);
     const close = outside() && (dReader < 1.8 || atDoor());
     label.visible = close;
+    const lockedOut = state === 'locked' && outside();
+    if (hm.map !== (lockedOut ? markTex : keyMap)) { hm.map = lockedOut ? markTex : keyMap; hm.needsUpdate = true; }
     if (close) {
       if (state === 'open') { const s = Math.max(0, Math.ceil(timer)); drawLabel('Door Unlocked', timer > 0 ? `Locks again in ${s}s` : 'Clear the doorway to lock', Math.max(0, timer) / OPEN_FOR, '#34d058'); }
       else if (state === 'closing') drawLabel('Locking…', 'Door closing', 0, '#ff3b30');
-      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : 'Door Locked', progress > 0 ? (touch ? 'Keep holding' : 'Keep holding F') : touch ? 'Hold the button to unlock' : 'Place your finger to unlock', progress, '#fff');
+      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : 'Door Locked', progress > 0 ? (touch ? 'Keep holding' : 'Keep holding E') : touch ? 'Hold the button to unlock' : 'Place your finger to unlock', progress, '#fff');
       else drawLabel('Door Locked', 'Place your finger to unlock', 1, '#ff3b30');
     }
 
@@ -215,7 +229,7 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
 
   /** HUD / touch-button hint. */
   function prompt() {
-    return state === 'locked' && inZone() ? 'F open door' : '';
+    return state === 'locked' && inZone() ? 'E hold to unlock' : '';
   }
 
   /** Where your own right hand should be: k 0 = down at your side, 1 = on the reader. */
