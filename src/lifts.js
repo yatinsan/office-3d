@@ -1,4 +1,4 @@
-import { LIFTS, GROUND_LIFTS, GROUND_LIGHTS, GROUND_DX, LIFT_DEPTH as DEPTH } from './world/hall.js';
+import { LIFTS, GROUND_LIFTS, GROUND_LIGHTS, GROUND_DX, LIFT_DEPTH as DEPTH, setLiftDisplay } from './world/hall.js';
 import { colliders } from './colliders.js';
 import { thud, join, whoosh } from './sfx.js';
 
@@ -11,7 +11,8 @@ import { thud, join, whoosh } from './sfx.js';
 const OW = 1.16;               // door opening
 const DOOR_SPEED = 1.1;        // 1 / s
 const FRONT = [0.1, 2.4];      // "in front of the doors" reach (m)
-const SHAKE_TIME = 1.7;        // seconds of rumble with the doors shut
+const TRAVEL_TIME = 5;         // seconds the cabin takes from 4th to G (it passes 3, 2, 1 on the way)
+const FLOORS = ['4', '3', '2', '1', 'G'];
 
 export function initLifts({ scene, camera, player }) {
   const all = [...LIFTS, ...GROUND_LIFTS];
@@ -40,27 +41,80 @@ export function initLifts({ scene, camera, player }) {
     if (open) { const i = colliders.indexOf(L.block); if (i >= 0) colliders.splice(i, 1); }
   }
 
-  // ---- the ride ----
-  let ride = null; // { L, dest, phase, t, nextShake }
-  const twin = (L) => all.find((o) => o.n === L.n && o.ground !== L.ground);
-  function startRide(L) {
-    ride = { L, dest: twin(L), phase: 'closing', t: 0 };
-    player.state.paused = true;
-    setOpen(L, false);
+  // ---- one shared cabin per lift number: it is on ONE floor at a time and really travels between them ----
+  // S[n] = { at: 0 upper | 1 ground, phase: idle | closing | moving | arrive | opening, to, t, carried }
+  const S = {};
+  for (const L of all) S[L.n] = S[L.n] || { n: L.n, at: 0, phase: 'idle', to: 0, t: 0, carried: false };
+  const floorOf = (L) => (L.ground ? 1 : 0);
+  const cabinAt = (n, f) => all.find((o) => o.n === n && floorOf(o) === f);
+  const listeners = [];
+  const emit = (m) => listeners.forEach((f) => f(m));
+
+  /** send the cabin to floor `to` (called by F from another floor, or E from inside). Only changes are broadcast. */
+  function go(n, to, remote) {
+    const s = S[n];
+    if (!s || s.phase !== 'idle' || s.at === to) return false;
+    s.to = to; s.phase = 'closing'; s.t = 0; s.carried = false;
+    setOpen(cabinAt(n, s.at), false);
+    if (!remote) emit({ t: 'lift', op: 'go', n, to });
+    return true;
   }
 
-  const free = () => !ride && !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden');
+  const free = () => !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden');
   addEventListener('keydown', (e) => {
     if (e.repeat || !free() || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const L = current();
     if (!L) return;
+    const s = S[L.n];
     if (e.code === 'KeyF') {
-      if (L.target) { if (!inDoorway(L)) setOpen(L, false); } else setOpen(L, true);
       e.stopImmediatePropagation();
-    } else if (e.code === 'KeyE' && inCabin(L) && L.target === 1 && L.t === 1) { startRide(L); }
+      if (s.phase !== 'idle') return;
+      if (s.at !== floorOf(L)) { go(L.n, floorOf(L)); return; }            // the cabin is elsewhere: call it
+      if (L.target) { if (inDoorway(L)) return; setOpen(L, false); } else setOpen(L, true);
+      emit({ t: 'lift', op: 'door', n: L.n, floor: floorOf(L), open: L.target });
+    } else if (e.code === 'KeyE' && inCabin(L) && s.at === floorOf(L) && s.phase === 'idle' && L.target === 1 && L.t === 1) {
+      go(L.n, 1 - s.at);
+    }
   });
 
   let shakeT = 0;
+  function step(s, dt) {
+    const from = cabinAt(s.n, s.at);
+    s.t += dt;
+    if (s.phase === 'closing') {
+      if (from.t === 0) {
+        s.phase = 'moving'; s.t = 0; thud();
+        s.carried = onGround() === !!s.at && inCabin(from);               // I am inside: I travel with it
+        if (s.carried) player.state.paused = true;
+      }
+    } else if (s.phase === 'moving') {
+      const u = Math.min(1, s.t / TRAVEL_TIME), e = u * u * (3 - 2 * u);   // eased: slow start, slow stop
+      const p = s.to ? e : 1 - e;                                          // 0 = 4th floor … 1 = ground
+      setLiftDisplay(s.n, s.to ? '▼' : '▲', FLOORS[Math.round(p * 4)]);
+      if (s.carried) {
+        camera.position.y += Math.sin(u * Math.PI * 2) * (s.to ? 1 : -1) * 0.03; // you feel it start and stop
+        shakeT += dt;
+        const k = Math.min(1, s.t / 0.25) * Math.min(1, (TRAVEL_TIME - s.t) / 0.3);
+        const a = 0.006 * Math.max(0, k);
+        camera.position.x += Math.sin(shakeT * 61) * a;
+        camera.position.y += Math.sin(shakeT * 47 + 1) * a * 1.4;
+        camera.position.z += Math.sin(shakeT * 53 + 2) * a;
+      }
+      if (s.t >= TRAVEL_TIME) {
+        if (s.carried) {
+          player.pos.x += s.to ? GROUND_DX : -GROUND_DX;                  // same spot inside the same-numbered cabin
+          camera.rotation.set(0, from.out > 0 ? -Math.PI / 2 : Math.PI / 2, 0, 'YXZ');
+        }
+        s.at = s.to; s.phase = 'arrive'; s.t = 0; setLiftDisplay(s.n, '', FLOORS[s.at ? 4 : 0]);
+        if (s.carried || onGround() === !!s.at) join();                   // ding for anyone on that floor
+      }
+    } else if (s.phase === 'arrive') {
+      if (s.t > 0.5) { setOpen(cabinAt(s.n, s.at), true); s.phase = 'opening'; s.t = 0; if (onGround() === !!s.at) whoosh(0.4); }
+    } else if (s.phase === 'opening') {
+      if (cabinAt(s.n, s.at).t === 1) { s.phase = 'idle'; if (s.carried) { player.state.paused = false; s.carried = false; } }
+    }
+  }
+
   function update(dt) {
     for (const L of all) {
       if (L.t !== L.target) {
@@ -72,39 +126,29 @@ export function initLifts({ scene, camera, player }) {
         if (L.t === 0 && !colliders.includes(L.block)) colliders.push(L.block);
       }
     }
-    if (!ride) return;
-    const { L, dest } = ride;
-    ride.t += dt;
-    if (ride.phase === 'closing') {               // doors slide shut
-      if (L.t === 0) { ride = { ...ride, phase: 'moving', t: 0 }; thud(); }
-    } else if (ride.phase === 'moving') {         // the cabin shakes a little, then "arrives"
-      shakeT += dt;
-      const k = Math.min(1, ride.t / 0.25) * Math.min(1, (SHAKE_TIME - ride.t) / 0.3);
-      const a = 0.012 * Math.max(0, k);
-      camera.position.x += Math.sin(shakeT * 61) * a;
-      camera.position.y += Math.sin(shakeT * 47 + 1) * a * 1.4;
-      camera.position.z += Math.sin(shakeT * 53 + 2) * a;
-      if (ride.t >= SHAKE_TIME) {
-        // step through to the other floor while the doors are shut: same spot inside the same-numbered lift
-        const off = dest.ground ? GROUND_DX : -GROUND_DX;
-        player.pos.x += off;
-        camera.rotation.set(0, L.out > 0 ? -Math.PI / 2 : Math.PI / 2, 0, 'YXZ'); // turn to face the doors
-        ride = { ...ride, L: dest, phase: 'arrive', t: 0 };
-        join();                                    // ding
-      }
-    } else if (ride.phase === 'arrive') {          // a beat, then the doors open on the other floor
-      if (ride.t > 0.5) { whoosh(0.4); setOpen(dest, true); ride = { ...ride, phase: 'opening', t: 0 }; }
-    } else if (ride.phase === 'opening') {
-      if (dest.t === 1) { player.state.paused = false; ride = null; }
-    }
+    for (const n in S) if (S[n].phase !== 'idle') step(S[n], dt);
   }
 
   return {
     update,
+    onChange: (f) => listeners.push(f),
+    /** a message from another player (only sent when something changes) */
+    apply(m) {
+      if (m.op === 'go') go(m.n, m.to, true);
+      else if (m.op === 'door') { const s = S[m.n], L = s && cabinAt(m.n, m.floor); if (L && s.phase === 'idle' && s.at === m.floor) setOpen(L, !!m.open); }
+      else if (m.op === 'snap' && Array.isArray(m.s)) {
+        for (const n of m.s) { const s = S[n]; if (s && s.phase === 'idle' && s.at === 0) { s.at = 1; setLiftDisplay(n, '', 'G'); setOpen(cabinAt(n, 0), false); setOpen(cabinAt(n, 1), true); } }
+      }
+    },
+    /** lifts parked on the ground floor, for someone who just joined */
+    snapshot: () => Object.values(S).filter((s) => s.at === 1 && s.phase === 'idle').map((s) => s.n),
     prompt() {
-      if (ride) return '';
       const L = current();
       if (!L) return '';
+      const s = S[L.n];
+      if (s.carried) return '';
+      if (s.phase !== 'idle') return `Lift ${L.n} is on its way`;
+      if (s.at !== floorOf(L)) return `F call lift ${L.n}`;
       if (inCabin(L) && L.target && L.t === 1) return `E ${onGround() ? 'go up' : 'go to the ground floor'}`;
       if (L.target) return inDoorway(L) ? '' : `F close lift ${L.n}`;
       return `F open lift ${L.n}`;

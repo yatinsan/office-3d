@@ -302,6 +302,28 @@ export const LIFT_DEPTH = 2.6; // door to back wall (a bit shorter than the full
 const LIFT_CW = 2.9, LIFT_CH = 2.85; // cabin width / height
 
 /** The cabin behind a lift door: brushed-steel walls, rail, mirror, button panel, light. Solid sides, open front. */
+const LIVE = {};
+/** One live floor display per lift number, shared by the cabin panels and the indicator over the door (src/lifts.js redraws it). */
+function liveDisp(n) {
+  if (LIVE[n]) return LIVE[n];
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const g = c.getContext('2d');
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const mat = std({ map: t, emissive: '#2a62d8', emissiveIntensity: 0.6 });
+  const set = (arrow, label) => {
+    g.fillStyle = '#1b52c9'; g.fillRect(0, 0, 128, 64);
+    g.fillStyle = '#fff'; g.font = 'bold 44px system-ui, sans-serif'; g.textBaseline = 'middle';
+    g.fillText(`${arrow} ${label}`.trim(), arrow ? 20 : 48, 34);
+    t.needsUpdate = true;
+  };
+  set('', '4');
+  return (LIVE[n] = { mat, set, last: '' });
+}
+export function setLiftDisplay(n, arrow, label) {
+  const d = liveDisp(n), k = arrow + label;
+  if (d.last !== k) { d.last = k; d.set(arrow, label); }
+}
+
 function liftCabin(root, L) {
   const { x: fx, z: zc, out, cw } = L;
   const back = fx - out * 0.1;                        // back face of the wall the door sits in
@@ -323,7 +345,7 @@ function liftCabin(root, L) {
   const fxi = back - out * 0.012, ret = (cw - LIFT_OW) / 2, rc = LIFT_OW / 2 + ret / 2, ryIn = -out * Math.PI / 2;
   for (const sd of [-1, 1]) box(root, H.liftIn, 0.024, LIFT_CH, ret, fxi, LIFT_CH / 2, zc + sd * rc, { shadow: false });
   box(root, H.liftIn, 0.024, LIFT_CH - LIFT_DH, LIFT_OW, fxi, (LIFT_DH + LIFT_CH) / 2, zc, { shadow: false });
-  const disp = L.ground ? H.dispG : H.disp4, fp = back - out * 0.03;
+  const disp = liveDisp(L.n).mat, fp = back - out * 0.03;
   for (const sd of [-1, 1]) {
     const z = zc + sd * rc, d = 0.015;
     box(root, H.liftSteel, 0.01, 2.0, ret - 0.06, back - out * 0.026, 1.4, z, { shadow: false });                    // raised panel
@@ -366,13 +388,13 @@ function liftFront(root, fx, zc, n, out, { alarm = true, ground = false, cw = LI
     return g;
   });
   (ground ? GROUND_LIFTS : LIFTS).push({ n, x: fx, z: zc, out, ground, leaves, cw });
-  liftCabin(root, { x: fx, z: zc, out, ground, cw });
+  liftCabin(root, { x: fx, z: zc, out, ground, cw, n });
   for (const sd of [-1, 1]) box(root, H.liftSteel, 0.04, LIFT_DH - 0.04, 0.03, x(0.03), (LIFT_DH - 0.04) / 2 + 0.02, zc + sd * (w / 2 + 0.02), { shadow: false });
   box(root, H.liftSteel, 0.04, 0.03, w + 0.07, x(0.03), LIFT_DH - 0.04, zc, { shadow: false });
   plane(root, H.numDisc(n), 0.2, 0.2, x(0.012), 2.74, zc, ry);
   box(root, H.liftSteel, 0.03, 0.14, 0.62, x(0.015), 2.92, zc, { shadow: false });
   box(root, M.blackMatte, 0.035, 0.08, 0.2, x(0.02), 2.92, zc, { shadow: false });
-  box(root, H.ledRed, 0.036, 0.04, 0.06, x(0.022), 2.92, zc, { shadow: false });
+  plane(root, liveDisp(n).mat, 0.17, 0.085, x(0.04), 2.92, zc, ry);           // live floor indicator
   for (const sd of [-1, 1]) plane(root, H.arrow, 0.1, 0.09, x(0.04), 2.92, zc + sd * 0.23, ry);
   const cz = zc + k * (w / 2 + 0.33);
   box(root, H.liftSteel, 0.02, 0.26, 0.11, x(0.01), 1.15, cz, { shadow: false });

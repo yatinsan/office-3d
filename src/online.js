@@ -556,6 +556,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       if (doors) try { dd.send(JSON.stringify({ t: 'all', s: doors.snapshot() })); } catch {}
       const ps = pool?.snapshot(); // the pool table, if anyone has played
       if (ps) try { dd.send(JSON.stringify(ps)); } catch {}
+      const ls = liftHook.snap(); // lifts parked on the ground floor
+      if (ls && ls.length) try { dd.send(JSON.stringify({ t: 'lift', op: 'snap', s: ls })); } catch {}
       const gs = gameHook.snap(); // the games list (src/games.js), so a newcomer sees open / running games
       if (gs && gs.length) try { dd.send(JSON.stringify({ t: 'game', op: 'snap', games: gs })); } catch {}
     };
@@ -564,6 +566,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
         const m = JSON.parse(e.data);
         if (m.t === 'pool') { pool?.applyRemote(m, { name: p.name, color: p.color }); return; }
         if (m.t === 'game') { gameHook.msg(p.id, m); return; }
+        if (m.t === 'lift') { liftHook.msg(m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
           if (m.to && m.to === uid) onHitMe(p);
@@ -589,6 +592,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   // fighting (src/combat.js): hits travel over the event channel; my knocked-out flag rides on the position message
   let onHitMe = () => {}, selfKo = false;
   // games (src/games.js): messages {t:'game'} are routed there; it also hears about peers leaving and gives the list to newcomers
+  let liftHook = { msg() {}, snap: () => null };
   let gameHook = { msg() {}, gone() {}, reset() {}, snap: () => null };
   const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
   function broadcast(msg) {
@@ -791,6 +795,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     me, broadcast, uid: () => uid,
     get name() { return myName; },
     hookGames: (h) => { gameHook = { ...gameHook, ...h }; },
+    hookLifts: (h) => { liftHook = { ...liftHook, ...h }; },
     onHit: (fn) => { onHitMe = fn; },
     setKnocked: (k) => { selfKo = !!k; sendPos(true); },
     // menu hooks
