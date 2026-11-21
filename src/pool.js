@@ -244,8 +244,17 @@ export function initPool({ scene, camera, player, touch = false }) {
     const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.0057, 0.0057, 0.012, 10).rotateX(Math.PI / 2).translate(0, 0, -0.004),
       new THREE.MeshStandardMaterial({ color: '#4a8ad6', roughness: 0.8 }));
     cue.add(stick, tip); }
-  line.visible = ghost.visible = cue.visible = false;
-  scene.add(line, ghost, cue);
+  const greenMat = new THREE.MeshBasicMaterial({ color: '#37ff6b', transparent: true, opacity: 0.95, depthWrite: false });
+  const objLine = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.002, 1), lineMat);   // secret aid: where the hit ball would go
+  line.visible = ghost.visible = cue.visible = objLine.visible = false;
+  scene.add(line, ghost, cue, objLine);
+  let cheat = false, slashTimes = [];                                                 // press "/" four times (quickly) to toggle
+  addEventListener('keydown', (e) => {
+    if (!active || e.code !== 'Slash' || e.repeat) return;
+    const now = performance.now();
+    slashTimes = slashTimes.filter((t) => now - t < 2000); slashTimes.push(now);
+    if (slashTimes.length >= 4) { slashTimes = []; cheat = !cheat; }
+  }, true);
 
   // big pop-up text when a ball drops in a pocket
   const popEl = document.createElement('div');
@@ -325,7 +334,7 @@ export function initPool({ scene, camera, player, touch = false }) {
     player.state.paused = false;
     document.body.classList.remove('cutscene');
     hud.classList.remove('on'); layer?.classList.remove('on');
-    line.visible = ghost.visible = cue.visible = false;
+    line.visible = ghost.visible = cue.visible = objLine.visible = false;
     if (savedQuat) camera.quaternion.copy(savedQuat);
     if (savedPos) player.pos.copy(savedPos);                      // back to where you stood (the table is a collider)
   }
@@ -416,8 +425,23 @@ export function initPool({ scene, camera, player, touch = false }) {
     // aim line, ghost ball and cue
     const ready = !moving && alive[0];
     if (ready) {
-      const dx = Math.sin(a), dz = Math.cos(a), { t } = trace(dx, dz);
+      const dx = Math.sin(a), dz = Math.cos(a), { t, hitBall } = trace(dx, dz);
       const len = Math.max(0.02, t - 0.0);
+      let perfect = false; objLine.visible = false;
+      if (cheat && hitBall > 0) {                      // cheat: follow the hit ball; green when it would drop in a pocket
+        let ox = bx[hitBall] - (bx[0] + dx * t), oz = bz[hitBall] - (bz[0] + dz * t);
+        const ol = Math.sqrt(ox * ox + oz * oz) || 1; ox /= ol; oz /= ol;
+        let best = -1;
+        for (const [qx, qz] of POCKETS) {
+          const wx = qx - bx[hitBall], wz = qz - bz[hitBall], pr = wx * ox + wz * oz;
+          if (pr > 0 && Math.abs(wx * oz - wz * ox) < 0.06 && (best < 0 || pr < best)) best = pr;
+        }
+        perfect = best > 0;
+        const L = perfect ? best : 0.5;
+        objLine.visible = true; objLine.scale.z = L; objLine.rotation.y = Math.atan2(ox, oz);
+        objLine.position.set(bx[hitBall] + ox * L / 2, BY, bz[hitBall] + oz * L / 2);
+      }
+      line.material = ghost.material = objLine.material = perfect ? greenMat : lineMat;
       line.visible = ghost.visible = true;
       line.scale.z = len; line.rotation.y = a;
       line.position.set(bx[0] + dx * len / 2, BY, bz[0] + dz * len / 2);
@@ -426,7 +450,7 @@ export function initPool({ scene, camera, player, touch = false }) {
       const pull = 0.02 + power * 0.22;
       cue.position.set(bx[0] - dx * (r + 0.006 + pull), BY + 0.012, bz[0] - dz * (r + 0.006 + pull));
       cue.rotation.y = a;
-    } else line.visible = ghost.visible = cue.visible = false;
+    } else line.visible = ghost.visible = cue.visible = objLine.visible = false;
     driveCamera(dt);
   }
 
