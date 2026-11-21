@@ -19,6 +19,7 @@ import { initPool } from './pool.js';
 import { initCombat } from './combat.js';
 import { initSeat } from './seat.js';
 import { initGames } from './games.js';
+import { initMinimap } from './minimap.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -114,6 +115,7 @@ const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, 
 modes.register(online);
 const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
+const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge
 const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
 if (touchUI) touchUI.onHit = () => combat.attack();
 
@@ -284,6 +286,7 @@ renderer.setAnimationLoop(() => {
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
   gameGuide.update(dt);
+  minimap.update(dt, started && overlay.classList.contains('hidden'));
   if (!overlay.classList.contains('hidden')) {
     swayT += dt;
     swayY = Math.sin(swayT * 0.35) * 0.05; swayX = Math.sin(swayT * 0.5) * 0.012;
