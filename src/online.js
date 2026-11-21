@@ -69,7 +69,7 @@ const CSS = `
   .ow-status { font: 500 13px system-ui, sans-serif; color: rgba(255,255,255,.75); }
   .ow-status b { color: #7ee08f; }
   .ow-status.err b { color: #ff8a80; }
-  #ow-online { position: fixed; left: 14px; top: 14px; z-index: 8; display: none; pointer-events: none; }
+  #ow-online { position: fixed; right: 14px; top: 14px; z-index: 8; display: none; pointer-events: none; }
   #ow-online.show { display: flex; }
   #ow-online svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
   #ow-online .dot { width: 8px; height: 8px; border-radius: 50%; background: #7ee08f; box-shadow: 0 0 8px #7ee08f; }
@@ -98,7 +98,7 @@ const CSS = `
   /* phones: the JS touch flag (not a media query, which some phones answer wrongly) picks ONE mic button */
   body.ow-touch #ow-hud { display: none !important; }
   body:not(.ow-touch) #ow-ptt { display: none !important; }
-  body.ow-touch #ow-online { left: 68px; top: 17px; }
+  body.ow-touch #ow-online { right: calc(max(18px, env(safe-area-inset-right)) + 40px + 12px); top: max(17px, calc(env(safe-area-inset-top) + 5px)); } /* top right, just left of the full-screen button */
   @keyframes ow-pulse { 50% { transform: scale(1.1); } }
   #ow-hud .ow-mode { display: none; pointer-events: auto; cursor: pointer; padding: 6px 11px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
     background: rgba(14,14,18,.62); color: rgba(255,255,255,.75); font: 700 12px system-ui, sans-serif; white-space: nowrap; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
@@ -106,15 +106,15 @@ const CSS = `
   #ow-hud .ow-mode kbd { margin-left: 4px; }
   /* phone mic: top-left under the Menu button (Menu 40px at top 12, mic below it), a real 46px target.
      Push to talk: talks while you hold it. Always on: one tap mutes / unmutes. */
-  #ow-ptt { position: fixed; z-index: 9; left: max(15px, calc(env(safe-area-inset-left) + 3px)); top: max(62px, calc(env(safe-area-inset-top) + 50px));
-    width: 46px; height: 46px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: rgba(20,20,20,.5); color: #fff; opacity: .85;
+  #ow-ptt { position: fixed; z-index: 9; left: max(21px, calc(env(safe-area-inset-left) + 3px)); top: max(62px, calc(env(safe-area-inset-top) + 50px));
+    width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: rgba(20,20,20,.5); color: #fff; opacity: .85;
     display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .15s, background .15s; }
   #ow-ptt.show { display: flex; }
   #ow-ptt.arm { transform: scale(.94); }
   #ow-ptt.on { background: rgba(126,224,143,.75); border-color: #b8f0c2; color: #0c2a12; }
   #ow-ptt.muted { background: rgba(255,77,77,.3); border-color: rgba(255,120,120,.8); color: #ff9a9a; }
-  #ow-ptt.muted::after { content: ''; position: absolute; width: 30px; height: 2.5px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
-  #ow-ptt svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  #ow-ptt.muted::after { content: ''; position: absolute; width: 25px; height: 2.5px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
+  #ow-ptt svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 `;
 
 export function initOnline({ scene, camera, player, panel, doors = null, pool = null, touch = false, start = () => {} }) {
@@ -687,7 +687,7 @@ let hudT = 0;
 // ---------- Avatar: a rounded figure (capsule body, round head with a visor, capsule arms + legs) that swings as it walks ----------
 const SKIN = '#f1d3b8', PANTS = '#2b3550', SHOES = '#1c1c20';
 /** self: your own body in first person: no head, chest or name tag, pinned to you with no smoothing. */
-const GUN_HOLD = -1.45; // right arm raised in front (x rotation, see setGun)
+const GUN_HOLD = 1.45; // right arm raised in front (x rotation, see setGun)
 export function makeAvatar(name, color, { self = false } = {}) {
   const group = new THREE.Group();
   group.rotation.order = 'YXZ'; // turn first, then lean / fall (a knocked-out body lies on its back)
@@ -937,7 +937,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
       }
       if (fireT >= 0) { fireT += dt; if (fireT > 0.1) fireT = -1; }
       muzzle.visible = fireT >= 0;
-      if (gunOn && koK === 0 && seatK === 0) { armR.rotation.x = GUN_HOLD + (fireT >= 0 ? 0.18 : 0); armR.rotation.z = 0; armR.scale.y = 1; } // arm out in front, kicks back on a shot
+      if (gunOn && koK === 0 && seatK === 0) { armR.rotation.x = GUN_HOLD - (fireT >= 0 ? 0.18 : 0); armR.rotation.z = 0; armR.scale.y = 1; } // arm out in front, kicks back on a shot
       tag.position.set(0, tagY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK);
       const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
       group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK - SIT_DROP * seatK, cur.z - Math.cos(yaw) * lunge);
