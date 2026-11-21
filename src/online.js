@@ -291,7 +291,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       return;
     }
     camera.getWorldDirection(meDir);
-    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false);
+    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false, false, Math.asin(Math.max(-1, Math.min(1, meDir.y))));
     me.setSeated(selfSeated);
     me.setReach(reach?.aim, reach?.k || 0);
     me.update(dt);
@@ -427,8 +427,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     dc.onclose = () => refreshStatus();
     dc.onmessage = (e) => {
       try {
-        const [x, y, z, yaw, talk, mu, ko, sit] = JSON.parse(e.data);
-        p.avatar.target(x, y, z, yaw, !!talk, !!mu);
+        const [x, y, z, yaw, talk, mu, ko, sit, pitch] = JSON.parse(e.data);
+        p.avatar.target(x, y, z, yaw, !!talk, !!mu, pitch || 0);
         p.avatar.setKnocked(!!ko);
         p.avatar.setSeated(!!sit);
       } catch {}
@@ -598,7 +598,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = yawOv ?? Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0]);
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0, +Math.asin(Math.max(-1, Math.min(1, dir.y))).toFixed(2)]);
     if (!force && msg === lastSent && heartbeat < (selfSeated ? 3 : 1)) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
@@ -713,7 +713,21 @@ export function makeAvatar(name, color, { self = false } = {}) {
   }
   const head = new THREE.Group(); head.position.y = 1.62; group.add(head);
   add(head, new THREE.SphereGeometry(0.17, 24, 16), skinMat, 0, 0.13, 0);
-  add(head, new THREE.BoxGeometry(0.22, 0.07, 0.08), mat('#15171c', 0.2, 0.4), 0, 0.16, -0.14); // visor: shows which way they face
+  // face (looks toward -z): hair, eyes with pupils + highlights that blink, brows, nose, cheeks, a mouth that moves when talking
+  const hairMat = mat('#2b1d15', 0.85);
+  // simple boy hair: one short, smooth cap over the top and back of the head
+  const hair = add(head, new THREE.SphereGeometry(0.178, 28, 16, 0, Math.PI * 2, 0, 1.45), hairMat, 0, 0.13, 0.008); hair.rotation.x = 0.3;
+  const eyes = new THREE.Group(); eyes.position.set(0, 0.14, -0.15); head.add(eyes);
+  const white = mat('#ffffff', 0.3), pupil = mat('#1a1410', 0.2), shine = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+  for (const s of [-1, 1]) {
+    const e = add(eyes, new THREE.SphereGeometry(0.036, 14, 10), white, s * 0.066, 0, 0); e.scale.set(1, 1.15, 0.5); e.castShadow = false;
+    const p = add(eyes, new THREE.SphereGeometry(0.021, 12, 8), pupil, s * 0.066, -0.002, -0.013); p.scale.set(1, 1.1, 0.5); p.castShadow = false;
+    const h = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 5), shine); h.position.set(s * 0.066 + 0.008, 0.009, -0.02); eyes.add(h);
+    const b = add(head, new THREE.BoxGeometry(0.058, 0.012, 0.012), hairMat, s * 0.066, 0.205, -0.158); b.rotation.z = s * -0.18; b.castShadow = false; // brow
+    const c = add(head, new THREE.SphereGeometry(0.026, 10, 8), mat('#ee9a95', 0.9), s * 0.105, 0.085, -0.125); c.scale.set(1, 0.7, 0.35); c.castShadow = false; // cheek
+  }
+  add(head, new THREE.SphereGeometry(0.02, 10, 8), mat('#e6bea1', 0.7), 0, 0.105, -0.17).scale.set(1, 0.9, 0.8).castShadow = false; // nose
+  const mouth = add(head, new THREE.SphereGeometry(0.03, 12, 8), mat('#7a2f33', 0.5), 0, 0.055, -0.152); mouth.scale.set(1, 0.25, 0.35); mouth.castShadow = false;
   if (self) {
     // first person: no head, and no chest (it would fill the screen when you look down). A round seat of hips joins
     // the legs, and everything sits slightly forward so your feet show and your arms swing at the edges of the view.
@@ -791,7 +805,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   drawTag();
 
   const to = new THREE.Vector3(), cur = new THREE.Vector3(), prev = new THREE.Vector3();
-  let toYaw = 0, yaw = 0, started = false, voice = null, phase = 0, speed = 0, swing = 0, talkT = 0;
+  let toPitch = 0, pitchS = 0, toYaw = 0, yaw = 0, started = false, voice = null, phase = 0, speed = 0, swing = 0, talkT = 0;
   // reaching: the right arm points its hand at a world point (fingerprint reader), blended in by reachK 0..1
   let reachK = 0;
   const reachAim = new THREE.Vector3(), sh = new THREE.Vector3(), dir = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
@@ -848,8 +862,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
     setVoice(v) { if (voice) { voice.disconnect?.(); head.remove(voice); } voice = v; head.add(v); },
-    target(x, y, z, yw, t, m = false) {
-      to.set(x, y, z); toYaw = yw;
+    target(x, y, z, yw, t, m = false, pitch = 0) {
+      to.set(x, y, z); toYaw = yw; toPitch = Math.max(-1.2, Math.min(1.2, pitch));
       if (!started) { cur.copy(to); prev.copy(to); yaw = yw; started = true; group.visible = true; }
       if (t !== talk || m !== muted) { talk = t; muted = m; drawStatus(); }
     },
@@ -873,7 +887,10 @@ export function makeAvatar(name, color, { self = false } = {}) {
       armL.rotation.x += lift; armR.rotation.x += lift;
       talkT += dt;
       if (talk && !self) { sT += dt; if ((sDraw += dt) > 0.08) { sDraw = 0; drawStatus(); } } // animate the speaker waves
+      pitchS += (toPitch * 0.8 - pitchS) * (1 - Math.exp(-12 * dt)); // head tilts up / down with where they look
       head.rotation.z = talk ? Math.sin(talkT * 7) * 0.03 : 0;  // a little nod while talking
+      mouth.scale.y = talk ? 0.3 + Math.abs(Math.sin(talkT * 11)) * 0.7 : 0.25; // lips open and close
+      eyes.scale.y = (talkT % 3.7) > 3.55 ? 0.1 : 1;            // blink every few seconds
       armR.scale.y = 1;
       if (reachK > 0) {
         group.position.set(cur.x, cur.y, cur.z); group.rotation.y = yaw; group.updateMatrixWorld(true);
@@ -898,8 +915,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
           const strike = p > 0.2 ? Math.sin(((p - 0.2) / 0.8) * Math.PI) : 0;
           const s = Math.sin(p * Math.PI);
           const hit = punchSide === 'L' ? armL : armR, guard = punchSide === 'L' ? armR : armL, sg = punchSide === 'L' ? 1 : -1;
-          hit.rotation.x = 0.55 * wind - 1.75 * strike; hit.rotation.z = sg * 0.1 * strike;
-          guard.rotation.x = -1.15 * s; guard.rotation.z = -sg * 0.4 * s; // other fist stays up by the chin
+          hit.rotation.x = -0.55 * wind + 1.75 * strike; hit.rotation.z = sg * 0.1 * strike; // +x swings the arm forward (-z)
+          guard.rotation.x = 1.15 * s; guard.rotation.z = -sg * 0.4 * s; // other fist stays up by the chin
           torso.rotation.y = sg * 0.2 * wind - sg * 0.5 * strike;
           lean = -0.14 * strike;
           lunge = 0.22 * strike;
@@ -917,10 +934,10 @@ export function makeAvatar(name, color, { self = false } = {}) {
           flash = 1 - h;
           const k = Math.sin(Math.min(1, h * 1.4) * Math.PI);
           lean += -0.32 * hlz * k; sway = 0.3 * hlx * k;
-          head.rotation.x = -0.5 * hlz * flash; head.rotation.y = 0.5 * hlx * flash;
+          head.rotation.x = pitchS - 0.5 * hlz * flash; head.rotation.y = 0.5 * hlx * flash;
         }
       }
-      if (hurtT < 0) { head.rotation.x = 0; head.rotation.y = 0; }
+      if (hurtT < 0) { head.rotation.x = pitchS; head.rotation.y = 0; }
       shirtMat.emissive.setRGB(flash * 0.85, 0, 0); skinMat.emissive.setRGB(flash * 0.85, 0, 0); pantsMat.emissive.setRGB(flash * 0.6, 0, 0);
       // knocked out: falls onto its back, gets up again slowly
       koK += (koTarget - koK) * (1 - Math.exp(-(koTarget ? 7 : 2.2) * dt));
@@ -932,7 +949,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
       if (Math.abs(seatTarget - seatK) < 0.002) seatK = seatTarget;
       if (seatK > 0 && koK === 0) {
         legL.rotation.x = legR.rotation.x = 1.45 * seatK;   // thighs forward (the figure faces -z)
-        armL.rotation.x = armR.rotation.x = -0.9 * seatK;   // hands out to the keyboard
+        armL.rotation.x = armR.rotation.x = 0.9 * seatK;   // hands out to the keyboard
         armL.rotation.z = 0.12 * seatK; armR.rotation.z = -0.12 * seatK;
       }
       if (fireT >= 0) { fireT += dt; if (fireT > 0.1) fireT = -1; }
