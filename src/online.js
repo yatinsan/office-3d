@@ -571,7 +571,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
         if (m.t === 'pool') { pool?.applyRemote(m, { name: p.name, color: p.color }); return; }
         if (m.t === 'game') { gameHook.msg(p.id, m); return; }
         if (m.t === 'lift') { liftHook.msg(m); return; }
-        if (m.t === 'alarm') { alarmHook(p.name); return; }
+        if (m.t === 'alarm') { p.avatar.blink(30); alarmHook(p.name); return; }
         if (m.t === 'screen') { screenHook.msg(p.id, m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
@@ -959,6 +959,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   const qPoint = new THREE.Quaternion(), qInv = new THREE.Quaternion();
   // fighting: a punch is a quick fist strike with one arm; a hit makes the body flash red and flinch; knocked = lying on the back
   const PUNCH_LEN = 0.28, HURT_LEN = 0.45;
+  let blinkLeft = 0; // fire alarm: the person who pulled it flashes red like a hit, for 30 s, longer than the alarm itself
   let punchT = -1, punchSide = 'L', hurtT = -1, koTarget = 0, koK = 0, hlx = 0, hlz = -1, lunge = 0;
   let seatTarget = 0, seatK = 0;
   const SIT_DROP = 0.32;
@@ -979,6 +980,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
         hlx = (dx * c - dz * s) / l; hlz = (dx * s + dz * c) / l; // puncher's direction in my own space (-z = in front)
       }
     },
+    /** blink red (same glow as a hit, repeating) for `s` seconds */
+    blink(s) { blinkLeft = s; },
     setKnocked(k) { koTarget = k ? 1 : 0; },
     /** sitting on a desk chair: hips drop, legs point forward, hands on the keyboard */
     setSeated(s) { seatTarget = s ? 1 : 0; },
@@ -1098,6 +1101,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
         }
       }
       if (hurtT < 0) { head.rotation.x = pitchS; head.rotation.y = 0; }
+      if (blinkLeft > 0) { blinkLeft -= dt; flash = Math.max(flash, (0.5 + 0.5 * Math.sin(blinkLeft * Math.PI * 2 * 2.5)) * Math.min(1, blinkLeft / 1)); }
       shirtMat.emissive.setRGB(flash * 0.85, 0, 0); skinMat.emissive.setRGB(flash * 0.85, 0, 0); pantsMat.emissive.setRGB(flash * 0.6, 0, 0);
       // knocked out: falls onto its back, gets up again slowly
       koK += (koTarget - koK) * (1 - Math.exp(-(koTarget ? 7 : 2.2) * dt));
