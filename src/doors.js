@@ -41,11 +41,12 @@ function keyTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d');
-  g.fillStyle = 'rgba(15,18,24,.8)';
-  g.strokeStyle = '#fff'; g.lineWidth = 8;
-  g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.fill(); g.stroke();
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.font = 'bold 72px system-ui, sans-serif';
+  // rounded square, dark see-through fill, yellow edge: same look as the F key in the on-screen prompt
+  g.fillStyle = 'rgba(15,18,24,.72)';
+  g.strokeStyle = '#ecc828'; g.lineWidth = 8;
+  g.beginPath(); g.roundRect(10, 10, 108, 108, 26); g.fill(); g.stroke();
+  g.fillStyle = '#ecc828'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = 'bold 70px system-ui, sans-serif';
   g.fillText('F', 64, 68);
   return (keyTex = new THREE.CanvasTexture(c));
 }

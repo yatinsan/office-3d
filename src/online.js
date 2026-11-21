@@ -144,6 +144,30 @@ const CSS = `
   #ow-ptt.muted { background: rgba(255,77,77,.3); border-color: rgba(255,120,120,.8); color: #ff9a9a; }
   #ow-ptt.muted::after { content: ''; position: absolute; width: 25px; height: 2.5px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
   #ow-ptt svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  /* tactical (COD-like) look for the voice HUD: flat, square, see-through, thin lines, no glow or bubbles */
+  #ow-online, #ow-hud .ow-mode, #ow-mic { border-radius: 0; background: rgba(0,0,0,.38); border: 0; border-left: 2px solid rgba(255,255,255,.45); box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; font-size: 11px; }
+  #ow-online { padding: 6px 12px; }
+  #ow-online .dot { border-radius: 50%; width: 7px; height: 7px; box-shadow: none; }
+  #ow-online svg { stroke-width: 1.6; stroke-linecap: butt; stroke-linejoin: miter; opacity: .7; }
+  #ow-hud .ow-mode { color: rgba(255,255,255,.7); }
+  #ow-hud .ow-mode kbd, #ow-mic kbd { border-radius: 0; background: rgba(255,255,255,.12); border: 0; box-shadow: none; }
+  #ow-mic { padding: 4px; border-radius: 40px; border: 1px solid rgba(255,255,255,.3); }
+  #ow-mic .ico { border-radius: 50%; width: 32px; height: 32px; background: transparent; color: rgba(255,255,255,.7); box-shadow: none; outline: 1px solid rgba(255,255,255,.28); outline-offset: -1px; }
+  #ow-mic .ico svg { stroke-width: 1.7; stroke-linecap: butt; stroke-linejoin: miter; }
+  #ow-mic .ico .slash { height: 1.5px; border-radius: 0; }
+  #ow-mic.live { border-color: rgba(126,224,143,.55); } #ow-mic.live .ico { background: rgba(126,224,143,.1); outline-color: rgba(126,224,143,.5); }
+  #ow-mic.talk { border-color: #7ee08f; } #ow-mic.talk .ico { background: rgba(126,224,143,.22); outline-color: #7ee08f; animation: none; box-shadow: none; }
+  #ow-mic.muted, #ow-mic.bad { border-color: rgba(255,92,92,.7); } #ow-mic.muted .ico, #ow-mic.bad .ico { background: rgba(255,77,77,.12); outline-color: rgba(255,92,92,.6); }
+  #ow-mic.ptt-on { border-color: #ecc828; } #ow-mic.ptt-on .ico { background: rgba(236,200,40,.85); outline-color: #ecc828; }
+  #ow-ptt { border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.4); }
+  #ow-ptt.on { background: rgba(126,224,143,.4); border-color: #7ee08f; } #ow-ptt.muted { background: rgba(255,77,77,.25); border-color: rgba(255,92,92,.7); }
+  #ow-list, #ow-list .hd { border-radius: 0; }
+  #ow-list { background: rgba(0,0,0,.38); border-left: 2px solid rgba(255,255,255,.45); }
+  #ow-list .hd { background: transparent; letter-spacing: 2px; }
+  #ow-list .d { border-radius: 50%; }
+  #ow-list .row.talk .s { border-radius: 50%; box-shadow: none; animation: none; }
+  .ow-note { background: rgba(0,0,0,.5); }
 `;
 
 export function initOnline({ scene, camera, player, panel, doors = null, pool = null, touch = false, start = () => {} }) {
@@ -859,29 +883,27 @@ export function makeAvatar(name, color, { self = false } = {}) {
     g.clearRect(0, 0, 128, 128);
     sIcon.visible = !self && !disg && (talk || muted);
     if (!sIcon.visible) return;
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    const disc = (c1, c2, ring) => {
-      g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 8; g.shadowOffsetY = 3;
-      const gr = g.createLinearGradient(0, 8, 0, 120); gr.addColorStop(0, c1); gr.addColorStop(1, c2);
-      g.fillStyle = gr; g.beginPath(); g.arc(64, 62, 52, 0, Math.PI * 2); g.fill(); g.restore();
-      g.strokeStyle = ring; g.lineWidth = 4; g.beginPath(); g.arc(64, 62, 52, 0, Math.PI * 2); g.stroke();
+    g.lineCap = 'butt'; g.lineJoin = 'miter';
+    const disc = (col) => { // see-through dark disc + thin coloured ring (tactical look, no gradient / shadow)
+      g.fillStyle = 'rgba(0,0,0,.42)'; g.beginPath(); g.arc(64, 62, 50, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = col; g.lineWidth = 4; g.beginPath(); g.arc(64, 62, 50, 0, Math.PI * 2); g.stroke();
     };
     if (talk) {
-      disc('#3ec36b', '#1c8a45', 'rgba(255,255,255,.85)');
-      g.fillStyle = '#fff';
-      g.beginPath(); g.moveTo(24, 50); g.lineTo(40, 50); g.lineTo(58, 34); g.lineTo(58, 90); g.lineTo(40, 74); g.lineTo(24, 74); g.closePath(); g.fill();
+      disc('rgba(126,224,143,.95)');
+      g.fillStyle = 'rgba(255,255,255,.92)';
+      g.beginPath(); g.moveTo(26, 52); g.lineTo(40, 52); g.lineTo(58, 36); g.lineTo(58, 88); g.lineTo(40, 72); g.lineTo(26, 72); g.closePath(); g.fill();
       const ph = (sT * 3.2) % 4; // waves light up one after another, then restart
-      g.lineWidth = 7;
+      g.lineWidth = 5;
       for (let i = 0; i < 3; i++) {
-        g.strokeStyle = `rgba(255,255,255,${i < ph ? 1 : 0.3})`;
+        g.strokeStyle = `rgba(126,224,143,${i < ph ? 1 : 0.3})`;
         g.beginPath(); g.arc(58, 62, 14 + i * 12, -0.75, 0.75); g.stroke();
       }
     } else {
-      disc('#e5484d', '#a82a30', 'rgba(255,255,255,.85)');
-      g.strokeStyle = '#fff'; g.lineWidth = 6;
+      disc('rgba(255,92,92,.95)');
+      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 5;
       g.beginPath(); g.roundRect(55, 30, 18, 32, 9); g.stroke();
       g.beginPath(); g.moveTo(44, 56); g.arc(64, 56, 20, Math.PI, 0, true); g.moveTo(64, 76); g.lineTo(64, 86); g.stroke();
-      g.lineWidth = 8; g.beginPath(); g.moveTo(40, 94); g.lineTo(88, 30); g.stroke();
+      g.strokeStyle = 'rgba(255,92,92,1)'; g.lineWidth = 6; g.beginPath(); g.moveTo(38, 94); g.lineTo(90, 30); g.stroke();
     }
     sTex.needsUpdate = true;
   }
