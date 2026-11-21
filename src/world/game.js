@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { M } from '../materials.js';
-import { box, cyl, sofa, beanBag } from '../props.js';
+import { box, cyl, plane, sofa, beanBag } from '../props.js';
 import { addBox, solid } from '../colliders.js';
 import { slab, wall, H, MEET_X1, MEET_Z1, GAME_X1, GAME_Z1 } from './helpers.js';
 
@@ -80,7 +80,8 @@ export function buildGameRoom(root) {
   box(g, G.ledPurple, 0.02, 0.025, GAME_Z1 - z0 - 0.6, 0.03, H - 0.25, (z0 + GAME_Z1) / 2, { shadow: false });
   { const tv = grp(g, 'TV');
     box(tv, M.black, 0.05, 0.98, 1.72, 0.06, 1.4, tvZ);
-    box(tv, M.screenDark, 0.005, 0.94, 1.68, 0.087, 1.4, tvZ, { shadow: false });
+    box(tv, M.screenOff, 0.005, 0.94, 1.68, 0.087, 1.4, tvZ, { shadow: false });
+    plane(tv, M.tvWallpaper, 1.68, 0.94, 0.0905, 1.4, tvZ, Math.PI / 2); // GTA VI wallpaper
     box(tv, G.ledCyan, 0.01, 1.06, 1.8, 0.03, 1.4, tvZ, { shadow: false }); }            // glow behind the TV
   { const con = grp(g, 'TV console');
     box(con, M.white, 0.42, 0.42, 1.9, 0.24, 0.21, tvZ);

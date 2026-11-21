@@ -224,6 +224,7 @@ export const M = {
   rail: std({ color: '#4a4a4a', roughness: 0.4, metalness: 0.6 }),
   logo: std({ map: photo('textures/logo.png'), transparent: true, alphaTest: 0.4, roughness: 0.4 }),
   logoText: std({ map: logoTextTex, transparent: true, alphaTest: 0.3, roughness: 0.6 }),
+  tvWallpaper: (() => { const t = photo('textures/gta6.webp'); return std({ map: t, emissive: '#ffffff', emissiveMap: t, emissiveIntensity: 0.9, roughness: 0.3 }); })(),
   gallery: std({ map: photo('textures/gallery.jpg'), roughness: 0.6 }),
   clock: std({ map: clockTex, roughness: 0.5 }),
 };
