@@ -95,22 +95,26 @@ const CSS = `
   #ow-mic.ptt-on { color: #ecc828; border-color: rgba(236,200,40,.6); }
   #ow-mic kbd { display: none; font-weight: 700; letter-spacing: 0; padding: 0 6px; font-size: 10px; line-height: 15px; transition: transform .08s, background .08s; }
   #ow-mic.ptt-on kbd { transform: translateY(2px); border-bottom-width: 1px; background: #ecc828; color: #111; }
-  @media (hover: none) and (pointer: coarse) { #ow-mic { display: none; } }
+  /* phones: the JS touch flag (not a media query, which some phones answer wrongly) picks ONE mic button */
+  body.ow-touch #ow-hud { display: none !important; }
+  body:not(.ow-touch) #ow-ptt { display: none !important; }
+  body.ow-touch #ow-online { left: 68px; top: 17px; }
   @keyframes ow-pulse { 50% { transform: scale(1.1); } }
   #ow-hud .ow-mode { display: none; pointer-events: auto; cursor: pointer; padding: 6px 11px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
     background: rgba(14,14,18,.62); color: rgba(255,255,255,.75); font: 700 12px system-ui, sans-serif; white-space: nowrap; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   #ow-hud .ow-mode:hover { border-color: #ecc828; color: #ecc828; }
   #ow-hud .ow-mode kbd { margin-left: 4px; }
-  /* phone mic: small, faint, tucked in the top-left corner away from the thumbs; needs a deliberate press-and-hold */
-  #ow-ptt { position: fixed; z-index: 7; left: max(14px, env(safe-area-inset-left)); top: 46px;
-    width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.35); background: rgba(20,20,20,.3); color: #fff; opacity: .4;
-    display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .15s; }
+  /* phone mic: top-left under the Menu button (Menu 40px at top 12, mic below it), a real 46px target.
+     Push to talk: talks while you hold it. Always on: one tap mutes / unmutes. */
+  #ow-ptt { position: fixed; z-index: 9; left: max(15px, calc(env(safe-area-inset-left) + 3px)); top: max(62px, calc(env(safe-area-inset-top) + 50px));
+    width: 46px; height: 46px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: rgba(20,20,20,.5); color: #fff; opacity: .85;
+    display: none; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .15s, background .15s; }
   #ow-ptt.show { display: flex; }
-  #ow-ptt.arm { opacity: .85; }
-  #ow-ptt.on { background: rgba(126,224,143,.6); opacity: .9; }
-  #ow-ptt.muted { color: #ff9a9a; }
-  #ow-ptt.muted::after { content: ''; position: absolute; width: 22px; height: 2px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
-  #ow-ptt svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+  #ow-ptt.arm { transform: scale(.94); }
+  #ow-ptt.on { background: rgba(126,224,143,.75); border-color: #b8f0c2; color: #0c2a12; }
+  #ow-ptt.muted { background: rgba(255,77,77,.3); border-color: rgba(255,120,120,.8); color: #ff9a9a; }
+  #ow-ptt.muted::after { content: ''; position: absolute; width: 30px; height: 2.5px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }
+  #ow-ptt svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 `;
 
 export function initOnline({ scene, camera, player, panel, doors = null, pool = null, touch = false, start = () => {} }) {
@@ -254,15 +258,19 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const pttBtn = document.createElement('button'); pttBtn.id = 'ow-ptt'; pttBtn.type = 'button'; pttBtn.setAttribute('aria-label', 'Hold to talk');
   pttBtn.innerHTML = MIC_SVG;
   document.body.appendChild(pttBtn);
-  // phone mic is deliberately hard to hit by accident: press and HOLD (0.45 s). Push to talk: talks while held; always on: toggles mute.
-  let pttTimer = null, pttHeld = false;
+  document.body.classList.toggle('ow-touch', !!touch); // phones get only this button; desktop only the bottom-right chip
+  // phone mic answers at once: push to talk = talks while you hold it; always on = a tap mutes / unmutes
+  let pttHeld = false;
+  const buzz = () => { try { navigator.vibrate?.(12); } catch {} };
   pttBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault(); pttBtn.classList.add('arm');
-    clearTimeout(pttTimer);
-    pttTimer = setTimeout(() => { pttTimer = null; if (micMode === 'ptt') { pttHeld = true; setHeld(true); } else setMuted(!muted); if (navigator.vibrate) navigator.vibrate(15); }, 450);
+    e.preventDefault(); e.stopPropagation();
+    try { pttBtn.setPointerCapture(e.pointerId); } catch {} // keep the press even if the finger slides off the button
+    pttBtn.classList.add('arm'); buzz();
+    if (micMode === 'ptt') { pttHeld = true; setHeld(true); } else setMuted(!muted);
   });
-  const pttEnd = () => { clearTimeout(pttTimer); pttTimer = null; pttBtn.classList.remove('arm'); if (pttHeld) { pttHeld = false; setHeld(false); } };
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pttBtn.addEventListener(ev, pttEnd);
+  const pttEnd = () => { pttBtn.classList.remove('arm'); if (pttHeld) { pttHeld = false; setHeld(false); } };
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) pttBtn.addEventListener(ev, pttEnd);
+  for (const ev of ['touchstart', 'mousedown', 'click']) pttBtn.addEventListener(ev, (e) => e.stopPropagation()); // never leak into the look / walk touch layer
   pttBtn.addEventListener('contextmenu', (e) => e.preventDefault());
   micChip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (micMode === 'ptt') setHeld(true); else setMuted(!muted); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) micChip.addEventListener(ev, () => setHeld(false));

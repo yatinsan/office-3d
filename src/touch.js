@@ -61,7 +61,7 @@ export function initTouch({ player, camera }) {
     .tb:active, .tb.on { opacity: .9; background: rgba(236,200,40,.7); color: #111; }
     .tb.off { display: none; }
     .tb-fs { top: max(12px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); width: 40px; height: 40px; opacity: .75; }
-    .tb-menu { top: max(12px, env(safe-area-inset-top)); left: max(18px, env(safe-area-inset-left)); width: 40px; height: 40px; opacity: .75; }
+    .tb-menu { top: max(12px, env(safe-area-inset-top)); left: max(18px, env(safe-area-inset-left)); width: 44px; height: 44px; opacity: .9; background: rgba(20,20,20,.5); }
     .tb-jump { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-hit { right: max(72px, calc(env(safe-area-inset-right) + 54px)); bottom: max(26px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     .tb-act { right: max(18px, env(safe-area-inset-right)); bottom: max(82px, calc(env(safe-area-inset-bottom) + 58px)); width: 40px; height: 40px;
