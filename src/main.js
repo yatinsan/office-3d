@@ -264,8 +264,12 @@ addEventListener('keydown', (e) => {
 const gameGuide = initGameGuide({ scene, player, inGameRoom: () => zone === 'Game Room' }); // first visit: a glowing marker at the Game Room door
 
 const clock = new THREE.Clock();
+// Menu / pause screen: the view behind the overlay sways very slowly so it never looks frozen. The offset is removed before the
+// next frame's updates, so it never leaks into the real camera angle.
+let swayT = 0, swayY = 0, swayX = 0;
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
+  camera.rotation.y -= swayY; camera.rotation.x -= swayX; swayY = swayX = 0;
   player.update(dt);
   balconyJump.update(dt); // after player.update: owns the camera tilt during the cutscene
   doors.update(dt);
@@ -280,6 +284,11 @@ renderer.setAnimationLoop(() => {
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
   gameGuide.update(dt);
+  if (!overlay.classList.contains('hidden')) {
+    swayT += dt;
+    swayY = Math.sin(swayT * 0.35) * 0.05; swayX = Math.sin(swayT * 0.5) * 0.012;
+    camera.rotation.y += swayY; camera.rotation.x += swayX;
+  }
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
     const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
