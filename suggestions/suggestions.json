@@ -2145,5 +2145,65 @@
     "folder": "060-filll-this-pag-as-build-like",
     "files": [],
     "reply": "Filled the gap south of the game room and west of the hall, so the building is one square block with floor lines on every storey. Solid inside for now."
+  },
+  {
+    "point": [
+      16.89,
+      1.26,
+      23
+    ],
+    "normal": [
+      -0.32,
+      0,
+      0.95
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.49,
+      "z": 23.5,
+      "yaw": -1.37,
+      "pitch": -0.16
+    },
+    "text": "make this door closed",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795296570508,
+    "id": "smwqx83gs",
+    "n": 61,
+    "created": 1795296570520,
+    "folder": "061-make-this-door-closed",
+    "files": [],
+    "reply": "Closed the stairwell door on the east wall of the building hall; it is flat in its frame and blocks the doorway."
+  },
+  {
+    "point": [
+      15.96,
+      1.3,
+      24.15
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.42,
+      "z": 24.17,
+      "yaw": -1.56,
+      "pitch": -0.23
+    },
+    "text": "add a emergency item in here like fire alaram and E to pull",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795296716656,
+    "id": "smwqxb88g",
+    "n": 62,
+    "created": 1795296716662,
+    "folder": "062-add-a-emergency-item-in-here",
+    "files": [],
+    "reply": "Small red E appears only when you are very close and looking at the pull station beside lift 5. Hold E (ring fills) to pull; siren and red strobes run for about 10 seconds."
   }
 ]

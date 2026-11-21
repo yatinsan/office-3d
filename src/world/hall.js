@@ -785,17 +785,17 @@ export function buildHall(root) {
   box(root, M.blackMatte, 0.015, 0.03, 0.035, X1 - 0.012, 1.25, (g1 + p1) / 2, { shadow: false });
   box(root, H.wall, 0.1, BULK - 2.4, g1 - g0, X1 + 0.05, (2.4 + BULK) / 2, (g0 + g1) / 2);
   box(root, H.wall, 0.1, BULK - 2.3, s1 - p1, X1 + 0.05, (2.3 + BULK) / 2, (p1 + s1) / 2);
-  // stair door: laminate leaf with a vision slot, standing open into the stairwell
+  // stair door: laminate leaf with a vision slot, shut (suggestion 61)
   box(root, H.frame, 0.12, 0.06, s1 - p1, X1 + 0.02, 2.3, (p1 + s1) / 2);
   for (const z of [p1 + 0.02, s1 - 0.02]) box(root, H.frame, 0.12, 2.3, 0.04, X1 + 0.02, 1.15, z);
-  const leaf = new THREE.Group(); leaf.position.set(X1 + 0.06, 0, p1 + 0.04); leaf.rotation.y = 1.25; root.add(leaf);
+  const leaf = new THREE.Group(); leaf.position.set(X1 + 0.06, 0, p1 + 0.04); leaf.rotation.y = 0; root.add(leaf);
   const lw = s1 - p1 - 0.08;
   box(leaf, H.laminate, 0.04, 2.25, lw, 0, 1.125, lw / 2);
   for (const sd of [-1, 1]) {
     box(leaf, H.slot, 0.012, 0.9, 0.1, sd * 0.021, 1.45, lw * 0.6, { shadow: false });
     box(leaf, M.chrome, 0.03, 0.42, 0.025, sd * 0.06, 1.05, lw - 0.12, { shadow: false });
   }
-  addBox(X1 + 0.04, p1, X1 + 1.05, p1 + 0.4);
+  addBox(X1 - 0.06, p1, X1 + 0.1, s1); // closed door blocks the doorway
   // stairwell: blue walls, black glossy floor, black steps rising east along the far side
   const sx1 = X1 + 4.2, sz0 = p1 - 0.1, sz1 = s1 + 0.15;
   slab(root, H.granite, X1 + 0.02, sz0, sx1, sz1, 0.003, { tile: 1.2 });

@@ -8,6 +8,7 @@ import { initSuggestions } from './suggestions.js';
 import { initDoors } from './doors.js';
 import { initUnlock } from './unlock.js';
 import { initLadies } from './ladies.js';
+import { initAlarm } from './alarm.js';
 import { initArcade } from './arcade.js';
 import { initGameGuide } from './gameguide.js';
 import { initTouch, isTouchDevice } from './touch.js';
@@ -103,6 +104,7 @@ player.controls.addEventListener('unlock', () => { if (!suggest.isOpen() && !sea
 const doors = initDoors({ scene, player, camera });
 const unlock = initUnlock({ scene, player, camera, doors, touch: !!touchUI }); // fingerprint entry lock on the reception entrance door (suggestion 47)
 const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
+const alarm = initAlarm({ scene, player, camera }); // fire alarm pull station beside lift 5: hold E to pull (suggestion 62)
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const balconyJump = initBalconyJump({ camera, player, touch: !!touchUI }); // terrace rail: Space to jump -> video cutscene
 const pool = initPool({ scene, camera, player, touch: !!touchUI }); // game room pool table: E to play, hold R to re-rack
@@ -322,6 +324,7 @@ renderer.setAnimationLoop(() => {
   lifts.update(dt);
   unlock.update(dt);
   ladies.update(dt);
+  alarm.update(dt);
   arcade.update(dt);
   pool.update(dt); // after player.update: owns the camera while you play
   seat.update(dt); // same while you sit at a desk
@@ -339,7 +342,7 @@ renderer.setAnimationLoop(() => {
   }
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = lvl.cur ? lifts.prompt() : arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt() || lifts.prompt();
+    const near = lvl.cur ? lifts.prompt() : arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt() || alarm.prompt() || lifts.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
       if (promptEl.dataset.t !== (near || '')) { // "F open door" -> [F] | Open door, like the lock box
