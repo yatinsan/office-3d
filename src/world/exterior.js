@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { M } from '../materials.js';
-import { X0, X1, LNZ0, LNZ1, CEIL, GROUND_Y, LIFTS, LIFT_DEPTH } from './hall.js';
+import { X0, X1, Z1, LNZ0, LNZ1, CEIL, GROUND_Y, FLOOR_H, LIFTS, LIFT_DEPTH } from './hall.js';
 import { buildLandscape } from './landscape.js';
 import { box } from '../props.js';
 import { buildTerrace, TX } from './terrace.js';
@@ -44,25 +44,29 @@ export function buildExterior(root) {
   // ---- Terrace along the west facade (photos IMG_5658–5668) ----
   buildTerrace(root);
 
-  // ---- Building body below the floor ----
-  const BW = 20 - TX;
-  // The ground floor (src/world/hall.js) is built inside this body, right under the 4th floor, so the body is cut around it:
-  // solid below the ground floor's slab and above its ceiling, and in between only where the corridors are not.
-  const zA = -0.5, zB = GAME_Z1 + 0.7, gy = GROUND_Y - 0.02, gt = GROUND_Y + CEIL + 0.05; // body z range, floor level, top of the ground ceiling
-  const part = (xa, xb, za, zb, ya, yb) => { if (xb > xa + 0.01 && zb > za + 0.01) box(root, M.wallWarm, xb - xa, yb - ya, zb - za, (xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2, { shadow: false }); };
-  part(TX, 20, zA, zB, -FLOOR_DROP, gy);        // under the ground floor
-  part(TX, 20, zA, zB, gt, 0);                  // between its ceiling and the 4th floor
-  // the middle band: west of the hall, east of the hall (up to the side corridor), minus the lift shafts the cabins stop in
-  let band = [[TX, X0 - 0.1, zA, zB], [X1 + 0.02, 20, zA, Math.min(zB, LNZ0)], [X1 + 0.02, 20, Math.max(zA, LNZ1), zB]];
-  for (const L of LIFTS) {
-    const xs = [L.x - L.out * 0.1, L.x - L.out * (0.1 + LIFT_DEPTH + 0.06)], hole = [Math.min(...xs), Math.max(...xs), L.z - L.cw / 2 - 0.06, L.z + L.cw / 2 + 0.06];
-    band = band.flatMap(([xa, xb, za, zb]) => {
-      if (hole[1] <= xa || hole[0] >= xb || hole[3] <= za || hole[2] >= zb) return [[xa, xb, za, zb]];
-      return [[xa, hole[0], za, zb], [hole[1], xb, za, zb], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), za, hole[2]], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), hole[3], zb]];
-    });
-  }
+  // ---- Building body below the 4th floor: floors 3, 2, 1 (solid, same height as the 4th) and the ground floor G ----
+  // The ground floor (src/world/hall.js) is built inside this body, so G is cut out of it: solid below G's slab and above
+  // its ceiling, and in between only where the corridors / lift shafts are not.
+  const zA = -0.5, zB = GAME_Z1 + 0.7, gy = GROUND_Y - 0.02, gt = GROUND_Y + CEIL + 0.05; // old body z range, G floor level, top of G's ceiling
+  const part = (xa, xb, za, zb, ya, yb) => { if (xb > xa + 0.01 && zb > za + 0.01 && yb > ya + 0.01) box(root, M.wallWarm, xb - xa, yb - ya, zb - za, (xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2, { shadow: false }); };
+  const xe = X1 + 15.0;                           // end of the ground-floor side corridor
+  const shafts = LIFTS.map((L) => { const xs = [L.x - L.out * 0.1, L.x - L.out * (0.1 + LIFT_DEPTH + 0.36)]; return [Math.min(...xs), Math.max(...xs), L.z - L.cw / 2 - 0.36, L.z + L.cw / 2 + 0.36]; });
+  // the cabin cavity of every lift: hollow from the ground floor up to the 4th floor, so the cabin really travels through an open shaft
+  const holes = LIFTS.map((L) => { const xs = [L.x - L.out * 0.1, L.x - L.out * (0.1 + LIFT_DEPTH + 0.06)]; return [Math.min(...xs), Math.max(...xs), L.z - L.cw / 2 - 0.06, L.z + L.cw / 2 + 0.06]; });
+  const cut = (rects, hs) => { for (const hole of hs) rects = rects.flatMap(([xa, xb, za, zb]) => {
+    if (hole[1] <= xa || hole[0] >= xb || hole[3] <= za || hole[2] >= zb) return [[xa, xb, za, zb]];
+    return [[xa, hole[0], za, zb], [hole[1], xb, za, zb], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), za, hole[2]], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), hole[3], zb]];
+  }); return rects; };
+  // the whole footprint, including the block west of the hall and south of the game room (suggestion 60), so the building is one square box
+  const columns = [[TX, 20, zA, zB], [TX, X0 - 0.1, zB, Z1 + 0.1], [X0 - 0.1, X1 + 0.1, zB, Z1 + 0.1], [X1 + 0.1, xe + 0.1, LNZ0 - 0.1, LNZ1 + 0.1], ...shafts];
+  for (const [xa, xb, za, zb] of columns) part(xa, xb, za, zb, -FLOOR_DROP, gy);        // under the ground floor
+  for (const [xa, xb, za, zb] of cut(columns, holes)) part(xa, xb, za, zb, gt, -0.02);  // floors 3, 2, 1 (up to the 4th floor)
+  // the ground-floor level: west of the hall (and south of the game room), east of it up to the side corridor, and the lift shafts, minus the cabin cavities
+  const band = cut([[TX, X0 - 0.1, zA, Z1 + 0.1], [X1 + 0.02, 20, zA, Math.min(zB, LNZ0)], [X1 + 0.02, 20, Math.max(zA, LNZ1), zB], ...shafts], holes);
   for (const [xa, xb, za, zb] of band) part(xa, xb, za, zb, gy, gt);
-  for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, GAME_Z1 + 1.3, TX - 0.01, -i * 3.4, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
+  // dark floor lines every storey on the west facade and on the south end of the hall block
+  for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, Z1 + 0.6, TX - 0.01, -i * FLOOR_H, (Z1 - 0.5) / 2 + 0.1, { shadow: false });
+  for (let i = 1; i < 4; i++) box(root, M.blackMatte, X1 - TX + 0.3, 0.25, 0.05, (TX + X1) / 2, -i * FLOOR_H, Z1 + 0.11, { shadow: false });
   void LOBBY_E; void W;
 
   // ---- Ground, palm canopy, hill and the one distant tower cluster (photo IMG_5660) ----

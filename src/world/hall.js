@@ -19,7 +19,7 @@ import { slab, worldUV, doorLeaves, LOBBY_E, LOBBY_S, CAB_BACK, EAST_DOORS, DOOR
 export const X0 = LOBBY_E;   // office side (west)
 export const X1 = LOBBY_E + 5.8; // east wall: one straight wall, hall pulled in closer (suggestion 33, was 24 ft)
 const Z0 = -2.0;      // north window
-const Z1 = 47.0;      // south window (long corridor with offices both sides, IMG_5707 / 5736 / 5738, suggestions 30, 45, 46)
+export const Z1 = 47.0;      // south window (long corridor with offices both sides, IMG_5707 / 5736 / 5738, suggestions 30, 45, 46)
 export const CEIL = 3.2;     // grid ceiling
 const BULK = 3.0;     // side bulkheads (meet the top of the entrance glass)
 const BW = 0.6;       // bulkhead width
@@ -429,7 +429,8 @@ export const GROUND_LIFTS = [];
 /** Lights for the ground floor (the static world is merged, so lights have to be added to the scene by the caller). */
 export const GROUND_LIGHTS = [];
 /** The ground floor is the same corridor built this far east (x offset), so nothing overlaps the office. */
-export const GROUND_Y = -(CEIL + 1.0);   // the ground floor sits right under the 4th floor
+export const FLOOR_H = 3.6;               // floor to floor, same as the 4th floor (helpers H)
+export const GROUND_Y = -4 * FLOOR_H;     // floors 3, 2, 1 and G are stacked right under the 4th floor
 
 /** Dev mode (P) shows the neighbour's sign text; normally it is a plain white board (suggestion 43). */
 const DEV_SIGNS = ['techno', 'tenCod', 'eSyn', 'ringLogo'];

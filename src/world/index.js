@@ -36,7 +36,7 @@ export function buildWorld(root) {
 
 /** Named areas for the on-screen zone label. */
 export function zoneAt(x, z, y) {
-  if (y !== undefined ? y < -2 : lvl.cur === 1) return 'Ground Floor'; // y: a pinned point's height; without it, the floor I am on
+  if (y !== undefined ? y < GROUND_Y / 2 : lvl.cur === 1) return 'Ground Floor'; // y: a pinned point's height; without it, the floor I am on
   if (x > LOBBY_E) return 'Building Hall';
   if (x < 0) return 'Terrace';
   if (z > MEET_Z1) return 'Game Room';

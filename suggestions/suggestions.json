@@ -1969,7 +1969,7 @@
   {
     "point": [
       16,
-      -2.78,
+      -12.98,
       29.89
     ],
     "normal": [
@@ -1999,7 +1999,7 @@
   {
     "point": [
       12.65,
-      -2.8,
+      -13,
       27.4
     ],
     "normal": [
@@ -2029,7 +2029,7 @@
   {
     "point": [
       10.25,
-      -2.89,
+      -13.09,
       27.79
     ],
     "normal": [
@@ -2055,5 +2055,95 @@
     "folder": "057-there-is-some-object-u-crated",
     "files": [],
     "reply": "Fixed the glitch after the lift opens on the ground floor: a beige slab of the building body was standing inside the cabin and in the doorway, because the body block ends partway through lifts 3 and 4. I cut each lift's shaft (and the doorway) out of the body, so the opened door now shows the clear corridor. I also checked the rest of the ground floor: it only has the corridor, lifts, signs, and lights, nothing else extra."
+  },
+  {
+    "point": [
+      12.57,
+      -1.23,
+      47.24
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.89,
+      "z": 54.73,
+      "yaw": -0.09,
+      "pitch": 0.08
+    },
+    "text": "see u not add the gound flor just down make it like gound like just 3, 2 1, g  use same size as 4 flor height and clean build",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795286397386,
+    "id": "smwqr2mc3",
+    "n": 58,
+    "created": 1795286237338,
+    "folder": "058-see-u-not-add-the-gound",
+    "files": [],
+    "reply": "Built the floors under the 4th floor: 3, 2, 1 and G, each the same height as the 4th floor (3.6 m), so the Ground Floor is now 4 floors down instead of one. From outside the building is a clean stack with a floor line at every storey, also under the south end of the hall and the side lounge. The lifts now travel the 4 floors (about 8 seconds, display counts 4, 3, 2, 1, G). Floors 3, 2 and 1 are plain solid for now."
+  },
+  {
+    "point": [
+      8.45,
+      -0.02,
+      25.36
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "zone": "Game Room",
+    "target": "Floor",
+    "view": {
+      "x": 8.58,
+      "z": 21.88,
+      "yaw": 3.1,
+      "pitch": -1.14
+    },
+    "text": "remove this withe flor for lift side",
+    "section": "Floor · Game Room",
+    "status": "done",
+    "updated": 1795286465962,
+    "id": "smwqr7iqy",
+    "n": 59,
+    "created": 1795286465969,
+    "folder": "059-remove-this-withe-flor-for-lift",
+    "files": [],
+    "reply": "Removed the white floor on the lift side: the lift shafts are now hollow from the ground floor up to the 4th floor, so the cabins travel through an open shaft."
+  },
+  {
+    "point": [
+      7.24,
+      -6.91,
+      31.87
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Game Room",
+    "target": "",
+    "view": {
+      "x": -6.15,
+      "z": 47.39,
+      "yaw": -0.71,
+      "pitch": -0.85
+    },
+    "text": "filll this pag as build like match fron baclony to other side like squre and make a box like empty",
+    "section": "Game Room",
+    "status": "done",
+    "updated": 1795286610492,
+    "id": "smwqram9o",
+    "n": 60,
+    "created": 1795286610498,
+    "folder": "060-filll-this-pag-as-build-like",
+    "files": [],
+    "reply": "Filled the gap south of the game room and west of the hall, so the building is one square block with floor lines on every storey. Solid inside for now."
   }
 ]

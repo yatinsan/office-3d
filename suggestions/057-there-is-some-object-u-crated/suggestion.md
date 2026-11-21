@@ -2,7 +2,7 @@
 
 - **Status:** done
 - **Section:** Ground Floor
-- **Point:** x 10.25, y -2.89, z 27.79 m (x from the window wall, z from the corner-cabin end; see floorplan/floorplan_proposed.png)
+- **Point:** x 10.25, y -13.09, z 27.79 m (x from the window wall, z from the corner-cabin end; see floorplan/floorplan_proposed.png)
 - **Created:** 2026-11-21 18:11 · **Updated:** 2026-11-21 18:11
 
 ## What needs to change

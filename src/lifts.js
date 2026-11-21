@@ -12,7 +12,7 @@ import { thud, join, whoosh } from './sfx.js';
 const OW = 1.16;               // door opening
 const DOOR_SPEED = 1.1;        // 1 / s
 const FRONT = [0.1, 2.4];      // "in front of the doors" reach (m)
-const TRAVEL_TIME = 5;         // seconds the cabin takes from 4th to G (it passes 3, 2, 1 on the way)
+const TRAVEL_TIME = 8;         // seconds the cabin takes from 4th to G (it passes 3, 2, 1 on the way: 2 s a floor)
 const FLOORS = ['4', '3', '2', '1', 'G'];
 
 export function initLifts({ scene, camera, player }) {
