@@ -595,7 +595,8 @@ export function buildHall(root) {
   for (const z of [-0.62, 0.12]) box(root, M.chrome, 0.06, 0.08, 0.05, fx + 0.02, 1.0, z, { shadow: false });
   plane(root, H.pushBar, 0.3, 0.06, fx + 0.002, 1.2, -0.25, Math.PI / 2);
   plane(root, H.exitSmall, 0.28, 0.1, X0 + 0.004, 2.45, -0.25, Math.PI / 2);
-  box(root, H.red, 0.04, 0.12, 0.12, X0 + 0.02, 1.4, 0.55, { shadow: false });
+  box(root, H.red, 0.04, 0.12, 0.12, X0 + 0.02, 1.4, 0.55, { shadow: false });   // pull station (src/alarm.js makes it work, suggestion 63)
+  box(root, H.fireRed, 0.05, 0.14, 0.12, X0 + 0.025, 2.05, 0.55, { shadow: false }); // alarm horn above it, like the lift ones
   box(root, M.white, 0.01, 0.12, 0.08, X0 + 0.04, 1.6, -0.25 + 0.75, { shadow: false }); // notice sheet
 
   // ---- West side, south of the entrance: concrete wall with switch, fingerprint reader, pixbit sign ----

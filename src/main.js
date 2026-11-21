@@ -104,7 +104,7 @@ player.controls.addEventListener('unlock', () => { if (!suggest.isOpen() && !sea
 const doors = initDoors({ scene, player, camera });
 const unlock = initUnlock({ scene, player, camera, doors, touch: !!touchUI }); // fingerprint entry lock on the reception entrance door (suggestion 47)
 const ladies = initLadies({ scene, player, doors }); // ladies toilet door asks "ARE U GAY?" before it opens
-const alarm = initAlarm({ scene, player, camera }); // fire alarm pull station beside lift 5: hold E to pull (suggestion 62)
+const alarm = initAlarm({ scene, player, camera, onPull: () => online.broadcast({ t: 'alarm' }) }); // fire alarm pull station beside lift 5: hold E; rings for everyone online (suggestion 62)
 const arcade = initArcade({ scene, player }); // game room TV: E to play (suggestion 18)
 const balconyJump = initBalconyJump({ camera, player, touch: !!touchUI }); // terrace rail: Space to jump -> video cutscene
 const pool = initPool({ scene, camera, player, touch: !!touchUI }); // game room pool table: E to play, hold R to re-rack
@@ -122,6 +122,7 @@ modes.register(online);
 const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
 const lifts = initLifts({ scene, camera, player, navigate: (on) => minimap.navigate(on) }); // E at any lift: ride to the ground floor and back (suggestion 54)
+online.hookAlarm((name) => alarm.trigger(name)); // someone else pulled the fire alarm
 online.hookLifts({ msg: (m) => lifts.apply(m), snap: () => lifts.snapshot() }); // lift calls / rides are sent to the others only when they happen
 lifts.onChange((m) => online.broadcast(m));
 const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge

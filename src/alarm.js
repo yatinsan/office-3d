@@ -1,38 +1,53 @@
 import * as THREE from 'three';
-import { LIFTS } from './world/hall.js';
+import { LIFTS, X0 } from './world/hall.js';
+import { lvl } from './colliders.js';
 
 /**
- * Fire alarm pull stations (the red boxes beside each lift on the 4th floor, built in world/hall.js → liftFront):
- * get very close and look at it: a small red E appears; hold E to pull (ring fills). A siren sounds and the hall strobes red for ~10 s.
+ * Fire alarm pull stations (the red box beside lift 5 and the one by the fire exit, built in world/hall.js):
+ * get very close and look at it: a small red E appears; hold E to pull (ring fills). A siren sounds and the hall strobes red for 15 s.
  * (suggestion 62)
  */
-const DURATION = 10;
+const DURATION = 15;
 /** read by the minimap: while `on`, it flashes red/white and marks the pulled station */
 export const alarmState = { on: false, t: 0, pts: [] };
-let ac = null, siren = null;
+/**
+ * The alarm sound is the first full beat of the supplied clip (public/sounds/alarm.mp3), repeated while the alarm runs.
+ * It is positional: loudest next to a pull station, a little quieter the further you are, and panned left / right
+ * by where the nearest station is compared with where you look (update() calls setSpatial every frame).
+ */
+let actx = null, buf = null, loading = false, gainN = null, panN = null, sirenTimer = 0;
 function startSiren() {
+  stopSiren();
   try {
-    ac ||= new (window.AudioContext || window.webkitAudioContext)();
-    if (ac.state === 'suspended') ac.resume();
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.type = 'square';
-    g.gain.value = 0.07;
-    o.connect(g).connect(ac.destination);
-    const t = ac.currentTime;
-    for (let i = 0; i < DURATION * 2; i++) o.frequency.setValueAtTime(i % 2 ? 740 : 980, t + i * 0.5); // two-tone horn
-    g.gain.setValueAtTime(0.07, t + DURATION - 0.1); g.gain.linearRampToValueAtTime(0.0001, t + DURATION);
-    o.start(t); o.stop(t + DURATION + 0.05);
-    siren = o;
+    actx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    gainN = actx.createGain(); gainN.gain.value = 0.5;
+    panN = actx.createStereoPanner ? actx.createStereoPanner() : null;
+    if (panN) gainN.connect(panN).connect(actx.destination); else gainN.connect(actx.destination);
+    const play = () => { if (!buf) return; const s = actx.createBufferSource(); s.buffer = buf; s.connect(gainN); s.start(); };
+    if (!buf && !loading) {
+      loading = true;
+      fetch('sounds/alarm.mp3').then((r) => r.arrayBuffer()).then((d) => actx.decodeAudioData(d)).then((b) => { buf = b; if (sirenTimer) play(); }).catch(() => {});
+    }
+    play();
+    sirenTimer = setInterval(play, 2000);
   } catch { /* no audio */ }
 }
-function stopSiren() { try { siren?.stop(); } catch { /* already stopped */ } siren = null; }
+function stopSiren() { clearInterval(sirenTimer); sirenTimer = 0; try { gainN?.disconnect(); panN?.disconnect(); } catch { /* ignore */ } gainN = panN = null; }
+function setSpatial(gain, pan) {
+  if (!gainN) return;
+  const t = actx.currentTime;
+  gainN.gain.setTargetAtTime(gain, t, 0.08);
+  panN?.pan.setTargetAtTime(pan, t, 0.08);
+}
 
-export function initAlarm({ scene, player, camera }) {
+export function initAlarm({ scene, player, camera, onPull = () => {} }) {
   const stations = LIFTS.filter((l) => l.n === 5).map((l) => {
     const k = -l.out;
     return { x: l.x + l.out * 0.05, y: 1.3, z: l.z - k * 0.97, out: l.out };
   });
-  if (!stations.length) return { update() {}, prompt: () => '' };
+  stations.push({ x: X0 + 0.02, y: 1.4, z: 0.55, out: 1 }); // by the fire exit on the office wall (suggestion 63)
+  if (!stations.length) return { update() {}, prompt: () => '', trigger() {} };
 
   alarmState.pts = stations.map((s) => ({ x: s.x, z: s.z }));
   const HOLD = 1.2, C = 2 * Math.PI * 18;
@@ -59,7 +74,30 @@ export function initAlarm({ scene, player, camera }) {
     return { l, lever };
   });
 
-  let t = 0, on = false, holding = false, progress = 0;
+  // red light that travels with you, so every room goes red (not only the hall), plus a pulsing red edge glow on screen
+  const wash = new THREE.PointLight('#ff2a1a', 0, 14, 1.2); scene.add(wash);
+  const glow = document.createElement('div');
+  glow.style.cssText = 'position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(255,20,10,0) 45%,rgba(255,20,10,.55) 100%)';
+  document.body.appendChild(glow);
+
+  // extra red light effect only (no models): along the hall ceiling, so the whole corridor throbs
+  const extra = [[13.2, 5], [13.2, 14], [13.2, 23], [13.2, 32]].map(([x, z]) => {
+    const l = new THREE.PointLight('#ff2a1a', 0, 10, 1.4); l.position.set(x, 2.9, z); scene.add(l); return l;
+  });
+
+  // big GTA-style "EMERGENCY" text with who pulled it
+  const bs = document.createElement('style');
+  bs.textContent = `#alarmbanner{position:fixed;left:0;right:0;top:16%;z-index:9;text-align:center;pointer-events:none;opacity:0;transform:scale(1.5);transition:opacity .25s,transform .35s cubic-bezier(.2,1.6,.4,1)}
+    #alarmbanner.show{opacity:1;transform:scale(1)}
+    #alarmbanner .big{font:italic 900 clamp(48px,10vw,128px)/1 Impact,'Arial Black',system-ui,sans-serif;letter-spacing:4px;text-transform:uppercase;color:#e5281c;-webkit-text-stroke:3px #000;text-shadow:4px 4px 0 #000,0 0 28px rgba(229,40,28,.7)}
+    #alarmbanner .sub{margin-top:10px;font:800 clamp(16px,2.6vw,26px)/1.2 system-ui,sans-serif;color:#fff;text-transform:uppercase;letter-spacing:2px;text-shadow:2px 2px 0 #000}`;
+  document.head.appendChild(bs);
+  const banner = document.createElement('div'); banner.id = 'alarmbanner';
+  banner.innerHTML = '<div class="big">Emergency</div><div class="sub"></div>';
+  document.body.appendChild(banner);
+  const bsub = banner.querySelector('.sub');
+
+  let bannerT = 0, t = 0, on = false, holding = false, progress = 0;
   const v = new THREE.Vector3(), fwd = new THREE.Vector3();
   /** very close AND looking at the pull station (so it never shows at the lift's own button/doors) */
   const facing = () => stations.some((s) => {
@@ -68,14 +106,20 @@ export function initAlarm({ scene, player, camera }) {
     camera.getWorldDirection(fwd);
     return fwd.dot(v.divideScalar(d)) > 0.9;
   });
-  const pull = () => {
+  const pull = (who) => {
+    if (on) { t = DURATION; return; }
+    bsub.textContent = `${who || 'You'} pulled the fire alarm`; banner.classList.add('show'); bannerT = 4.5;
     on = true; alarmState.on = true; t = DURATION; progress = 0; holding = false;
+    if (!who) onPull();
     for (const { lever } of lights) lever.position.y = 1.24;
     startSiren();
   };
   const stop = () => {
     on = false; alarmState.on = false; stopSiren();
     for (const { l, lever } of lights) { l.intensity = 0; lever.position.y = 1.3; }
+    extra.forEach((l) => { l.intensity = 0; });
+    banner.classList.remove('show');
+    wash.intensity = 0; glow.style.opacity = '0';
   };
   addEventListener('keydown', (e) => { if (e.code === 'KeyE' && !e.repeat && !typing(e)) holding = true; });
   addEventListener('keyup', (e) => { if (e.code === 'KeyE') holding = false; });
@@ -88,15 +132,26 @@ export function initAlarm({ scene, player, camera }) {
     el.classList.toggle('on', on);
     if (on) {
       t -= dt; alarmState.t = t;
+      if (bannerT > 0 && (bannerT -= dt) <= 0) banner.classList.remove('show');
       if (t <= 0) { stop(); el.classList.remove('show'); return; }
       ring.setAttribute('stroke-dashoffset', String(C * (1 - t / DURATION)));
-      const flash = Math.floor(t * 4) % 2 ? 14 : 2;
-      for (const { l } of lights) l.intensity = flash;
+      const p = 0.5 + 0.5 * Math.sin(performance.now() / 1000 * Math.PI * 2 * 1.1), fade = Math.min(1, t / 1.5);   // slow pulse, fades out at the end
+      for (const { l } of lights) l.intensity = (2 + 12 * p) * fade;
+      extra.forEach((l, i) => { l.intensity = (1 + 9 * (0.5 + 0.5 * Math.sin(performance.now() / 1000 * Math.PI * 2 * 1.1 + i * 0.9))) * fade; });
+      // positional sound: nearest station sets the volume (full beside it, ~15 % far away) and the left / right pan
+      let best = null, bd = 1e9;
+      for (const s of stations) { const d = Math.hypot(player.pos.x - s.x, player.pos.z - s.z); if (d < bd) { bd = d; best = s; } }
+      camera.getWorldDirection(fwd);
+      const rx = -fwd.z, rz = fwd.x, rl = Math.hypot(rx, rz) || 1;   // my right-hand direction on the floor
+      const side = best && bd > 0.01 ? ((best.x - player.pos.x) * rx + (best.z - player.pos.z) * rz) / (rl * bd) : 0;
+      setSpatial(lvl.cur ? 0.12 : 0.15 + 0.85 * Math.max(0, 1 - bd / 30) ** 1.5, lvl.cur ? 0 : side * Math.min(1, bd / 4) * 0.9);
+      wash.position.copy(camera.position); wash.intensity = (3 + 14 * p) * fade;
+      glow.style.opacity = String((0.25 + 0.75 * p) * fade);
       return;
     }
     if (show && holding) { progress += dt / HOLD; if (progress >= 1) pull(); }
     else progress = Math.max(0, progress - dt * 2.5);
     ring.setAttribute('stroke-dashoffset', String(C * (1 - Math.min(progress, 1))));
   }
-  return { update, prompt: () => '' };
+  return { update, prompt: () => '', trigger: (name) => pull(name || 'Someone') };
 }

@@ -2205,5 +2205,35 @@
     "folder": "062-add-a-emergency-item-in-here",
     "files": [],
     "reply": "Small red E appears only when you are very close and looking at the pull station beside lift 5. Hold E (ring fills) to pull; siren and red strobes run for about 10 seconds."
+  },
+  {
+    "point": [
+      10.34,
+      1.43,
+      0.55
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.32,
+      "z": 0.58,
+      "yaw": 1.54,
+      "pitch": -0.23
+    },
+    "text": "make same emergency gear here and",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795297401184,
+    "id": "smwqxpwf4",
+    "n": 63,
+    "created": 1795297401191,
+    "folder": "063-make-same-emergency-gear-here-and",
+    "files": [],
+    "reply": "Added an alarm horn above the red call point by the fire exit; it is now a working pull station like the one at lift 5 (hold E close up), and it rings for everyone online."
   }
 ]

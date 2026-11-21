@@ -571,6 +571,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
         if (m.t === 'pool') { pool?.applyRemote(m, { name: p.name, color: p.color }); return; }
         if (m.t === 'game') { gameHook.msg(p.id, m); return; }
         if (m.t === 'lift') { liftHook.msg(m); return; }
+        if (m.t === 'alarm') { alarmHook(p.name); return; }
         if (m.t === 'screen') { screenHook.msg(p.id, m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
@@ -598,6 +599,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   let onHitMe = () => {}, selfKo = false;
   // games (src/games.js): messages {t:'game'} are routed there; it also hears about peers leaving and gives the list to newcomers
   let liftHook = { msg() {}, snap: () => null };
+  let alarmHook = () => {}; // fire alarm pulled by someone (src/alarm.js)
   let screenHook = { msg() {}, gone() {}, reset() {}, snap: () => null }; // desk screens + who sits where (src/seat.js)
   let gameHook = { msg() {}, gone() {}, reset() {}, snap: () => null };
   const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
@@ -802,6 +804,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     me, broadcast, uid: () => uid,
     get name() { return myName; },
     hookGames: (h) => { gameHook = { ...gameHook, ...h }; },
+    hookAlarm: (fn) => { alarmHook = fn; },
     hookLifts: (h) => { liftHook = { ...liftHook, ...h }; },
     hookScreens: (h) => { screenHook = { ...screenHook, ...h }; },
     onHit: (fn) => { onHitMe = fn; },
