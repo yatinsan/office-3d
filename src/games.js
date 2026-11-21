@@ -65,6 +65,8 @@ export function initGames({ online, player, scene, camera }) {
   let stunT = 0, stunApplied = false, keyQ = []; // stunT: seconds of "can't move / punch" left; keyQ: key presses for the game types (1-5, R, ...)
   const TPP_D = 2.6, SHOT_CD = 0.55, SHOT_RANGE = 40;
   const dirV = new THREE.Vector3(), orgV = new THREE.Vector3();
+  let yawSet = null; // my own facing while the prop is turned by hand (Prop Hunt), null = the camera decides
+  const heldKeys = new Set();
   let camSaved = null, shotT = 0, recoil = 0, flashT = 0;
   const cloneObjs = new Map(); // clone id -> { obj, dying }: the decoy props standing in the world
   const propCache = new WeakMap(); // avatar -> disguise index currently shown (so changed() does not rebuild the prop every time)
@@ -86,7 +88,11 @@ export function initGames({ online, player, scene, camera }) {
     get me() { return me(); },
     el: (g) => (now() - g.startMs) / 1000,
     /** where I stand and which way I face (for dropping a clone) */
-    pose() { camera.getWorldDirection(dirV); return { x: +player.pos.x.toFixed(2), z: +player.pos.z.toFixed(2), ry: +Math.atan2(-dirV.x, -dirV.z).toFixed(2) }; },
+    pose() { camera.getWorldDirection(dirV); return { x: +player.pos.x.toFixed(2), z: +player.pos.z.toFixed(2), ry: +(yawSet ?? Math.atan2(-dirV.x, -dirV.z)).toFixed(2) }; },
+    /** keys held right now (event.code) */
+    held: (k) => heldKeys.has(k),
+    /** face this angle (radians) instead of where the camera looks; null = follow the camera again */
+    setYaw(a) { const v = a == null ? null : a; if (v !== yawSet) { yawSet = v; online.setYawOverride?.(v); } },
     toast,
     send: (op) => act(op),
     freeze(v) { frozen = !!v; syncStun(); },
@@ -106,7 +112,7 @@ export function initGames({ online, player, scene, camera }) {
     const want = frozen || stunT > 0;
     if (want !== stunApplied) { stunApplied = want; player.state.stunned = want; }
   }
-  const stopEffects = () => { frozen = false; stunT = 0; syncStun(); ctx.blind(null); keyQ = []; };
+  const stopEffects = () => { ctx.setYaw(null); frozen = false; stunT = 0; syncStun(); ctx.blind(null); keyQ = []; };
 
   // ---------- shared state: every client applies the same messages ----------
   const hydrate = (r) => ({ id: r.id, type: r.type, host: r.host, hostName: r.hostName, players: { ...r.players }, phase: r.phase, seed: r.seed || 0,
@@ -173,6 +179,9 @@ export function initGames({ online, player, scene, camera }) {
       case 'shot': // a seeker shot at me: the game decides what that means (Prop Hunt: same as a tag)
         if (g && g.phase === 'playing' && m.to === me() && g.players[me()] && g.seekers.includes(from)) t.onHit?.(g, ctx, from);
         break;
+      case 'fire': // a seeker fired their gun: everybody sees the flash
+        if (g && g.phase === 'playing' && g.seekers.includes(from) && from !== me()) { for (const p of online.peers()) if (p.id === from) p.avatar.fireGun?.(); sfx.whoosh(); }
+        break;
       case 'end':
         if (g && g.phase === 'playing' && from === g.host) finish(g, m.result);
         break;
@@ -219,7 +228,7 @@ export function initGames({ online, player, scene, camera }) {
     else avatar.setDisguise?.(t.makeProp(idx), t.props[idx].hit); // my own too: I see it from behind (camBegin)
   }
   function changed() {
-    for (const p of online.peers()) { const g = playingOf(p.id); p.avatar.setBadge?.(g ? typeOf(g).badge(g, p.id) : null); dress(p.avatar, g, p.id, false); }
+    for (const p of online.peers()) { const g = playingOf(p.id); p.avatar.setBadge?.(g ? typeOf(g).badge(g, p.id) : null); p.avatar.setGun?.(!!g && !!typeOf(g).gun && g.seekers.includes(p.id)); dress(p.avatar, g, p.id, false); }
     if (online.me) dress(online.me, playingOf(me()), me(), true);
     syncClones();
     drawHud();
@@ -255,6 +264,7 @@ export function initGames({ online, player, scene, camera }) {
     if (!g) return false;
     if (!typeOf(g).canShoot(g, ctx) || shotT > 0) return true;
     shotT = SHOT_CD; recoil = 1; flashT = 0.06; sfx.whoosh(); sfx.impact();
+    online.broadcast({ t: 'game', op: 'fire', id: g.id });
     camera.getWorldDirection(dirV); orgV.copy(camera.position);
     let best = null, bestT = SHOT_RANGE;
     const test = (cx, cy, cz, r, what) => { // ray against a sphere
@@ -364,6 +374,9 @@ export function initGames({ online, player, scene, camera }) {
     else return;
     e.preventDefault(); e.stopImmediatePropagation();
   }, true);
+  addEventListener('keydown', (e) => { if (!open) heldKeys.add(e.code); });
+  addEventListener('keyup', (e) => heldKeys.delete(e.code));
+  addEventListener('blur', () => heldKeys.clear());
   player.controls.addEventListener('unlock', () => close()); // Esc released the mouse: the pause menu takes over
 
   function update(dt) {

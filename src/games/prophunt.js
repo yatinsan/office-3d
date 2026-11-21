@@ -28,7 +28,7 @@ export default {
   name: 'Prop Hunt',
   min: 2,
   max: 8,
-  blurb: 'Hide as a chair or plant (1-5 pick, R freeze, C clone). The seeker has a gun.',
+  blurb: 'Hide as a chair or plant (1-5 pick, R freeze, C clone, T + Z X turn the prop). The seeker has a gun.',
   props: PROPS,
   gun: true, // the seeker's left click fires a gun (src/games.js)
   canShoot: (g, ctx) => phaseAt(ctx.el(g)) === 'seek',
@@ -50,27 +50,30 @@ export default {
   onLeave(g) { if (!g.seekers.length) { const ids = Object.keys(g.players).sort(); if (ids.length) g.seekers = [ids[0]]; } },
   caught(g, uid) { if (g.players[uid] && !g.seekers.includes(uid)) g.seekers.push(uid); },
 
-  tick(g, ctx) {
+  tick(g, ctx, dt) {
     const el = ctx.el(g), ph = phaseAt(el), run = g.run, me = ctx.me;
     const seeker = g.seekers.includes(me);
     const blind = seeker && el < COUNT + HIDE;
     ctx.blind(blind ? (el < COUNT ? 'Get ready' : 'You are the seeker') : null, blind ? `Counting… ${Math.max(0, Math.ceil(COUNT + HIDE - el))}` : '');
     if (!run.init) { run.init = true; ctx.keys(); } // forget key presses from before the game
-    if (seeker) ctx.freeze(blind);
+    if (seeker) { ctx.freeze(blind); ctx.setYaw(null); run.lock = false; }
     else {
       const mine = g.disguise[me];
       if (!mine && !run.picked) { run.picked = true; ctx.send({ op: 'disguise', id: g.id, uid: me, p: Math.floor(Math.random() * PROPS.length), f: 0 }); } // start as a random prop
       for (const k of ctx.keys()) {
         const cur = g.disguise[me] || { p: 0, f: 0 }, n = /^(?:Digit|Numpad)([1-5])$/.exec(k);
         if (n) { ctx.send({ op: 'disguise', id: g.id, uid: me, p: +n[1] - 1, f: cur.f }); ctx.toast(`You are a ${PROPS[+n[1] - 1].name}`, 1400); }
+        else if (k === 'KeyT') { run.lock = !run.lock; if (run.lock) run.ang = ctx.pose().ry; ctx.toast(run.lock ? 'Prop angle locked: Z X turn it' : 'Prop turns with your view', 1600); }
         else if (k === 'KeyC') { if (g.disguise[me]) { ctx.send({ op: 'clone', id: g.id, uid: me, cid: `${me.slice(-5)}${Date.now().toString(36)}`, p: cur.p, ...ctx.pose() }); ctx.toast('Dropped a clone (3 max)', 1200); } }
         else if (k === 'KeyR') { ctx.send({ op: 'disguise', id: g.id, uid: me, p: cur.p, f: cur.f ? 0 : 1 }); ctx.toast(cur.f ? 'Moving again' : 'Frozen: you look like furniture', 1400); }
       }
+      if (run.lock) run.ang += ((ctx.held('KeyZ') ? 1 : 0) - (ctx.held('KeyX') ? 1 : 0)) * 2.4 * (dt || 0);
+      ctx.setYaw(run.lock ? run.ang : null);
       ctx.freeze(!!(g.disguise[me] && g.disguise[me].f));
     }
     if (ph !== run.ph) {
       run.ph = ph;
-      if (ph === 'count') ctx.toast(seeker ? 'You are the SEEKER' : `${g.players[g.seekers[0]] || 'Someone'} is the seeker. Become a prop: 1-5 pick, R freeze, C clone`, 3500);
+      if (ph === 'count') ctx.toast(seeker ? 'You are the SEEKER' : `${g.players[g.seekers[0]] || 'Someone'} is the seeker. Become a prop: 1-5 pick, R freeze, C clone, T turn mode`, 3500);
       else if (ph === 'seek') ctx.toast(seeker ? 'GO! Shoot the props. A clone just breaks, the real hider is found' : 'The seeker is out. Stay frozen!', 3200);
     }
   },

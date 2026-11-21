@@ -271,6 +271,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const me = makeAvatar('', myColor, { self: true });
   scene.add(me.group);
   const meDir = new THREE.Vector3();
+  let yawOv = null; // Prop Hunt: face this angle instead of where the camera looks (null = follow the camera)
   let selfSeated = false, lowNet = false, netT = 0; // seated at a desk (src/seat.js): we barely move, so we send much less
   function updateSelf(dt, reach = null) {
     if (creating) { // third-person front view of your character while you pick a name + colour
@@ -282,7 +283,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       return;
     }
     camera.getWorldDirection(meDir);
-    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, Math.atan2(-meDir.x, -meDir.z), false);
+    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false);
     me.setSeated(selfSeated);
     me.setReach(reach?.aim, reach?.k || 0);
     me.update(dt);
@@ -588,7 +589,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   function sendPos(force = false) {
     if (creating) return;
     camera.getWorldDirection(dir);
-    const yaw = Math.atan2(-dir.x, -dir.z);
+    const yaw = yawOv ?? Math.atan2(-dir.x, -dir.z);
     const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0]);
     if (!force && msg === lastSent && heartbeat < (selfSeated ? 3 : 1)) return;
     lastSent = msg; heartbeat = 0;
@@ -655,6 +656,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     updateSelf,
     /** sitting at a desk (src/seat.js): tell the others, and send far less */
     setSeated(v) { selfSeated = !!v; if (on) sendPos(true); },
+    setYawOverride(a) { yawOv = a == null ? null : a; },
     lowConnection: () => lowNet,
     // fighting hooks (src/combat.js)
     running: () => on && !!uid && !creating,
@@ -677,6 +679,7 @@ let hudT = 0;
 // ---------- Avatar: a rounded figure (capsule body, round head with a visor, capsule arms + legs) that swings as it walks ----------
 const SKIN = '#f1d3b8', PANTS = '#2b3550', SHOES = '#1c1c20';
 /** self: your own body in first person: no head, chest or name tag, pinned to you with no smoothing. */
+const GUN_HOLD = -1.45; // right arm raised in front (x rotation, see setGun)
 export function makeAvatar(name, color, { self = false } = {}) {
   const group = new THREE.Group();
   group.rotation.order = 'YXZ'; // turn first, then lean / fall (a knocked-out body lies on its back)
@@ -711,6 +714,14 @@ export function makeAvatar(name, color, { self = false } = {}) {
     for (const c of group.children) { c.position.z -= 0.08; c.position.y -= 0.08; }
   }
   const ARM = 0.6; // shoulder to hand centre
+  // Prop Hunt: the seeker's gun in the right hand (barrel along the arm), the arm held out in front
+  const gunG = new THREE.Group(); gunG.position.set(0, -0.6, 0); gunG.rotation.x = -Math.PI / 2; gunG.visible = false; armR.add(gunG);
+  const gunMat = (c) => new THREE.MeshBasicMaterial({ color: c });
+  for (const [w, h, d, y, z, c] of [[0.07, 0.1, 0.34, 0, 0, '#2b2d33'], [0.04, 0.04, 0.22, 0.03, -0.26, '#1a1b1f'], [0.06, 0.13, 0.07, -0.1, 0.1, '#3a3d45']]) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), gunMat(c)); b.position.set(0, y, z); gunG.add(b);
+  }
+  const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), gunMat('#ffd34a')); muzzle.position.set(0, 0.03, -0.42); muzzle.visible = false; gunG.add(muzzle);
+  let gunOn = false, fireT = -1;
 
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
   const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
@@ -800,6 +811,10 @@ export function makeAvatar(name, color, { self = false } = {}) {
     setKnocked(k) { koTarget = k ? 1 : 0; },
     /** sitting on a desk chair: hips drop, legs point forward, hands on the keyboard */
     setSeated(s) { seatTarget = s ? 1 : 0; },
+    /** Prop Hunt: hold a gun out in front (the seeker); false = hands down again */
+    setGun(on) { gunOn = !!on; gunG.visible = gunOn; },
+    /** a shot was fired: muzzle flash + the arm kicks back */
+    fireGun() { fireT = 0; },
     /** a coloured ring round the name tag = this player is in a running game (null removes it) */
     setBadge(c) { if (c !== badge) { badge = c; drawTag(); } },
     /** Prop Hunt: show `obj` (a THREE.Object3D; hitY = how high to aim a punch) instead of the body, name tag and mic icon; null = back to normal */
@@ -912,6 +927,9 @@ export function makeAvatar(name, color, { self = false } = {}) {
         armL.rotation.x = armR.rotation.x = -0.9 * seatK;   // hands out to the keyboard
         armL.rotation.z = 0.12 * seatK; armR.rotation.z = -0.12 * seatK;
       }
+      if (fireT >= 0) { fireT += dt; if (fireT > 0.1) fireT = -1; }
+      muzzle.visible = fireT >= 0;
+      if (gunOn && koK === 0 && seatK === 0) { armR.rotation.x = GUN_HOLD + (fireT >= 0 ? 0.18 : 0); armR.rotation.z = 0; armR.scale.y = 1; } // arm out in front, kicks back on a shot
       tag.position.set(0, tagY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK);
       const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
       group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK - SIT_DROP * seatK, cur.z - Math.cos(yaw) * lunge);
