@@ -122,6 +122,13 @@
     #hud { left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 10px; font-size: 11px; color: rgba(255,255,255,.6); text-shadow: none;
       background: rgba(14,14,18,.45); border: 1px solid rgba(255,255,255,.08); }
     #hud:empty { display: none; }
+    /* key guide: a thin strip along the bottom centre (hidden on touch screens and during cutscenes) */
+    #keyguide { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 5; pointer-events: none; display: flex; gap: 14px; white-space: nowrap;
+      padding: 5px 12px; border-radius: 10px; font-size: 11px; color: rgba(255,255,255,.7); background: rgba(14,14,18,.45); border: 1px solid rgba(255,255,255,.08); }
+    #keyguide kbd { display: inline-block; min-width: 16px; padding: 1px 5px; margin-right: 4px; text-align: center; font: 700 10px system-ui, sans-serif; color: #fff;
+      background: rgba(255,255,255,.14); border-radius: 4px; }
+    @media (pointer: coarse), (max-width: 900px) { #keyguide { display: none; } }
+    body.cutscene #keyguide { display: none; }
     #byline { right: 12px; bottom: 12px; padding: 5px 12px; border-radius: 10px; font-size: 15px; text-shadow: none; background: rgba(14,14,18,.45); border: 1px solid rgba(255,255,255,.08); }
     #prompt { position: fixed; left: 50%; bottom: 74px; transform: translateX(-50%); z-index: 6; pointer-events: none; padding: 0 22px 0 0; gap: 0; overflow: hidden;
       border-radius: 2px; border: 0; border-left: 5px solid #ecc828; background: rgba(24,24,26,.92); font-size: 21px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
@@ -186,6 +193,7 @@
   <div id="zone"></div>
   <div id="prompt" class="chip"></div>
   <div id="hud"></div>
+  <div id="keyguide"><span><kbd>Shift</kbd>Run</span><span><kbd>Space</kbd>Jump</span><span><kbd>C</kbd>Crouch</span><span><kbd>V</kbd>Camera</span><span><kbd>P</kbd>Mute</span><span><kbd>F</kbd>Interact</span><span><kbd>Esc</kbd>Menu</span></div>
   <div id="byline">Developed by <b>Yatin</b></div>
   <script type="module" src="/src/main.js"></script>
 </body>
