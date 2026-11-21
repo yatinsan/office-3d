@@ -760,10 +760,10 @@ export function makeAvatar(name, color, { self = false } = {}) {
   const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), gunMat('#ffd34a')); muzzle.position.set(0, 0.03, -0.42); muzzle.visible = false; gunG.add(muzzle);
   let gunOn = false, fireT = -1;
 
-  const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
+  const canvas = document.createElement('canvas'); canvas.width = 768; canvas.height = 192;
   const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
   const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  tag.scale.set(1.1, 0.275, 1);
+  tag.scale.set(1.2, 0.3, 1);
   tag.position.y = 2.2;
   tag.renderOrder = 10;
   tag.visible = !self;
@@ -774,7 +774,7 @@ export function makeAvatar(name, color, { self = false } = {}) {
   const sCanvas = document.createElement('canvas'); sCanvas.width = 128; sCanvas.height = 128;
   const sTex = new THREE.CanvasTexture(sCanvas); sTex.colorSpace = THREE.SRGBColorSpace;
   const sIcon = new THREE.Sprite(new THREE.SpriteMaterial({ map: sTex, depthTest: false, transparent: true }));
-  sIcon.scale.set(0.34, 0.34, 1); sIcon.position.y = 2.55; sIcon.renderOrder = 11; sIcon.visible = false;
+  sIcon.scale.set(0.36, 0.36, 1); sIcon.position.y = 2.58; sIcon.renderOrder = 11; sIcon.visible = false;
   group.add(sIcon);
   let sT = 0, sDraw = 0;
   function drawStatus() {
@@ -783,38 +783,50 @@ export function makeAvatar(name, color, { self = false } = {}) {
     sIcon.visible = !self && !disg && (talk || muted);
     if (!sIcon.visible) return;
     g.lineCap = 'round'; g.lineJoin = 'round';
+    const disc = (c1, c2, ring) => {
+      g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 8; g.shadowOffsetY = 3;
+      const gr = g.createLinearGradient(0, 8, 0, 120); gr.addColorStop(0, c1); gr.addColorStop(1, c2);
+      g.fillStyle = gr; g.beginPath(); g.arc(64, 62, 52, 0, Math.PI * 2); g.fill(); g.restore();
+      g.strokeStyle = ring; g.lineWidth = 4; g.beginPath(); g.arc(64, 62, 52, 0, Math.PI * 2); g.stroke();
+    };
     if (talk) {
-      g.fillStyle = 'rgba(0,0,0,.6)'; g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+      disc('#3ec36b', '#1c8a45', 'rgba(255,255,255,.85)');
       g.fillStyle = '#fff';
-      g.beginPath(); g.moveTo(26, 52); g.lineTo(42, 52); g.lineTo(62, 36); g.lineTo(62, 92); g.lineTo(42, 76); g.lineTo(26, 76); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(24, 50); g.lineTo(40, 50); g.lineTo(58, 34); g.lineTo(58, 90); g.lineTo(40, 74); g.lineTo(24, 74); g.closePath(); g.fill();
       const ph = (sT * 3.2) % 4; // waves light up one after another, then restart
       g.lineWidth = 7;
       for (let i = 0; i < 3; i++) {
-        const a = i < ph ? 1 : 0.18, r = 16 + i * 13;
-        g.strokeStyle = `rgba(126,224,143,${a})`;
-        g.beginPath(); g.arc(62, 64, r, -0.75, 0.75); g.stroke();
+        g.strokeStyle = `rgba(255,255,255,${i < ph ? 1 : 0.3})`;
+        g.beginPath(); g.arc(58, 62, 14 + i * 12, -0.75, 0.75); g.stroke();
       }
     } else {
-      g.fillStyle = 'rgba(0,0,0,.6)'; g.beginPath(); g.arc(64, 64, 34, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = '#ff5c5c'; g.lineWidth = 6;
-      g.beginPath(); g.roundRect(55, 40, 18, 30, 9); g.stroke();
-      g.beginPath(); g.moveTo(46, 62); g.arc(64, 62, 18, Math.PI, 0, true); g.moveTo(64, 82); g.lineTo(64, 90); g.stroke();
-      g.lineWidth = 7; g.beginPath(); g.moveTo(44, 90); g.lineTo(84, 38); g.stroke();
+      disc('#e5484d', '#a82a30', 'rgba(255,255,255,.85)');
+      g.strokeStyle = '#fff'; g.lineWidth = 6;
+      g.beginPath(); g.roundRect(55, 30, 18, 32, 9); g.stroke();
+      g.beginPath(); g.moveTo(44, 56); g.arc(64, 56, 20, Math.PI, 0, true); g.moveTo(64, 76); g.lineTo(64, 86); g.stroke();
+      g.lineWidth = 8; g.beginPath(); g.moveTo(40, 94); g.lineTo(88, 30); g.stroke();
     }
     sTex.needsUpdate = true;
   }
   function drawTag() {
     const g = canvas.getContext('2d');
-    g.clearRect(0, 0, 512, 128);
-    g.font = '700 54px system-ui, sans-serif';
-    const w = Math.min(500, g.measureText(curName).width + 60);
-    const x0 = (512 - w) / 2;
-    g.fillStyle = 'rgba(0,0,0,.55)';
-    g.beginPath(); g.roundRect(x0, 20, w, 88, 44); g.fill();
-    if (badge) { g.strokeStyle = badge; g.lineWidth = 7; g.stroke(); }
-    g.fillStyle = curColor; g.beginPath(); g.arc(x0 + 36, 64, 12, 0, Math.PI * 2); g.fill();
+    g.clearRect(0, 0, 768, 192);
+    g.font = '700 66px system-ui, "Segoe UI", sans-serif';
+    const w = Math.min(740, g.measureText(curName).width + 120), h = 112, y0 = 18, x0 = (768 - w) / 2;
+    // dark glass pill with a little pointer toward the head
+    g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 14; g.shadowOffsetY = 4;
+    const bg = g.createLinearGradient(0, y0, 0, y0 + h); bg.addColorStop(0, 'rgba(38,42,56,.92)'); bg.addColorStop(1, 'rgba(16,18,26,.92)');
+    g.fillStyle = bg; g.beginPath(); g.roundRect(x0, y0, w, h, h / 2); g.fill();
+    g.beginPath(); g.moveTo(384 - 20, y0 + h - 2); g.lineTo(384, y0 + h + 24); g.lineTo(384 + 20, y0 + h - 2); g.closePath(); g.fill();
+    g.restore();
+    g.lineWidth = badge ? 8 : 3; g.strokeStyle = badge || 'rgba(255,255,255,.28)';
+    g.beginPath(); g.roundRect(x0, y0, w, h, h / 2); g.stroke();
+    // colour dot (the player's shirt colour) with a soft ring
+    g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(x0 + 54, y0 + h / 2, 21, 0, Math.PI * 2); g.fill();
+    g.fillStyle = curColor; g.beginPath(); g.arc(x0 + 54, y0 + h / 2, 16, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'left';
-    g.fillText(curName, x0 + 58, 66, w - 70);
+    g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 4; g.shadowOffsetY = 2;
+    g.fillText(curName, x0 + 92, y0 + h / 2 + 3, w - 118);
     tex.needsUpdate = true;
   }
   drawTag();
