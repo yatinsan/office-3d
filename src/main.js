@@ -95,7 +95,7 @@ player.controls.domElement.addEventListener('mousedown', () => {
   if (touchUI || !player.state.dragMode || player.controls.isLocked) return;
   try { const p = player.controls.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {}
 });
-player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) showMenu(); });
+player.controls.addEventListener('unlock', () => { if (!suggest.isOpen() && !seat.isBrowsing()) showMenu(); });
 
 // ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
 const doors = initDoors({ scene, player, camera });

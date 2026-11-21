@@ -11,8 +11,11 @@ import { SEATS } from './props.js';
 const REACH = 1.15;           // how close to the chair centre you must be
 const EYE_DIST = 0.4;         // camera distance from the screen
 const CW = 832, CH = 480;     // screen canvas, same 0.52 x 0.30 m ratio as the monitor
-const APPS = ['Notes', 'Calculator', 'Clock'];
-const DOCK = APPS.map((_, i) => ({ x: CW / 2 - 105 + i * 75, y: CH - 70, w: 60, h: 60 }));
+const APPS = ['Notes', 'Calculator', 'Clock', 'Pixbit'];
+const SITE = 'https://pixbitsolutions.com/';
+const logo = new Image(); logo.src = 'textures/logo.png';
+const BAR = 26;               // menu bar height on the screen canvas; the web page fills the rest
+const DOCK = APPS.map((_, i) => ({ x: CW / 2 - 142 + i * 75, y: CH - 70, w: 60, h: 60 }));
 const WIN = { x: 150, y: 50, w: 532, h: 330 };
 const font = (px, w = 500) => `${w} ${px}px "Avenir Next", "Helvetica Neue", system-ui, Arial, sans-serif`;
 
@@ -46,6 +49,8 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
   }
 
   let active = false, seat = null, savedPos = null, savedQuat = null, clockT = 0;
+  logo.addEventListener('load', () => draw());
+  let browsing = false;
   let app = null;               // null = desktop, else one of APPS
   let sel = 0;
   const camPos = new THREE.Vector3();
@@ -89,12 +94,13 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
   const { app, sel } = st, notes = st.notes || '', calc = { disp: st.disp || '0', op: st.op || null };
   const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
   function drawIcon(i, x, y, w, on) {
-    const cols = [['#ffd54a', '#f2a900'], ['#7a7f8c', '#3d414c'], ['#fff', '#d8dce6']][i];
+    const cols = [['#ffd54a', '#f2a900'], ['#7a7f8c', '#3d414c'], ['#fff', '#d8dce6'], ['#1c1c1c', '#000']][i];
     const grd = g.createLinearGradient(0, y, 0, y + w); grd.addColorStop(0, cols[0]); grd.addColorStop(1, cols[1]);
     g.fillStyle = grd; rr(x, y, w, w, 14); g.fill();
     g.fillStyle = i === 2 ? '#222' : '#fff'; g.strokeStyle = g.fillStyle; g.lineWidth = 3; g.lineCap = 'round';
     if (i === 0) { for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(x + 14, y + 20 + k * 11); g.lineTo(x + w - 14, y + 20 + k * 11); g.stroke(); } }
     else if (i === 1) { g.font = font(30, 700); g.textAlign = 'center'; g.fillText('+ ×', x + w / 2, y + w / 2 + 11); }
+    else if (i === 3) { if (logo.complete && logo.naturalWidth) { const lh = w * 0.72, lw = lh * logo.naturalWidth / logo.naturalHeight; g.drawImage(logo, x + (w - lw) / 2, y + (w - lh) / 2, lw, lh); } }
     else { g.beginPath(); g.arc(x + w / 2, y + w / 2, 19, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(x + w / 2, y + w / 2); g.lineTo(x + w / 2, y + w / 2 - 13); g.moveTo(x + w / 2, y + w / 2); g.lineTo(x + w / 2 + 9, y + w / 2 + 4); g.stroke(); }
     if (on) { g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(x + w / 2, y + w + 7, 3, 0, Math.PI * 2); g.fill(); }
   }
@@ -124,6 +130,10 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
       g.fillStyle = '#ff9f0a'; g.font = font(20, 600); g.textAlign = 'left'; if (calc.op) g.fillText(calc.op === '*' ? '×' : calc.op === '/' ? '÷' : calc.op, x + 24, y + 70);
       g.fillStyle = '#555'; g.font = font(17, 500); g.textAlign = 'center';
       g.fillText('Type numbers and + − * /   ·   Enter =   ·   C clear   ·   Backspace delete', x + w / 2, y + 170);
+    } else if (app === 'Pixbit') {
+      if (logo.complete && logo.naturalWidth) g.drawImage(logo, x + w / 2 - 40, y + 70, 80, 80 * logo.naturalHeight / logo.naturalWidth);
+      g.fillStyle = '#111'; g.textAlign = 'center'; g.font = font(26, 700);
+      g.fillText('pixbitsolutions.com', x + w / 2, y + 250);
     } else {
       const d = new Date();
       g.fillStyle = '#111'; g.textAlign = 'center'; g.font = font(96, 200);
@@ -152,7 +162,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
       g.fillText('← →  choose an app   ·   Enter  open   ·   E / Esc  stand up', CW / 2, 120);
     }
     // dock
-    g.fillStyle = 'rgba(255,255,255,.22)'; rr(CW / 2 - 125, CH - 82, 250, 76, 20); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.22)'; rr(CW / 2 - 162, CH - 82, 325, 76, 20); g.fill();
     APPS.forEach((_, i) => { const d = DOCK[i]; drawIcon(i, d.x, d.y, d.w, app === APPS[i]); });
     if (!app) { g.strokeStyle = '#fff'; g.lineWidth = 3; rr(DOCK[sel].x - 4, DOCK[sel].y - 4, DOCK[sel].w + 8, DOCK[sel].h + 8, 17); g.stroke(); }
   }
@@ -183,7 +193,13 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
   }
   function queueSend() { if (active && !sendT) sendT = setTimeout(sendNow, 100); } // typing is batched, ~10 messages a second at most
   function stateFrom(m) { return { app: APPS[m.app] || null, sel: m.sel | 0, notes: String(m.notes || '').slice(0, 600), disp: String(m.disp || '0').slice(0, 14), op: m.op || null }; }
-  function hideRemote(id) { const r = remote.get(id); if (r) { r.mesh.visible = false; r.on = false; } }
+  // someone stood up: their last screen stays on the monitor (frozen) until another person sits there
+  function hideRemote(id) { const r = remote.get(id); if (r) r.on = false; }
+  let mySeat = -1;              // seat where my own last screen stays after I stand up
+  function clearSeat(i, except) {
+    for (const r of remote.values()) if (r !== except && r.seat === i) r.mesh.visible = false;
+    if (i === mySeat && !active) screen.visible = false;
+  }
   function showRemote(id, m) {
     const s = SEATS[m.seat];
     if (!s) return;
@@ -198,7 +214,8 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     }
     r.mesh.position.set(s.sx + s.nx * 0.004, s.sy, s.sz + s.nz * 0.004);
     r.mesh.rotation.y = Math.atan2(s.nx, s.nz);
-    r.mesh.visible = r.on = true;
+    clearSeat(m.seat, r); r.seat = m.seat;
+    r.mesh.visible = r.on = true; r.t = performance.now();
     r.st = stateFrom(m);
     paint(r.g, r.st); r.tex.needsUpdate = true;
   }
@@ -218,6 +235,11 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
       }
       taken.set(id, m.seat);
       showRemote(id, m);
+    },
+    // a lost 'stood up' message must not leave their screen on: the position stream says whether they still sit
+    sat(id, sitting) {
+      const r = remote.get(id);
+      if (!sitting && r?.on && performance.now() - r.t > 2000) { taken.delete(id); hideRemote(id); }
     },
     gone(id) { taken.delete(id); const r = remote.get(id); if (r) { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); r.tex.dispose(); remote.delete(id); } },
     reset() { for (const id of [...remote.keys()]) hooks.gone(id); taken.clear(); },
@@ -250,6 +272,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     camPos.copy(camera.position);
     screen.position.set(s.sx + s.nx * 0.004, s.sy, s.sz + s.nz * 0.004);
     screen.rotation.y = Math.atan2(s.nx, s.nz);
+    const si = SEATS.indexOf(s); clearSeat(si); mySeat = si;
     screen.visible = true;
     document.body.classList.add('cutscene');
     online?.setSeated?.(true);
@@ -263,15 +286,45 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     online?.broadcast?.({ t: 'screen', seat: -1 });
     active = false; seat = null;
     player.state.paused = false;
-    screen.visible = false;
     document.body.classList.remove('cutscene');
-    field?.blur();
+    field?.blur(); hideBrowser();
     online?.setSeated?.(false);
     if (savedQuat) camera.quaternion.copy(savedQuat);
     if (savedPos) player.pos.copy(savedPos);   // back where you stood (the chair is a collider)
   }
-  function open(i) { sel = i; app = APPS[i]; if (field && app === 'Notes') field.focus(); draw(); }
-  function home() { app = null; field?.blur(); draw(); }
+  // the web page: an iframe laid exactly over the 3D screen (re-fitted every frame while the camera settles)
+  let frame = null, bar = null;
+  const corner = new THREE.Vector3();
+  function showBrowser() {
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.src = SITE; frame.title = 'Monitor';
+      frame.style.cssText = 'position:fixed;border:0;background:#fff;z-index:30;display:none';
+      bar = document.createElement('button');
+      bar.textContent = '✕ Close';
+      bar.style.cssText = 'position:fixed;z-index:31;display:none;font:600 13px sans-serif;padding:5px 12px;border:0;border-radius:8px;background:#000b;color:#fff;cursor:pointer';
+      bar.addEventListener('click', () => { home(); relock(); });
+      document.body.append(frame, bar);
+    }
+    browsing = true;
+    if (document.pointerLockElement) document.exitPointerLock();   // the mouse is needed for the page
+  }
+  function hideBrowser() { browsing = false; if (frame) { frame.style.display = 'none'; bar.style.display = 'none'; } }
+  function relock() { try { const p = player.controls.domElement.requestPointerLock(); if (p?.catch) p.catch(() => {}); } catch {} }
+  function fitBrowser() {
+    if (!browsing || !frame) return;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+      corner.set(sx * 0.26, sy * 0.15, 0); screen.localToWorld(corner); corner.project(camera);
+      const px = (corner.x + 1) / 2 * innerWidth, py = (1 - corner.y) / 2 * innerHeight;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    const top = y0 + (y1 - y0) * (BAR / CH);
+    Object.assign(frame.style, { display: 'block', left: x0 + 'px', top: top + 'px', width: (x1 - x0) + 'px', height: (y1 - top) + 'px' });
+    Object.assign(bar.style, { display: 'block', left: Math.max(4, x1 - 80) + 'px', top: Math.max(4, y0 - 34) + 'px' });
+  }
+  function open(i) { sel = i; app = APPS[i]; if (app === 'Pixbit') showBrowser(); if (field && app === 'Notes') field.focus(); draw(); }
+  function home() { app = null; hideBrowser(); field?.blur(); draw(); }
 
   // ---------- input (capture phase so nothing else reacts while you sit) ----------
   addEventListener('keydown', (e) => {
@@ -328,6 +381,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     camPos.lerp(tp, k);                       // own smoothed position: player.update resets camera.position every frame
     camera.position.copy(camPos);
     camera.quaternion.slerp(tq, k);
+    camera.updateMatrixWorld(); fitBrowser();
     player.pos.set(seat.x, 0, seat.z);        // your body sits on the chair
   }
 
@@ -335,6 +389,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     update,
     prompt: () => (active ? 'E stand up' : near() ? 'E sit down' : nearAny() ? 'Seat in use' : ''),
     isActive: () => active,
+    isBrowsing: () => browsing,
     exit,
     hooks,
   };

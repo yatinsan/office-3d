@@ -547,6 +547,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
         if (p.talk !== !!talk || p.mu !== !!mu) { p.talk = !!talk; p.mu = !!mu; drawList(); }
         p.avatar.setKnocked(!!ko);
         p.avatar.setSeated(!!sit);
+        screenHook.sat?.(p.id, !!sit);
       } catch {}
     };
   }
