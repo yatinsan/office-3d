@@ -765,7 +765,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   return {
     id: 'online', name: 'Open World',
     /** world positions + colours of the other players (for the minimap) */
-    peerDots() { const r = []; for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') r.push({ x: p.avatar.group.position.x, z: p.avatar.group.position.z, y: p.avatar.group.position.y, color: p.color }); return r; },
+    peerDots() { const r = []; for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') r.push({ x: p.avatar.group.position.x, z: p.avatar.group.position.z, y: p.avatar.group.position.y, yaw: p.avatar.group.rotation.y, color: p.color }); return r; },
     desc: 'Explore with other people online and talk: push to talk or always-on mic.',
     start() {
       on = true; box.classList.add('show'); showHud(true); if (touch) pttBtn.classList.add('show');

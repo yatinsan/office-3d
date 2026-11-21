@@ -91,6 +91,12 @@ export function initMinimap({ camera, player, online }) {
     }
     for (const d of online?.peerDots?.() || []) {
       if ((d.y < -2) !== (lvl.cur === 1)) continue; // only people on my floor
+      if (d.yaw !== undefined) {                       // where they are looking: the same little yellow V as mine
+        const a = Math.atan2(-Math.cos(d.yaw), -Math.sin(d.yaw)), g = ctx.createRadialGradient(d.x, d.z, 0.4, d.x, d.z, 3.6);
+        g.addColorStop(0, 'rgba(236,200,40,.75)'); g.addColorStop(1, 'rgba(236,200,40,0)');
+        ctx.save(); ctx.shadowBlur = 0; ctx.fillStyle = g;
+        ctx.beginPath(); ctx.moveTo(d.x, d.z); ctx.arc(d.x, d.z, 3.6, a - 0.62, a + 0.62); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
       ctx.fillStyle = d.color || '#7ee08f';
       ctx.beginPath(); ctx.arc(d.x, d.z, 0.45, 0, 7); ctx.fill();
     }
@@ -107,11 +113,23 @@ export function initMinimap({ camera, player, online }) {
       }
       ctx.restore();
     }
-    // you: yellow arrow in the middle, always pointing up
+    // you: a small bee seen from above in the middle, head always pointing up
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(W / 2, H / 2); ctx.scale(dpr, dpr);
-    ctx.fillStyle = '#ecc828'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    const cone = ctx.createRadialGradient(0, 0, 4, 0, 0, 44);                   // view cone like Google Maps: a small yellow V that fades out
+    cone.addColorStop(0, 'rgba(236,200,40,.75)'); cone.addColorStop(1, 'rgba(236,200,40,0)');
+    ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 44, -Math.PI / 2 - 0.62, -Math.PI / 2 + 0.62); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 1.2; ctx.strokeStyle = '#000';
+    ctx.fillStyle = 'rgba(235,245,255,.85)';                                   // wings
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 6, -1, 3.2, 6, sd * 0.5, 0, 7); ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(0, 3, 4.6, 7, 0, 0, 7); ctx.fillStyle = '#ecc828'; ctx.fill(); ctx.stroke();   // body
+    ctx.fillStyle = '#111';
+    for (const y of [1, 5]) { ctx.beginPath(); ctx.ellipse(0, y, 4.5, 1.3, 0, 0, 7); ctx.fill(); }          // stripes
+    ctx.beginPath(); ctx.moveTo(-1, 9.5); ctx.lineTo(0, 12); ctx.lineTo(1, 9.5); ctx.fill();                // sting
+    ctx.beginPath(); ctx.arc(0, -6, 3.3, 0, 7); ctx.fillStyle = '#111'; ctx.fill();                          // head
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 1.5, -8.5); ctx.lineTo(sd * 3.5, -12); ctx.stroke(); } // antennae
     if (lvl.cur) return;                          // the game room is not on the ground floor
     // game room: a little game-pad badge at its real spot on the map (not pinned: it only shows while the room is inside the map)
     const s = MH / (RANGE * 2), c = Math.cos(yaw), sn = Math.sin(yaw), dx = GAME_C.x - px, dz = GAME_C.z - pz;
