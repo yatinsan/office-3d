@@ -1935,5 +1935,64 @@
     "folder": "053-this-also-so-in-this-side",
     "files": [],
     "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
+  },
+  {
+    "point": [
+      10.35,
+      1.43,
+      24.63
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.92,
+      "z": 24.6,
+      "yaw": 1.59,
+      "pitch": -0.14
+    },
+    "text": "make all lifte working , like all lisft wroking , but check that its oposit is game zone like so , make depended size and , make go to gound flor , in groudn flor , same like hall but only coridor for now like all offcie size is wall , let do other later",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795280943761,
+    "id": "smwqnx5sh",
+    "n": 54,
+    "created": 1795280943769,
+    "folder": "054-make-all-lifte-working-like-all",
+    "files": [],
+    "reply": "All 6 lifts now work like real ones: press F in front of a lift and the doors slide open, walk into the cabin, press E: the doors slide shut, the cabin shakes a little, then the doors open on the other floor (new Ground Floor: hall-sized corridor, solid walls both sides for now). Same E inside a lift on the ground floor takes you back up. No fade or jump."
+  },
+  {
+    "point": [
+      216,
+      1.42,
+      29.89
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Ground Floor",
+    "target": "",
+    "view": {
+      "x": 213.24,
+      "z": 29.95,
+      "yaw": -1.55,
+      "pitch": -0.08
+    },
+    "text": "like 4 th flor add a cordor in here but without sofa and a littile length and no window just like walls",
+    "section": "Ground Floor",
+    "status": "open",
+    "updated": 1795282787139,
+    "id": "smwqp0o5f",
+    "n": 55,
+    "created": 1795282787146,
+    "folder": "055-like-4-th-flor-add-a",
+    "files": []
   }
 ]

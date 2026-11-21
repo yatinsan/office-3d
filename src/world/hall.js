@@ -194,9 +194,19 @@ const H = {
   stairBlue: std({ color: '#5a6fc4', roughness: 0.8 }),
   fireRed: std({ color: '#c8231c', roughness: 0.5 }),
   granite: std({ color: '#141416', roughness: 0.12, metalness: 0.35, envMapIntensity: 1.4 }),
+  liftIn: std({ color: '#7d8284', roughness: 0.45, metalness: 0.55, emissive: '#52575a', emissiveIntensity: 0.7 }), // self-lit: the cabin has no lamp of its own
+  arrow: std({ map: tex(64, 64, (g, w) => { g.fillStyle = '#e8eaea'; g.fillRect(0, 0, w, w); g.fillStyle = '#6d7173'; g.beginPath(); g.moveTo(10, 14); g.lineTo(54, 14); g.lineTo(32, 52); g.fill(); }, false), roughness: 0.4 }),
+  liftSeam: std({ color: '#3b3e40', roughness: 0.6 }),
+  brass: std({ color: '#b8943c', roughness: 0.3, metalness: 0.9, emissive: '#5a4510', emissiveIntensity: 0.5 }),
+  vent: std({ color: '#2e3032', roughness: 0.8 }),
+  dispNote: std({ map: tex(128, 76, (g, w, h) => { g.fillStyle = '#1f55a8'; g.fillRect(0, 0, w, h); g.fillStyle = '#cfe0f5'; for (let i = 0; i < 9; i++) g.fillRect(8, 10 + i * 7, 20 + (i * 37) % 90, 3); }, false), roughness: 0.5 }),
+  disp4: std({ map: tex(128, 64, (g, w, h) => { g.fillStyle = '#1b52c9'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.font = 'bold 44px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillText('▲ 4', 20, h / 2 + 2); }, false), emissive: '#2a62d8', emissiveIntensity: 0.6 }),
+  dispG: std({ map: tex(128, 64, (g, w, h) => { g.fillStyle = '#1b52c9'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.font = 'bold 44px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillText('▼ G', 20, h / 2 + 2); }, false), emissive: '#2a62d8', emissiveIntensity: 0.6 }),
+  liftFloor: std({ color: '#3a3d3f', roughness: 0.35, metalness: 0.4 }),
   liftSteel: std({ color: '#b9bdbd', roughness: 0.42, metalness: 0.75 }),
   fireDoor: std({ color: '#9aa5a1', roughness: 0.55, metalness: 0.15 }),
   greenSign: glowSign(sign('FIRE STATION', { w: 512, h: 112, font: 'bold 50px system-ui, sans-serif' })),
+  groundSign: std({ map: sign('GROUND FLOOR', { bg: '#c9ccce', fg: '#2c2c2c', w: 512, h: 128, font: 'bold 54px system-ui, sans-serif' }), roughness: 0.4, metalness: 0.3 }),
   fourth: std({ map: sign('FOURTH FLOOR', { bg: '#c9ccce', fg: '#2c2c2c', w: 512, h: 128, font: 'bold 54px system-ui, sans-serif' }), roughness: 0.4, metalness: 0.3 }),
   ledRed: std({ color: '#ff2a1a', emissive: '#ff2a1a', emissiveIntensity: 1.4 }),
   numDisc: (n) => std({ map: tex(128, 128, (g, w) => {
@@ -286,21 +296,84 @@ function ladiesToilet(root, tw0, tw1, zc) {
   addBox(rx1 - 0.46, bz - 0.3, rx1, bz + 0.3);
 }
 
+const LIFT_OW = 1.16;  // door opening (m)
+const LIFT_DH = 2.55;  // door opening height
+export const LIFT_DEPTH = 2.6; // door to back wall (a bit shorter than the full gap up to the game room wall)
+const LIFT_CW = 2.9, LIFT_CH = 2.85; // cabin width / height
+
+/** The cabin behind a lift door: brushed-steel walls, rail, mirror, button panel, light. Solid sides, open front. */
+function liftCabin(root, L) {
+  const { x: fx, z: zc, out, cw } = L;
+  const back = fx - out * 0.1;                        // back face of the wall the door sits in
+  const cx = back - out * LIFT_DEPTH / 2, far = back - out * LIFT_DEPTH;
+  box(root, H.liftIn, LIFT_DEPTH, 0.02, cw, cx, 0.012, zc, { shadow: false });
+  box(root, H.liftIn, LIFT_DEPTH, 0.04, cw + 0.1, cx, LIFT_CH, zc, { shadow: false });
+  box(root, M.lightStrip, LIFT_DEPTH - 0.4, 0.015, 0.5, cx, LIFT_CH - 0.03, zc, { shadow: false });
+  box(root, H.liftIn, 0.05, LIFT_CH, cw + 0.1, far - out * 0.025, LIFT_CH / 2, zc, { shadow: false });
+  for (const sd of [-1, 1]) box(root, H.liftIn, LIFT_DEPTH, LIFT_CH, 0.05, cx, LIFT_CH / 2, zc + sd * (cw / 2 + 0.025), { shadow: false });
+  // back wall: vertical steel panels with dark seams, brass rail + kick strip (reference photo)
+  for (const sd of [-1.5, -0.5, 0.5, 1.5]) box(root, H.liftSeam, 0.01, LIFT_CH - 0.2, 0.012, far + out * 0.002, LIFT_CH / 2, zc + sd * (cw / 4), { shadow: false });
+  box(root, H.liftFloor, LIFT_DEPTH - 0.1, 0.02, cw - 0.1, cx, 0.03, zc, { shadow: false });                   // dark floor
+  box(root, H.liftIn, 0.12, 0.03, LIFT_OW + 0.1, back - out * 0.05, 0.015, zc, { shadow: false });                  // steel threshold
+  for (const sd of [-1, 1]) box(root, H.vent, 0.4, 0.015, 0.3, cx + sd * 0.0, LIFT_CH - 0.03, zc + sd * 0.4, { shadow: false }); // ceiling vents
+  // door frame: steel jambs + lintel through the wall thickness
+  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.12, LIFT_DH, 0.04, fx - out * 0.05, LIFT_DH / 2, zc + sd * (LIFT_OW / 2 + 0.02), { shadow: false });
+  box(root, H.liftSteel, 0.12, 0.04, LIFT_OW + 0.08, fx - out * 0.05, LIFT_DH + 0.02, zc, { shadow: false });
+  // front wall inside the cabin: steel returns on both sides of the door (and over it), each with a car operating panel
+  const fxi = back - out * 0.012, ret = (cw - LIFT_OW) / 2, rc = LIFT_OW / 2 + ret / 2, ryIn = -out * Math.PI / 2;
+  for (const sd of [-1, 1]) box(root, H.liftIn, 0.024, LIFT_CH, ret, fxi, LIFT_CH / 2, zc + sd * rc, { shadow: false });
+  box(root, H.liftIn, 0.024, LIFT_CH - LIFT_DH, LIFT_OW, fxi, (LIFT_DH + LIFT_CH) / 2, zc, { shadow: false });
+  const disp = L.ground ? H.dispG : H.disp4, fp = back - out * 0.03;
+  for (const sd of [-1, 1]) {
+    const z = zc + sd * rc, d = 0.015;
+    box(root, H.liftSteel, 0.01, 2.0, ret - 0.06, back - out * 0.026, 1.4, z, { shadow: false });                    // raised panel
+    plane(root, disp, 0.2, 0.1, back - out * 0.036, 2.1, z, ryIn);
+    plane(root, H.dispNote, 0.2, 0.12, back - out * 0.036, 1.88, z, ryIn);
+    for (let i = 0; i < 6; i++) box(root, M.chrome, 0.012, 0.045, 0.045, back - out * (0.03 + d / 2), 0.62 + i * 0.1, z, { shadow: false });
+    box(root, M.blackMatte, 0.012, 0.09, 0.05, back - out * 0.036, 1.15, z + 0.0, { shadow: false });
+  }
+  addBox(far - out * 0.05, zc - cw / 2 - 0.05, far + out * 0.01, zc + cw / 2 + 0.05);
+  for (const sd of [-1, 1]) addBox(back, zc + sd * (cw / 2 + 0.05), far, zc + sd * cw / 2);
+}
+
+/**
+ * A wall along z with a door opening for every lift ("bays", z centres): `mat` between the lifts, black granite around
+ * each door, a header over each opening. Solid except the openings (src/lifts.js blocks those while the doors are shut).
+ */
+function wallWithBays(root, x, z0, z1, dir, bays, { h = BULK, mat = H.wall, bayMat = H.granite, pad = 1.25 } = {}) {
+  let cur = z0;
+  for (const bz of [...bays].sort((a, b) => a - b)) {
+    if (bz - pad > cur + 0.01) wallZ(root, x, cur, bz - pad, dir, mat, h);
+    wallZ(root, x, bz - pad, bz - LIFT_OW / 2, dir, bayMat, h);
+    wallZ(root, x, bz + LIFT_OW / 2, bz + pad, dir, bayMat, h);
+    box(root, bayMat, 0.1, h - LIFT_DH, LIFT_OW, x - dir * 0.05, (LIFT_DH + h) / 2, bz);
+    cur = bz + pad;
+  }
+  if (z1 > cur + 0.01) wallZ(root, x, cur, z1, dir, mat, h);
+}
+
 /**
  * Lift front in black granite (IMG_5713): dark reveal, brushed-steel frame + sliding doors, white number disc,
  * steel floor indicator with red LED, call-button plate on one side, fire alarm horn + pull station on the other.
  * fx = granite face x, out = direction toward the hall (-1 east wall, +1 west wall).
  */
-function liftFront(root, fx, zc, n, out, { alarm = true } = {}) {
+function liftFront(root, fx, zc, n, out, { alarm = true, ground = false, cw = LIFT_CW } = {}) {
   const w = 1.1, k = -out, ry = out * Math.PI / 2, x = (d) => fx + out * d;
-  box(root, M.blackMatte, 0.04, 2.3, w + 0.2, x(0.005), 1.15, zc, { shadow: false });
-  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.03, 2.22, w / 2 - 0.01, x(0.03), 1.11, zc + sd * w / 4, { shadow: false });
-  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.04, 2.26, 0.03, x(0.03), 1.13, zc + sd * (w / 2 + 0.02), { shadow: false });
-  box(root, H.liftSteel, 0.04, 0.03, w + 0.07, x(0.03), 2.26, zc, { shadow: false });
-  plane(root, H.numDisc(n), 0.22, 0.22, x(0.012), 2.55, zc, ry);
+  // the two sliding door leaves are loose groups (not merged into the static world): src/lifts.js moves them
+  const leaves = [-1, 1].map((sd) => {
+    const g = new THREE.Group();
+    box(g, H.liftSteel, 0.03, LIFT_DH - 0.08, w / 2 - 0.01, x(0.03), (LIFT_DH - 0.08) / 2, zc + sd * w / 4, { shadow: false });
+    return g;
+  });
+  (ground ? GROUND_LIFTS : LIFTS).push({ n, x: fx, z: zc, out, ground, leaves, cw });
+  liftCabin(root, { x: fx, z: zc, out, ground, cw });
+  for (const sd of [-1, 1]) box(root, H.liftSteel, 0.04, LIFT_DH - 0.04, 0.03, x(0.03), (LIFT_DH - 0.04) / 2 + 0.02, zc + sd * (w / 2 + 0.02), { shadow: false });
+  box(root, H.liftSteel, 0.04, 0.03, w + 0.07, x(0.03), LIFT_DH - 0.04, zc, { shadow: false });
+  plane(root, H.numDisc(n), 0.2, 0.2, x(0.012), 2.74, zc, ry);
   box(root, H.liftSteel, 0.03, 0.14, 0.62, x(0.015), 2.92, zc, { shadow: false });
   box(root, M.blackMatte, 0.035, 0.08, 0.2, x(0.02), 2.92, zc, { shadow: false });
   box(root, H.ledRed, 0.036, 0.04, 0.06, x(0.022), 2.92, zc, { shadow: false });
+  for (const sd of [-1, 1]) plane(root, H.arrow, 0.1, 0.09, x(0.04), 2.92, zc + sd * 0.23, ry);
   const cz = zc + k * (w / 2 + 0.33);
   box(root, H.liftSteel, 0.02, 0.26, 0.11, x(0.01), 1.15, cz, { shadow: false });
   box(root, M.blackMatte, 0.01, 0.06, 0.05, x(0.022), 1.12, cz, { shadow: false });
@@ -310,6 +383,15 @@ function liftFront(root, fx, zc, n, out, { alarm = true } = {}) {
     box(root, H.fireRed, 0.04, 0.13, 0.1, x(0.02), 1.3, az, { shadow: false });
   }
 }
+
+/** Every working lift on the upper floor (filled while the hall is built): src/lifts.js reads it. */
+export const LIFTS = [];
+/** Same, for the ground floor twin. */
+export const GROUND_LIFTS = [];
+/** Lights for the ground floor (the static world is merged, so lights have to be added to the scene by the caller). */
+export const GROUND_LIGHTS = [];
+/** The ground floor is the same corridor built this far east (x offset), so nothing overlaps the office. */
+export const GROUND_DX = 200;
 
 /** Dev mode (P) shows the neighbour's sign text; normally it is a plain white board (suggestion 43). */
 const DEV_SIGNS = ['techno', 'tenCod', 'eSyn', 'ringLogo'];
@@ -521,7 +603,7 @@ export function buildHall(root) {
   plane(root, H.fireExt, 0.62, 0.12, X0 + 0.012, 1.45, 22.05, Math.PI / 2);
   const LZ0 = 22.8, LZ1 = 36.0;
   wallZ(root, X0, 20.0, LZ0, 1);                                                        // white wall with the hatch
-  wallZ(root, X0, LZ0, LZ1, 1, H.granite);                                              // black granite lift wall
+  wallWithBays(root, X0, LZ0, LZ1, 1, [24.6, 28.0, 31.4, 34.6], { mat: H.granite });   // black granite lift wall with a door opening per lift
   const lifts = [{ n: 4, z: 24.6 }, { n: 3, z: 28.0 }, { n: 2, z: 31.4 }, { n: 1, z: 34.6 }];
   // same look as lift 5 (suggestion 42): steel frame, number disc, indicator, call button, fire alarm
   for (const L of lifts) liftFront(root, X0, L.z, L.n, 1);
@@ -687,11 +769,10 @@ export function buildHall(root) {
   addBox(X1 + 1.15, s1 - 0.9, sx1, sz1);
   addBox(sx1 - 0.05, sz0, sx1 + 0.1, sz1);
   // lift 5: black granite block from floor to ceiling, steel doors, number disc, indicator, call button, fire alarm
-  const L5 = s1 + 1.5, lx = X1 - 0.1;
-  box(root, H.granite, 0.2, CEIL, lf1 - lf0, X1, CEIL / 2, (lf0 + lf1) / 2);
+  const L5 = s1 + 1.3, lx = X1 - 0.1;
+  wallWithBays(root, lx, lf0, lf1, -1, [L5], { h: CEIL, mat: H.granite, pad: 1.0 });
   box(root, H.granite, 0.1, CEIL, 0.1, X1 + 0.05, CEIL / 2, lf1 + 0.05);                        // return into the lounge
-  addBox(lx, lf0, X1 + 0.1, lf1);
-  liftFront(root, lx, L5, 5, -1);
+  liftFront(root, lx, L5, 5, -1, { cw: 2.3 });   // narrower: stairwell on one side, lounge wall on the other
   // hanging FOURTH FLOOR sign in front of lift 5
   const fl5 = new THREE.Group(); fl5.position.set(X1 - 0.9, 2.95, lf0 - 0.1); root.add(fl5);
   box(fl5, M.black, 0.03, 0.2, 0.62, 0, 0, 0, { shadow: false });
@@ -701,9 +782,8 @@ export function buildHall(root) {
   // navy slatted panel with the 10COD logo, then black-framed glass offices to the window
   const P6 = LNZ1 + 0.55, lb0 = P6 + 0.35, lb1 = lb0 + 2.6;
   wallZ(root, X1, P6, lb0, -1);
-  box(root, H.granite, 0.2, CEIL, lb1 - lb0, X1, CEIL / 2, (lb0 + lb1) / 2);
-  addBox(X1 - 0.1, lb0, X1 + 0.1, lb1);
-  liftFront(root, X1 - 0.1, lb0 + 1.45, 6, -1);
+  wallWithBays(root, X1 - 0.1, lb0, lb1, -1, [lb0 + 1.3], { h: CEIL, mat: H.granite, pad: 1.0 });
+  liftFront(root, X1 - 0.1, lb0 + 1.3, 6, -1, { cw: 2.4 });
   const tw0 = lb1, tw1 = tw0 + 2.8, lz6 = tw0 + 0.9;
   ladiesToilet(root, tw0, tw1, lz6);
   const lb = new THREE.Group(); lb.position.set(X1 - 0.33, 2.62, lz6 + 0.75); root.add(lb);
@@ -731,4 +811,40 @@ export function buildHall(root) {
   plane(ex, H.fireExit, 0.56, 0.12, 0, 0, 0.016, 0);
   plane(ex, H.fireExit, 0.56, 0.12, 0, 0, -0.016, Math.PI);
   for (const s of [-1, 1]) box(ex, M.chrome, 0.006, CEIL - 2.79, 0.006, s * 0.22, (CEIL - 2.79) / 2 + 0.07, 0, { shadow: false });
+}
+
+/**
+ * Ground floor (suggestion 54): same size as the hall, only the corridor for now. Both long sides are solid wall
+ * (the offices come later); the 6 lifts sit exactly where they are upstairs, so every lift brings you to the same
+ * spot one floor down (src/lifts.js).
+ */
+export function buildGroundFloor(root) {
+  const D = GROUND_DX, x0 = X0 + D, x1 = X1 + D, xm = (x0 + x1) / 2;
+  slab(root, H.floor, x0 + 0.02, Z0, x1 - BAND, Z1, 0.001, { tile: 1.6 });
+  slab(root, H.floorBrown, x1 - BAND, Z0, x1, Z1, 0.001, { tile: 1.6 });
+  slab(root, H.grid, x0 + BW, Z0, x1 - BW, Z1, CEIL, { down: true, tile: 1.2 });
+  for (const [xa, xb, edge, dir] of [[x0, x0 + BW, x0 + BW, 1], [x1 - BW, x1, x1 - BW, -1]]) {
+    slab(root, H.wall, xa, Z0, xb, Z1, BULK, { down: true });
+    box(root, H.wall, 0.03, CEIL - BULK, Z1 - Z0, edge, (BULK + CEIL) / 2, (Z0 + Z1) / 2, { shadow: false });
+    box(root, M.lightStrip, 0.02, 0.025, Z1 - Z0 - 0.4, edge + dir * 0.03, BULK + 0.04, (Z0 + Z1) / 2, { shadow: false });
+  }
+  for (let z = Z0 + 2.2; z < Z1 - 1; z += 3.0) for (const x of [x0 + BW + 0.9, x1 - BW - 0.9]) cyl(root, M.spotGlow, 0.07, 0.07, 0.01, x, CEIL - 0.006, z, { seg: 16, shadow: false });
+  for (let z = Z0 + 3.7; z < Z1 - 2; z += 6.0) plane(root, H.diffuser, 0.6, 0.6, xm + (Math.round(z) % 2 ? 0.6 : -0.6), CEIL - 0.004, z, 0, Math.PI / 2);
+  // solid walls the whole way along (white, black granite around each lift door)
+  const bays = (out) => LIFTS.filter((L) => L.out === out).map((L) => L.z);
+  wallWithBays(root, x0, Z0, Z1, 1, bays(1), { h: CEIL });
+  wallWithBays(root, x1 - 0.1, Z0, Z1, -1, bays(-1), { h: CEIL });
+  for (const L of LIFTS) liftFront(root, L.x + D, L.z, L.n, L.out, { ground: true, cw: L.cw });
+  // end walls with a daylight window, "GROUND FLOOR" signs in front of the lifts
+  endWindow(root, Z0 - 0.12, 1, x0, x1, x0 + 0.9, x1 - 0.9);
+  endWindow(root, Z1 + 0.12, -1, x0, x1, x0 + 0.9, x1 - 0.9);
+  for (const [z, ry] of [[Z0 + 1.6, 0], [Z1 - 1.6, Math.PI]]) plane(root, H.groundSign, 0.6, 0.18, xm, 2.95, z, ry);
+  for (const L of LIFTS) {
+    const g = new THREE.Group(); g.position.set(L.x + D + L.out * 0.9, 2.95, L.z - 0.4); root.add(g);
+    box(g, M.black, 0.03, 0.2, 0.62, 0, 0, 0, { shadow: false });
+    plane(g, H.groundSign, 0.6, 0.18, 0.017, 0, 0, Math.PI / 2);
+    plane(g, H.groundSign, 0.6, 0.18, -0.017, 0, 0, -Math.PI / 2);
+  }
+  // soft light so the corridor is not dim (the sun does not reach in here)
+  for (const z of [6, 24, 40]) { const l = new THREE.PointLight('#fff1dc', 5, 22, 1.4); l.position.set(xm, CEIL - 0.3, z); GROUND_LIGHTS.push(l); }
 }

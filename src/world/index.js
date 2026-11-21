@@ -7,7 +7,7 @@ import { buildWorkspace } from './workspace.js';
 import { buildExterior } from './exterior.js';
 import { buildMeetingRoom } from './meeting.js';
 import { buildGameRoom } from './game.js';
-import { buildHall, setHallDevSigns } from './hall.js';
+import { buildHall, buildGroundFloor, GROUND_DX, setHallDevSigns } from './hall.js';
 export { setHallDevSigns };
 
 // Start in reception, facing the logo wall (west).
@@ -22,6 +22,7 @@ export function buildWorld(root) {
   buildCeilings(root);
   buildLobby(root);
   buildHall(root);
+  buildGroundFloor(root);
   buildCorridor(root);
   buildWorkspace(root);
   buildExterior(root);
@@ -31,6 +32,7 @@ export function buildWorld(root) {
 
 /** Named areas for the on-screen zone label. */
 export function zoneAt(x, z) {
+  if (x > GROUND_DX - 50) return 'Ground Floor';
   if (x > LOBBY_E) return 'Building Hall';
   if (x < 0) return 'Terrace';
   if (z > MEET_Z1) return 'Game Room';

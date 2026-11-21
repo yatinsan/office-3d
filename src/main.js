@@ -20,6 +20,7 @@ import { initCombat } from './combat.js';
 import { initSeat } from './seat.js';
 import { initGames } from './games.js';
 import { initMinimap } from './minimap.js';
+import { initLifts } from './lifts.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -115,6 +116,7 @@ const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, 
 modes.register(online);
 const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
+const lifts = initLifts({ scene, camera, player }); // E at any lift: ride to the ground floor and back (suggestion 54)
 const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge
 const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
 if (touchUI) touchUI.onHit = () => combat.attack();
@@ -276,6 +278,7 @@ renderer.setAnimationLoop(() => {
   player.update(dt);
   balconyJump.update(dt); // after player.update: owns the camera tilt during the cutscene
   doors.update(dt);
+  lifts.update(dt);
   unlock.update(dt);
   ladies.update(dt);
   arcade.update(dt);
@@ -295,7 +298,7 @@ renderer.setAnimationLoop(() => {
   }
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
+    const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt() || lifts.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
       if (promptEl.dataset.t !== (near || '')) { // "F open door" -> [F] | Open door, like the lock box
