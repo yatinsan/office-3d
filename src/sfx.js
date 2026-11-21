@@ -60,3 +60,17 @@ export function thud() {
   tone(c, t, { f0: 90, f1: 28, len: 0.5, vol: 0.7 });
   burst(c, t, { f0: 600, f1: 80, len: 0.3, vol: 0.4, type: 'lowpass' });
 }
+/** someone joined: a bright two-note rising chime */
+export function join() {
+  const c = ctx(); if (!c) return;
+  const t = c.currentTime;
+  tone(c, t, { f0: 660, f1: 660, len: 0.18, vol: 0.12 });
+  tone(c, t + 0.1, { f0: 990, f1: 990, len: 0.3, vol: 0.12 });
+}
+/** someone left: a softer two-note falling chime */
+export function leave() {
+  const c = ctx(); if (!c) return;
+  const t = c.currentTime;
+  tone(c, t, { f0: 740, f1: 740, len: 0.18, vol: 0.1 });
+  tone(c, t + 0.1, { f0: 494, f1: 494, len: 0.3, vol: 0.1 });
+}

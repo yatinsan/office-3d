@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { blocked } from './colliders.js';
 import { FIREBASE_CONFIG, ROOM, isConfigured } from './firebase-config.js';
-import { impact as impactSfx } from './sfx.js';
+import { impact as impactSfx, join as joinSfx, leave as leaveSfx } from './sfx.js';
 
 /**
  * Open World: walk the office with other people, and hold V to talk (proximity voice).
@@ -100,6 +100,16 @@ const CSS = `
   body:not(.ow-touch) #ow-ptt { display: none !important; }
   body.ow-touch #ow-online { right: calc(max(18px, env(safe-area-inset-right)) + 40px + 12px); top: max(17px, calc(env(safe-area-inset-top) + 5px)); } /* top right, just left of the full-screen button */
   @keyframes ow-pulse { 50% { transform: scale(1.1); } }
+  /* GTA-style feed: flat dark strips with a coloured edge, sliding in from the right edge, stacked under the online indicator */
+  #ow-feed { position: fixed; right: 0; top: 56px; z-index: 8; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
+  .ow-note { display: flex; align-items: center; gap: 10px; padding: 13px 26px 13px 18px; min-width: 300px; box-sizing: border-box; border-left: 5px solid var(--c, #7ee08f);
+    background: linear-gradient(90deg, rgba(10,10,12,.9), rgba(10,10,12,.7)); color: #fff; font: 800 16px system-ui, sans-serif; letter-spacing: .3px; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    opacity: 0; transform: translateX(110%); transition: opacity .3s, transform .35s cubic-bezier(.2,.8,.2,1); }
+  .ow-note.in { opacity: 1; transform: none; }
+  .ow-note .d { width: 11px; height: 11px; border-radius: 50%; background: var(--c, #7ee08f); flex: none; }
+  .ow-note.left { color: rgba(255,255,255,.75); --c: #ff6b6b; }
+  body.ow-touch #ow-feed { top: 64px; }
+  body.ow-touch .ow-note { min-width: 220px; padding: 10px 18px 10px 14px; font-size: 14px; }
   #ow-hud .ow-mode { display: none; pointer-events: auto; cursor: pointer; padding: 6px 11px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
     background: rgba(14,14,18,.62); color: rgba(255,255,255,.75); font: 700 12px system-ui, sans-serif; white-space: nowrap; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   #ow-hud .ow-mode:hover { border-color: #ecc828; color: #ecc828; }
@@ -119,6 +129,20 @@ const CSS = `
 
 export function initOnline({ scene, camera, player, panel, doors = null, pool = null, touch = false, start = () => {} }) {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
+
+  // ---------- "X joined" / "X left" notices ----------
+  const feed = document.createElement('div'); feed.id = 'ow-feed'; document.body.appendChild(feed);
+  function joinToast(text, color, left = false) {
+    const el = document.createElement('div');
+    el.className = 'ow-note' + (left ? ' left' : '');
+    try { (left ? leaveSfx : joinSfx)(); } catch {}
+    const dot = document.createElement('span'); dot.className = 'd'; if (!left && /^#[0-9a-f]{6}$/i.test(color || '')) el.style.setProperty('--c', color);
+    const t = document.createElement('span'); t.textContent = text;
+    el.append(dot, t); feed.appendChild(el);
+    while (feed.children.length > 4) feed.firstChild.remove();
+    requestAnimationFrame(() => el.classList.add('in'));
+    setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 300); }, 3500);
+  }
 
   // ---------- Menu panel (shown while Open World is the selected mode) ----------
   let myName = '', myColor = '';
@@ -352,9 +376,22 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       fb.onDisconnect(path(`signal/${uid}`)).remove();
       await publishMe();
       const players = path('players');
-      unsubs.push(fb.onChildAdded(players, (s) => { if (s.key !== uid) meet(s.key, s.val()); refreshStatus(); }));
+      let existing = new Set(); // already here when I connected: no "joined" toast for them
+      try { const snap = await fb.get(players); const v = snap.val(); if (v) existing = new Set(Object.keys(v)); } catch {}
+      if (!on) return;
+      unsubs.push(fb.onChildAdded(players, (s) => {
+        if (s.key !== uid) {
+          meet(s.key, s.val());
+          if (!existing.has(s.key)) joinToast(`${s.val()?.name || 'Guest'} joined`, s.val()?.color);
+          existing.delete(s.key);
+        }
+        refreshStatus();
+      }));
       unsubs.push(fb.onChildChanged(players, (s) => { const p = peers.get(s.key); if (p) { p.name = s.val().name; p.color = s.val().color; p.avatar.setLook(p.name, p.color); } }));
-      unsubs.push(fb.onChildRemoved(players, (s) => { drop(s.key); refreshStatus(); }));
+      unsubs.push(fb.onChildRemoved(players, (s) => {
+        if (s.key !== uid) joinToast(`${peers.get(s.key)?.name || s.val()?.name || 'Guest'} left`, s.val()?.color, true);
+        drop(s.key); refreshStatus();
+      }));
       unsubs.push(fb.onChildAdded(path(`signal/${uid}`), (s) => { const m = s.val(); fb.remove(s.ref); onSignal(m).catch((e) => console.warn('[online] signal', e)); }));
       refreshStatus();
     } catch (e) {
