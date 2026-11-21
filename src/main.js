@@ -225,7 +225,7 @@ function setDev(on) {
   setHallDevSigns(on);
   try { localStorage.setItem('pixbit-devmode', on ? '1' : '0'); } catch {}
 }
-addEventListener('keydown', (e) => { if (DEV_BUILD && e.code === 'KeyP' &&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
+addEventListener('keydown', (e) => { if (DEV_BUILD && e.code === 'KeyP' && e.shiftKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
 setDev(dev);
 
 // ---- Quality toggle ----
@@ -257,9 +257,10 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// C: switch between first and third person (not in dev mode, where C is 'suggest', nor while a Prop Hunt prop uses C for clones)
+player.state.canCrouch = () => !dev && !games.isProp(); // C = crouch (hold); dev mode uses C for 'suggest', Prop Hunt props use it for clones
+// V: switch between first and third person
 addEventListener('keydown', (e) => {
-  if (e.code !== 'KeyC' || e.repeat || dev || player.state.paused || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || games.isProp()) return;
+  if (e.code !== 'KeyV' || e.repeat || player.state.paused || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || games.isProp()) return;
   online.toggleView();
 });
 

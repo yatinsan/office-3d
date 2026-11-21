@@ -15,13 +15,13 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   const touch = { x: 0, y: 0, run: false }; // on-screen joystick (src/touch.js): x right, y forward, -1..1
   const pos = new THREE.Vector3(spawn.x, 0, spawn.z); // feet position
   const vel = new THREE.Vector3();
-  let vy = 0, feetY = 0, bobT = 0, bob = 0;
+  let vy = 0, feetY = 0, bobT = 0, bob = 0, crouch = 0; // crouch: hold C, 0..1
 
   camera.position.set(pos.x, EYE, pos.z);
   camera.rotation.set(0, yaw, 0, 'YXZ');
 
   // Fallback for embedded browsers that block Pointer Lock: click-and-drag to look.
-  const state = { dragMode: false, paused: false, stunned: false }; // paused: a form is open, ignore movement keys; stunned: knocked out
+  const state = { dragMode: false, paused: false, stunned: false, crouch: 0 }; // paused: a form is open, ignore movement keys; stunned: knocked out
   let dragging = false, lastX = 0, lastY = 0;
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
   domElement.addEventListener('mousedown', (e) => { if (state.dragMode) { dragging = true; lastX = e.clientX; lastY = e.clientY; } });
@@ -38,7 +38,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
 
   addEventListener('keydown', (e) => {
     keys[e.code] = true;
-    if (e.code === 'Space') jump();
+    if (e.code === 'Space') { crouch = 0; jump(); }
   });
   function jump() { if (active() && feetY <= 0.001) vy = JUMP_V; }
   addEventListener('keyup', (e) => { keys[e.code] = false; });
@@ -58,10 +58,13 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
       if (keys.KeyA || keys.ArrowLeft) wish.sub(right);
       if (touch.x || touch.y) wish.addScaledVector(fwd, touch.y).addScaledVector(right, touch.x);
     }
-    const running = keys.ShiftLeft || keys.ShiftRight || touch.run;
+    const wantCrouch = !!keys.KeyC && active() && feetY <= 0.001 && (state.canCrouch ? state.canCrouch() : true);
+    crouch += ((wantCrouch ? 1 : 0) - crouch) * (1 - Math.exp(-14 * dt));
+    state.crouch = crouch; // read by the avatar (online.js) for the crouch pose
+    const running = (keys.ShiftLeft || keys.ShiftRight || touch.run) && !wantCrouch;
     if (wish.lengthSq() > 0) {
       const mag = Math.min(1, wish.length());
-      wish.normalize().multiplyScalar((running ? RUN : WALK) * (touch.x || touch.y ? Math.max(0.5, mag) : 1));
+      wish.normalize().multiplyScalar((running ? RUN : WALK) * (1 - 0.5 * crouch) * (touch.x || touch.y ? Math.max(0.5, mag) : 1));
     }
     // Smooth acceleration / braking.
     const k = 1 - Math.exp(-(feetY > 0 ? 3 : 12) * dt);
@@ -81,7 +84,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     // looking down: the head leans a little forward (same eye height), like a person bending their neck
     const dn = Math.min(1, Math.max(0, -camera.rotation.x) / 0.8);
     const fw = dn * 0.12;
-    camera.position.set(pos.x - Math.sin(camera.rotation.y) * fw, EYE + feetY + bob, pos.z - Math.cos(camera.rotation.y) * fw);
+    camera.position.set(pos.x - Math.sin(camera.rotation.y) * fw, EYE - 0.6 * crouch + feetY + bob, pos.z - Math.cos(camera.rotation.y) * fw);
   }
 
   return { controls, update, pos, state, touch, jump };

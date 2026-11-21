@@ -317,7 +317,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const onlineTxt = onlineChip.querySelector('.txt');
   document.body.appendChild(onlineChip);
   const hud = document.createElement('div'); hud.id = 'ow-hud';
-  hud.innerHTML = `<div id="ow-mic" class="chip" role="button"><span class="ico">${MIC_SVG}<i class="slash"></i></span><span class="lbl"></span><kbd>V</kbd></div><button type="button" class="ow-mode"></button>`;
+  hud.innerHTML = `<div id="ow-mic" class="chip" role="button"><span class="ico">${MIC_SVG}<i class="slash"></i></span><span class="lbl"></span><kbd>P</kbd></div><button type="button" class="ow-mode"></button>`;
   const modeChip = hud.querySelector('.ow-mode'), micChip = hud.querySelector('#ow-mic'), micLbl = micChip.querySelector('.lbl'), micKey = micChip.querySelector('kbd');
   document.body.appendChild(hud);
   let netErr = false;
@@ -392,6 +392,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     camera.getWorldDirection(meDir);
     me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false, false, Math.asin(Math.max(-1, Math.min(1, meDir.y))));
     me.setSeated(selfSeated);
+    me.setCrouch(player.state.crouch);
     me.setReach(reach?.aim, reach?.k || 0);
     me.update(dt);
   }
@@ -539,7 +540,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     dc.onclose = () => refreshStatus();
     dc.onmessage = (e) => {
       try {
-        const [x, y, z, yaw, talk, mu, ko, sit, pitch] = JSON.parse(e.data);
+        const [x, y, z, yaw, talk, mu, ko, sit, pitch, crch] = JSON.parse(e.data);
+        p.avatar.setCrouch(crch ? 1 : 0);
         p.avatar.target(x, y, z, yaw, !!talk, !!mu, pitch || 0);
         if (p.talk !== !!talk || p.mu !== !!mu) { p.talk = !!talk; p.mu = !!mu; drawList(); }
         p.avatar.setKnocked(!!ko);
@@ -679,10 +681,10 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   function setMuted(v) { if (micMode === 'open' && v !== muted) { muted = v; refreshMic(); } }
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || player.state.paused;
   addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyV' || e.repeat || typing(e) || !on) return;
+    if (e.code !== 'KeyP' || e.shiftKey || e.repeat || typing(e) || !on) return;
     if (micMode === 'ptt') setHeld(true); else setMuted(!muted);
   });
-  addEventListener('keyup', (e) => { if (e.code === 'KeyV') setHeld(false); });
+  addEventListener('keyup', (e) => { if (e.code === 'KeyP') setHeld(false); });
   addEventListener('blur', () => setHeld(false));
   const buf = new Float32Array(512);
   function meterTick(dt) { // "always on": talking dot follows your voice level, with a short hang so it doesn't flicker
@@ -712,7 +714,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = yawOv ?? Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0, +Math.asin(Math.max(-1, Math.min(1, dir.y))).toFixed(2)]);
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0, +Math.asin(Math.max(-1, Math.min(1, dir.y))).toFixed(2), player.state.crouch > 0.5 ? 1 : 0]);
     if (!force && msg === lastSent && heartbeat < (selfSeated ? 3 : 1)) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
@@ -724,7 +726,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (!on || !uid) return;
     const n = connectedCount(), seen = peers.size;
     const lost = seen - n;
-    setStatus(`<b>Connected</b> · ${n + 1} in the world${lost ? ` · ${lost} joining…` : ''} · ${micMode === 'ptt' ? 'hold <b>V</b> to talk' : 'mic on in game, <b>V</b> mutes'}`);
+    setStatus(`<b>Connected</b> · ${n + 1} in the world${lost ? ` · ${lost} joining…` : ''} · ${micMode === 'ptt' ? 'hold <b>P</b> to talk' : 'mic on in game, <b>P</b> mutes'}`);
     drawHud();
   }
   function drawHud() {
@@ -744,7 +746,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     micChip.classList.toggle('ptt-on', !blocked && micMode === 'ptt' && held);
     micLbl.textContent = blocked ? 'MIC BLOCKED' : micMode === 'ptt' ? (held ? 'TALKING' : 'PUSH TO TALK') : muteNow ? 'MUTED' : talking ? 'TALKING' : 'MIC ON';
     micKey.style.display = touch ? 'none' : '';
-    micChip.title = blocked ? 'Allow the microphone in your browser to talk' : micMode === 'ptt' ? 'Hold V to talk' : muteNow ? 'Click or press V to unmute' : 'Click or press V to mute';
+    micChip.title = blocked ? 'Allow the microphone in your browser to talk' : micMode === 'ptt' ? 'Hold P to talk' : muteNow ? 'Click or press P to unmute' : 'Click or press P to mute';
   }
 
   return {
@@ -944,6 +946,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
   let punchT = -1, punchSide = 'L', hurtT = -1, koTarget = 0, koK = 0, hlx = 0, hlz = -1, lunge = 0;
   let seatTarget = 0, seatK = 0;
   const SIT_DROP = 0.32;
+  const CROUCH_LEG = 0.9, CROUCH_DROP = 0.32; // hip drop matches the thigh angle: 0.77 * (1 - cos 0.9) ~ 0.3
+  let crouchTarget = 0, crouchK = 0;
   const tagY = tag.position.y, iconY = sIcon.position.y;
   return {
     group,
@@ -962,6 +966,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
     setKnocked(k) { koTarget = k ? 1 : 0; },
     /** sitting on a desk chair: hips drop, legs point forward, hands on the keyboard */
     setSeated(s) { seatTarget = s ? 1 : 0; },
+    /** crouch amount 0..1 (own body: the live value; others: 0 or 1 from the network, smoothed here) */
+    setCrouch(c) { crouchTarget = Math.max(0, Math.min(1, c || 0)); },
     /** Prop Hunt: hold a gun out in front (the seeker); false = hands down again */
     setGun(on) { gunOn = !!on; gunG.visible = gunOn; },
     /** a shot was fired: muzzle flash + the arm kicks back */
@@ -1083,6 +1089,8 @@ export function makeAvatar(name, color, { self = false } = {}) {
       if (koK > 0) {
         legL.rotation.x = legR.rotation.x = 0; armL.rotation.x = armR.rotation.x = 0.2; armL.rotation.z = -0.5 * koK; armR.rotation.z = 0.5 * koK;
       }
+      crouchK += (crouchTarget - crouchK) * (1 - Math.exp(-14 * dt));
+      if (Math.abs(crouchTarget - crouchK) < 0.002) crouchK = crouchTarget;
       seatK += (seatTarget - seatK) * (1 - Math.exp(-10 * dt));
       if (Math.abs(seatTarget - seatK) < 0.002) seatK = seatTarget;
       if (seatK > 0 && koK === 0) {
@@ -1090,14 +1098,21 @@ export function makeAvatar(name, color, { self = false } = {}) {
         armL.rotation.x = armR.rotation.x = 0.9 * seatK;   // hands out to the keyboard
         armL.rotation.z = 0.12 * seatK; armR.rotation.z = -0.12 * seatK;
       }
+      // crouching: knees bent (thighs forward), hips down, arms a little forward; the walk swing fades out
+      const cr = koK === 0 && seatK === 0 && !air ? crouchK : 0;
+      if (cr > 0) {
+        legL.rotation.x = CROUCH_LEG * cr + swing * 0.4 * (1 - cr); legR.rotation.x = CROUCH_LEG * cr - swing * 0.4 * (1 - cr);
+        armL.rotation.x = 0.45 * cr + armL.rotation.x * (1 - cr); armR.rotation.x = 0.45 * cr + armR.rotation.x * (1 - cr);
+      }
       if (fireT >= 0) { fireT += dt; if (fireT > 0.1) fireT = -1; }
       muzzle.visible = fireT >= 0;
       if (gunOn && koK === 0 && seatK === 0) { armR.rotation.x = GUN_HOLD - (fireT >= 0 ? 0.18 : 0); armR.rotation.z = 0; armR.scale.y = 1; } // arm out in front, kicks back on a shot
-      tag.position.set(0, tagY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK - SIT_DROP * seatK, -0.9 * koK);
-      const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05;
-      group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK - SIT_DROP * seatK, cur.z - Math.cos(yaw) * lunge);
+      const drop = SIT_DROP * seatK + CROUCH_DROP * cr;
+      tag.position.set(0, tagY - 0.9 * koK - drop, -0.9 * koK); sIcon.position.set(0, iconY - 0.9 * koK - drop, -0.9 * koK);
+      const bob = air || koK > 0 ? 0 : Math.abs(Math.sin(phase)) * Math.min(1, speed / 3) * 0.05 * (1 - cr);
+      group.position.set(cur.x - Math.sin(yaw) * lunge, cur.y + bob + 0.16 * koK - drop, cur.z - Math.cos(yaw) * lunge);
       group.rotation.y = yaw;
-      group.rotation.x = lean + koK * (Math.PI / 2);
+      group.rotation.x = lean + koK * (Math.PI / 2) - 0.25 * cr; // a slight forward hunch
       group.rotation.z = sway;
     },
     dispose() {
