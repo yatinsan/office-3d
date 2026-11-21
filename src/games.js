@@ -327,12 +327,13 @@ export function initGames({ online, player, scene, camera }) {
   const tppIdx = () => { const g = playingOf(me()); return g && typeOf(g).props ? typeOf(g).disguiseOf(g, me()) : null; };
   /** call right before rendering: a hider who is a prop sees themselves from behind, so they can see how they look */
   function camBegin() {
-    if (camSaved || tppIdx() === null) return;
+    if (camSaved || tppIdx() === null) return false;
     camSaved = camera.position.clone(); camera.getWorldDirection(dirV);
     let d = 0.15;
     for (; d <= TPP_D; d += 0.15) if (blocked(camSaved.x - dirV.x * d, camSaved.z - dirV.z * d, 0.12)) break;
     d = Math.max(0, Math.min(TPP_D, d - 0.15));
     camera.position.set(camSaved.x - dirV.x * d, Math.max(0.3, camSaved.y - dirV.y * d + 0.35), camSaved.z - dirV.z * d);
+    return true;
   }
   function camEnd() { if (camSaved) { camera.position.copy(camSaved); camSaved = null; } }
   function drawHud() {
@@ -446,5 +447,5 @@ export function initGames({ online, player, scene, camera }) {
     if ((hudT += dt) > 0.25) { hudT = 0; drawHud(); }
   }
 
-  return { update, open: openPanel, close, canHit, onHit, onMiss, shoot, camBegin, camEnd, get isOpen() { return open; } };
+  return { update, open: openPanel, close, canHit, onHit, onMiss, shoot, camBegin, camEnd, isProp: () => tppIdx() !== null, get isOpen() { return open; } };
 }

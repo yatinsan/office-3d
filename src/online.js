@@ -279,6 +279,19 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   const me = makeAvatar('', myColor, { self: true });
   scene.add(me.group);
   const meDir = new THREE.Vector3();
+  let tpp = false, camSavedT = null; // C: third-person view of your own body
+  const tdir = new THREE.Vector3();
+  function toggleView() { tpp = !tpp; me.setFirstPerson(!tpp); return tpp; }
+  /** right before rendering: pull the camera back behind you (never into a wall); camEnd puts it back */
+  function camBegin() {
+    if (!tpp || creating || selfSeated || camSavedT) return;
+    camSavedT = camera.position.clone(); camera.getWorldDirection(tdir);
+    let d = 0.15;
+    for (; d <= 2.4; d += 0.15) if (blocked(camSavedT.x - tdir.x * d, camSavedT.z - tdir.z * d, 0.12)) break;
+    d = Math.max(0, Math.min(2.4, d - 0.15));
+    camera.position.set(camSavedT.x - tdir.x * d, Math.max(0.3, camSavedT.y - tdir.y * d + 0.3), camSavedT.z - tdir.z * d);
+  }
+  function camEnd() { if (camSavedT) { camera.position.copy(camSavedT); camSavedT = null; } }
   let yawOv = null; // Prop Hunt: face this angle instead of where the camera looks (null = follow the camera)
   let selfSeated = false, lowNet = false, netT = 0; // seated at a desk (src/seat.js): we barely move, so we send much less
   function updateSelf(dt, reach = null) {
@@ -661,7 +674,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       if (hudNote && (hudT += dt) > 5) { hudNote = ''; hudT = 0; drawHud(); }
     },
     prompt() { return ''; },
-    updateSelf,
+    updateSelf, toggleView, camBegin, camEnd, get thirdPerson() { return tpp; },
     /** sitting at a desk (src/seat.js): tell the others, and send far less */
     setSeated(v) { selfSeated = !!v; if (on) sendPos(true); },
     setYawOverride(a) { yawOv = a == null ? null : a; },
@@ -728,12 +741,14 @@ export function makeAvatar(name, color, { self = false } = {}) {
   }
   add(head, new THREE.SphereGeometry(0.02, 10, 8), mat('#e6bea1', 0.7), 0, 0.105, -0.17).scale.set(1, 0.9, 0.8).castShadow = false; // nose
   const mouth = add(head, new THREE.SphereGeometry(0.03, 12, 8), mat('#7a2f33', 0.5), 0, 0.055, -0.152); mouth.scale.set(1, 0.25, 0.35); mouth.castShadow = false;
+  let hips = null, shifted = [], firstPerson = true;
   if (self) {
     // first person: no head, and no chest (it would fill the screen when you look down). A round seat of hips joins
     // the legs, and everything sits slightly forward so your feet show and your arms swing at the edges of the view.
     head.visible = false; torso.visible = false;
-    add(group, new THREE.SphereGeometry(0.2, 18, 12), pantsMat, 0, HIP + 0.02, 0).scale.set(1.05, 0.55, 0.75);
-    for (const c of group.children) { c.position.z -= 0.08; c.position.y -= 0.08; }
+    hips = add(group, new THREE.SphereGeometry(0.2, 18, 12), pantsMat, 0, HIP + 0.02, 0); hips.scale.set(1.05, 0.55, 0.75);
+    shifted = [...group.children];
+    for (const c of shifted) { c.position.z -= 0.08; c.position.y -= 0.08; }
   }
   const ARM = 0.6; // shoulder to hand centre
   // Prop Hunt: the seeker's gun in the right hand (barrel along the arm), the arm held out in front
@@ -860,6 +875,13 @@ export function makeAvatar(name, color, { self = false } = {}) {
     get disguised() { return !!disg; },
     setLook(n, c) { curName = n || curName; curColor = c || curColor; shirtMat.color.set(curColor); drawTag(); },
     /** Point the right hand at `aim` (world space); k 0 = arm down, 1 = hand on the target. */
+    /** your own avatar: true = first person (no head / chest, nudged so your feet show), false = a normal full body (third person) */
+    setFirstPerson(v) {
+      if (!self || v === firstPerson) return;
+      firstPerson = v;
+      head.visible = torso.visible = !v; hips.visible = v;
+      for (const c of shifted) { c.position.z += v ? -0.08 : 0.08; c.position.y += v ? -0.08 : 0.08; }
+    },
     setReach(aim, k) { reachK = k; if (aim) reachAim.copy(aim); },
     setVoice(v) { if (voice) { voice.disconnect?.(); head.remove(voice); } voice = v; head.add(v); },
     target(x, y, z, yw, t, m = false, pitch = 0) {

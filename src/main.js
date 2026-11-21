@@ -254,6 +254,12 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
+// C: switch between first and third person (not in dev mode, where C is 'suggest', nor while a Prop Hunt prop uses C for clones)
+addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyC' || e.repeat || dev || player.state.paused || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || games.isProp()) return;
+  online.toggleView();
+});
+
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
@@ -280,9 +286,9 @@ renderer.setAnimationLoop(() => {
     }
     frames = 0; fpsT = 0;
   }
-  games.camBegin(); // a hider who is a prop sees from behind
+  if (!games.camBegin()) online.camBegin(); // a hider who is a prop sees from behind; otherwise C = third person
   renderer.render(scene, camera);
-  games.camEnd();
+  games.camEnd(); online.camEnd();
 });
 
 // Handy for debugging from the console.
