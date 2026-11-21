@@ -1785,5 +1785,155 @@
     "folder": "048-remove-this-chari",
     "files": [],
     "reply": "Removed the modern armchair from reception (the one angled toward the sofa between the reception desk and the potted plant). Its collider went with it, so you can walk through that spot now. The sofa, desk and plant stay as they were."
+  },
+  {
+    "point": [
+      16.07,
+      1.62,
+      21.56
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 15.26,
+      "z": 21.55,
+      "yaw": -1.58,
+      "pitch": -0.04
+    },
+    "text": "just make thiis inside a squer box like never see outside",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795275615896,
+    "id": "smwqkqys8",
+    "n": 49,
+    "created": 1795275615908,
+    "folder": "049-just-make-thiis-inside-a-squer",
+    "files": [],
+    "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
+  },
+  {
+    "point": [
+      16.07,
+      1.59,
+      44.62
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 14.97,
+      "z": 43.37,
+      "yaw": -2.41,
+      "pitch": -0.04
+    },
+    "text": "same like this , like from my view u see somting",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795275641484,
+    "id": "smwqkrij0",
+    "n": 50,
+    "created": 1795275641489,
+    "folder": "050-same-like-this-like-from-my",
+    "files": [],
+    "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
+  },
+  {
+    "point": [
+      10.33,
+      1.87,
+      40.62
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.44,
+      "z": 41.51,
+      "yaw": 1.17,
+      "pitch": 0.1
+    },
+    "text": "also here",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795275679429,
+    "id": "smwqksbt1",
+    "n": 51,
+    "created": 1795275679435,
+    "folder": "051-also-here",
+    "files": [],
+    "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
+  },
+  {
+    "point": [
+      10.33,
+      1.83,
+      42.3
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.08,
+      "z": 41.07,
+      "yaw": 2.19,
+      "pitch": 0.08
+    },
+    "text": "here also",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795275686118,
+    "id": "smwqksgyu",
+    "n": 52,
+    "created": 1795275686122,
+    "folder": "052-here-also",
+    "files": [],
+    "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
+  },
+  {
+    "point": [
+      10.33,
+      1.67,
+      46.04
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 12.65,
+      "z": 46.05,
+      "yaw": 1.57,
+      "pitch": 0.01
+    },
+    "text": "this also so in this side just close like , \na \nbox office",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795275725771,
+    "id": "smwqktbkb",
+    "n": 53,
+    "created": 1795275725778,
+    "folder": "053-this-also-so-in-this-side",
+    "files": [],
+    "reply": "Closed the room behind the glass into a solid square box: added side walls at both ends of every glass-front office (and a north wall for the room behind the glass door), so you no longer see outside through the glass or past the corners."
   }
 ]

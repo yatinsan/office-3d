@@ -347,6 +347,8 @@ function glassFronts(root, xw, side, z0, z1, unit = 4.2, { frost = false } = {})
     box(root, M.screenDark, 0.03, 0.32, 0.55, dx + side * 0.2, 1.0, cz);
     box(root, M.black, 0.45, 0.5, 0.45, dx - side * 0.55, 0.5, cz);
   }
+  // closed square box (suggestions 49–53): side walls at both ends so nothing outside shows through the glass at an angle
+  for (const z of [z0 - 0.05, z1 + 0.05]) box(root, H.room, Math.abs(back - xw), CEIL, 0.1, (xw + back) / 2, CEIL / 2, z, { shadow: false });
   box(root, H.wall, 0.4, CEIL, 0.4, xw, CEIL / 2, z1);
   addBox(Math.min(xw, x) - 0.05, z0, Math.max(xw, x) + 0.05, z1);
 }
@@ -655,6 +657,7 @@ export function buildHall(root) {
   box(root, H.room, 0.1, CEIL, g1 + 0.3 - g0, X1 + 3.0, CEIL / 2, (g0 + g1 + 0.3) / 2, { shadow: false });
   box(root, M.black, 0.05, 2.6, 0.05, X1 + 1.6, 1.3, g0 + 0.5, { shadow: false });                // glimpse of a black partition
   box(root, H.room, 2.88, CEIL, 0.1, X1 + 1.56, CEIL / 2, g1 + 0.35, { shadow: false });
+  box(root, H.room, 2.88, CEIL, 0.1, X1 + 1.56, CEIL / 2, g0 - 0.05, { shadow: false });            // north wall: closed box (suggestion 49)
   // white pier + headers over both doors
   wallZ(root, X1, g1, p1, -1);
   box(root, M.white, 0.012, 0.09, 0.09, X1 - 0.006, 1.25, (g1 + p1) / 2, { shadow: false });   // switch
