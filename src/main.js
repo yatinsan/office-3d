@@ -121,7 +121,8 @@ const lifts = initLifts({ scene, camera, player }); // E at any lift: ride to th
 online.hookLifts({ msg: (m) => lifts.apply(m), snap: () => lifts.snapshot() }); // lift calls / rides are sent to the others only when they happen
 lifts.onChange((m) => online.broadcast(m));
 const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge
-const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
+const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (others see its screen; a taken seat can't be used)
+online.hookScreens(seat.hooks);
 if (touchUI) touchUI.onHit = () => combat.attack();
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----

@@ -472,6 +472,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     for (const u of unsubs) u(); unsubs = [];
     for (const id of [...peers.keys()]) drop(id);
     gameHook.reset();
+    screenHook.reset();
     if (fb && uid) { fb.remove(path(`players/${uid}`)); fb.remove(path(`signal/${uid}`)); }
     uid = null;
   }
@@ -558,6 +559,8 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       if (ps) try { dd.send(JSON.stringify(ps)); } catch {}
       const ls = liftHook.snap(); // lifts parked on the ground floor
       if (ls && ls.length) try { dd.send(JSON.stringify({ t: 'lift', op: 'snap', s: ls })); } catch {}
+      const ss = screenHook.snap(); // my desk screen, if I am sitting at one
+      if (ss) try { dd.send(JSON.stringify(ss)); } catch {}
       const gs = gameHook.snap(); // the games list (src/games.js), so a newcomer sees open / running games
       if (gs && gs.length) try { dd.send(JSON.stringify({ t: 'game', op: 'snap', games: gs })); } catch {}
     };
@@ -567,6 +570,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
         if (m.t === 'pool') { pool?.applyRemote(m, { name: p.name, color: p.color }); return; }
         if (m.t === 'game') { gameHook.msg(p.id, m); return; }
         if (m.t === 'lift') { liftHook.msg(m); return; }
+        if (m.t === 'screen') { screenHook.msg(p.id, m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
           if (m.to && m.to === uid) onHitMe(p);
@@ -593,6 +597,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   let onHitMe = () => {}, selfKo = false;
   // games (src/games.js): messages {t:'game'} are routed there; it also hears about peers leaving and gives the list to newcomers
   let liftHook = { msg() {}, snap: () => null };
+  let screenHook = { msg() {}, gone() {}, reset() {}, snap: () => null }; // desk screens + who sits where (src/seat.js)
   let gameHook = { msg() {}, gone() {}, reset() {}, snap: () => null };
   const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
   function broadcast(msg) {
@@ -604,6 +609,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (!p) return;
     peers.delete(id);
     gameHook.gone(id);
+    screenHook.gone(id);
     try { p.dd?.close(); } catch {}
     try { p.dc?.close(); } catch {}
     try { p.pc.close(); } catch {}
@@ -796,6 +802,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     get name() { return myName; },
     hookGames: (h) => { gameHook = { ...gameHook, ...h }; },
     hookLifts: (h) => { liftHook = { ...liftHook, ...h }; },
+    hookScreens: (h) => { screenHook = { ...screenHook, ...h }; },
     onHit: (fn) => { onHitMe = fn; },
     setKnocked: (k) => { selfKo = !!k; sendPos(true); },
     // menu hooks

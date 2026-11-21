@@ -83,6 +83,10 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
   }
 
   // ---------- drawing ----------
+  // paint(g, st) draws one screen from a state { app, sel, notes, disp, op }: my own screen and the other players' screens
+  // (their state arrives over the network) go through the same code. Params shadow the local app / sel / notes / calc.
+  function paint(g, st) {
+  const { app, sel } = st, notes = st.notes || '', calc = { disp: st.disp || '0', op: st.op || null };
   const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
   function drawIcon(i, x, y, w, on) {
     const cols = [['#ffd54a', '#f2a900'], ['#7a7f8c', '#3d414c'], ['#fff', '#d8dce6']][i];
@@ -129,7 +133,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     }
     g.restore();
   }
-  function draw() {
+  {
     const grd = g.createLinearGradient(0, 0, CW, CH);
     grd.addColorStop(0, '#2b3a8c'); grd.addColorStop(0.55, '#7b3fa0'); grd.addColorStop(1, '#e9707a');
     g.fillStyle = grd; g.fillRect(0, 0, CW, CH);
@@ -151,16 +155,93 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     g.fillStyle = 'rgba(255,255,255,.22)'; rr(CW / 2 - 125, CH - 82, 250, 76, 20); g.fill();
     APPS.forEach((_, i) => { const d = DOCK[i]; drawIcon(i, d.x, d.y, d.w, app === APPS[i]); });
     if (!app) { g.strokeStyle = '#fff'; g.lineWidth = 3; rr(DOCK[sel].x - 4, DOCK[sel].y - 4, DOCK[sel].w + 8, DOCK[sel].h + 8, 17); g.stroke(); }
+  }
+  }
+  const mine = () => ({ app, sel, notes, disp: calc.disp, op: calc.op });
+  function draw() {
+    paint(g, mine());
     tex.needsUpdate = true;
+    queueSend();
+  }
+
+  // ---------- other players' screens + who sits where (state only, drawn locally; see online.js hookScreens) ----------
+  const taken = new Map();      // peer id -> seat index they sit on
+  const remote = new Map();     // peer id -> { mesh, g, tex, st }
+  let lastSent = '', sendT = 0;
+  const seatIdx = () => (active ? SEATS.indexOf(seat) : -1);
+  function stateMsg() {
+    const st = mine();
+    return { t: 'screen', seat: seatIdx(), app: st.app ? APPS.indexOf(st.app) : -1, sel: st.sel,
+      notes: st.app === 'Notes' ? st.notes : '', disp: st.app === 'Calculator' ? st.disp : '0', op: st.app === 'Calculator' ? st.op : null };
+  }
+  function sendNow() {
+    clearTimeout(sendT); sendT = 0;
+    if (!active) return;
+    const m = stateMsg(), s = JSON.stringify(m);
+    if (s === lastSent) return;
+    lastSent = s; online?.broadcast?.(m);
+  }
+  function queueSend() { if (active && !sendT) sendT = setTimeout(sendNow, 100); } // typing is batched, ~10 messages a second at most
+  function stateFrom(m) { return { app: APPS[m.app] || null, sel: m.sel | 0, notes: String(m.notes || '').slice(0, 600), disp: String(m.disp || '0').slice(0, 14), op: m.op || null }; }
+  function hideRemote(id) { const r = remote.get(id); if (r) { r.mesh.visible = false; r.on = false; } }
+  function showRemote(id, m) {
+    const s = SEATS[m.seat];
+    if (!s) return;
+    let r = remote.get(id);
+    if (!r) {
+      const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH;
+      const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.30),
+        new THREE.MeshBasicMaterial({ map: tx, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      scene.add(mesh);
+      remote.set(id, (r = { mesh, g: cv.getContext('2d'), tex: tx, st: null, on: false }));
+    }
+    r.mesh.position.set(s.sx + s.nx * 0.004, s.sy, s.sz + s.nz * 0.004);
+    r.mesh.rotation.y = Math.atan2(s.nx, s.nz);
+    r.mesh.visible = r.on = true;
+    r.st = stateFrom(m);
+    paint(r.g, r.st); r.tex.needsUpdate = true;
+  }
+  function note(text) {
+    const t = document.createElement('div');
+    t.textContent = text;
+    t.style.cssText = 'position:fixed;top:14%;left:50%;transform:translateX(-50%);background:#000a;color:#fff;padding:8px 16px;border-radius:8px;font:14px sans-serif;z-index:99;pointer-events:none';
+    document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+  }
+  const takenBySomeone = (i) => { for (const v of taken.values()) if (v === i) return true; return false; };
+  const hooks = {
+    msg(id, m) {
+      if (!(m.seat >= 0)) { taken.delete(id); hideRemote(id); return; }
+      if (active && seatIdx() === m.seat) { // both of us sat down in the same moment: the lower id keeps the seat
+        if (String(online?.uid?.()) < String(id)) return;
+        exit(); note('Seat taken');
+      }
+      taken.set(id, m.seat);
+      showRemote(id, m);
+    },
+    gone(id) { taken.delete(id); const r = remote.get(id); if (r) { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); r.tex.dispose(); remote.delete(id); } },
+    reset() { for (const id of [...remote.keys()]) hooks.gone(id); taken.clear(); },
+    snap: () => (active ? stateMsg() : null),
+  };
+  let remoteT = 0;
+  function updateRemote(dt) {
+    if ((remoteT += dt) < 0.5) return;
+    remoteT = 0;
+    for (const r of remote.values()) {       // clock + caret blink, only for screens close enough to read
+      if (!r.on || !r.st) continue;
+      if (r.mesh.position.distanceTo(camera.position) > 8) continue;
+      paint(r.g, r.st); r.tex.needsUpdate = true;
+    }
   }
 
   // ---------- sitting down / standing up ----------
-  const near = () => {
+  const nearAny = () => {
     if (!SEATS.length || player.state.paused) return null;
     let best = null, bd = REACH;
     for (const s of SEATS) { const d = Math.hypot(player.pos.x - s.x, player.pos.z - s.z); if (d < bd) { bd = d; best = s; } }
     return best;
   };
+  const near = () => { const s = nearAny(); return s && !takenBySomeone(SEATS.indexOf(s)) ? s : null; };
   function enter(s) {
     seat = s; active = true; app = null; sel = 0;
     player.state.paused = true;
@@ -172,10 +253,14 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
     screen.visible = true;
     document.body.classList.add('cutscene');
     online?.setSeated?.(true);
+    lastSent = '';
     draw();
+    sendNow();                                // tell everyone at once: this seat is taken, and what is on the screen
   }
   function exit() {
     if (!active) return;
+    clearTimeout(sendT); sendT = 0; lastSent = '';
+    online?.broadcast?.({ t: 'screen', seat: -1 });
     active = false; seat = null;
     player.state.paused = false;
     screen.visible = false;
@@ -230,6 +315,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
   }, true);
 
   function update(dt) {
+    updateRemote(dt);
     if (!active) return;
     if (!overlay.classList.contains('hidden')) { exit(); return; } // pause menu opened
     if ((clockT += dt) > 0.5) { clockT = 0; draw(); } // clock, caret blink and the connection badge
@@ -247,8 +333,9 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
 
   return {
     update,
-    prompt: () => (active ? 'E stand up' : near() ? 'E sit down' : ''),
+    prompt: () => (active ? 'E stand up' : near() ? 'E sit down' : nearAny() ? 'Seat in use' : ''),
     isActive: () => active,
     exit,
+    hooks,
   };
 }
