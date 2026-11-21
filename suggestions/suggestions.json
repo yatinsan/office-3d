@@ -2235,5 +2235,35 @@
     "folder": "063-make-same-emergency-gear-here-and",
     "files": [],
     "reply": "Added an alarm horn above the red call point by the fire exit; it is now a working pull station like the one at lift 5 (hold E close up), and it rings for everyone online."
+  },
+  {
+    "point": [
+      16.1,
+      1.23,
+      7.04
+    ],
+    "normal": [
+      -1,
+      0,
+      0
+    ],
+    "zone": "Building Hall",
+    "target": "",
+    "view": {
+      "x": 11.01,
+      "z": 7.97,
+      "yaw": -1.39,
+      "pitch": -0.08
+    },
+    "text": "make that gens tolialet and a objerct in right side to here",
+    "section": "Building Hall",
+    "status": "done",
+    "updated": 1795299814598,
+    "id": "smwqz5mme",
+    "n": 64,
+    "created": 1795299814607,
+    "folder": "064-make-that-gens-tolialet-and-a",
+    "files": [],
+    "reply": "Moved the gents toilet (door, blade sign) and the fire ball on its right side to the spot you pointed at on the east wall (z 7.04). I read your note as a move; tell me if you meant something else."
   }
 ]

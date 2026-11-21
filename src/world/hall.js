@@ -19,6 +19,7 @@ import { slab, worldUV, doorLeaves, LOBBY_E, LOBBY_S, CAB_BACK, EAST_DOORS, DOOR
 export const X0 = LOBBY_E;   // office side (west)
 export const X1 = LOBBY_E + 5.8; // east wall: one straight wall, hall pulled in closer (suggestion 33, was 24 ft)
 const Z0 = -2.0;      // north window
+export const GENTS_Z = 7.04; // gents toilet door position on the east wall (src/gents.js)
 export const Z1 = 47.0;      // south window (long corridor with offices both sides, IMG_5707 / 5736 / 5738, suggestions 30, 45, 46)
 export const CEIL = 3.2;     // grid ceiling
 const BULK = 3.0;     // side bulkheads (meet the top of the entrance glass)
@@ -123,7 +124,21 @@ const H = {
   woodStrip: std({ color: '#6a4126', roughness: 0.5 }),
   darkGlass: new THREE.MeshStandardMaterial({ color: '#2c3a2c', transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0.3, depthWrite: false, side: THREE.DoubleSide }),
   orange: std({ color: '#ff6a12', roughness: 0.35 }),
-  caution: std({ map: sign('CAUTION', { bg: '#f2b90f', fg: '#2a2a2a', w: 256, h: 512, font: 'bold 44px system-ui, sans-serif' }), roughness: 0.5 }),
+  caution: std({ map: tex(256, 512, (g, w, h) => {
+    g.fillStyle = '#f5c400'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#1a1a1a'; g.lineWidth = 10; g.strokeRect(10, 10, w - 20, h - 20);
+    g.fillStyle = '#1a1a1a'; g.beginPath(); g.moveTo(w / 2, 40); g.lineTo(w - 36, 230); g.lineTo(36, 230); g.closePath(); g.fill();
+    g.fillStyle = '#f5c400'; g.beginPath(); g.moveTo(w / 2, 70); g.lineTo(w - 62, 214); g.lineTo(62, 214); g.closePath(); g.fill();
+    g.fillStyle = '#1a1a1a'; g.beginPath(); g.arc(w / 2 - 6, 118, 12, 0, 7); g.fill();            // slipping figure
+    g.lineWidth = 11; g.lineCap = 'round'; g.strokeStyle = '#1a1a1a'; g.beginPath();
+    g.moveTo(w / 2 - 6, 130); g.lineTo(w / 2 + 6, 168); g.lineTo(w / 2 + 34, 196); g.moveTo(w / 2 + 6, 168); g.lineTo(w / 2 - 30, 198);
+    g.moveTo(w / 2 - 6, 138); g.lineTo(w / 2 - 34, 150); g.moveTo(w / 2 - 6, 138); g.lineTo(w / 2 + 24, 124); g.stroke();
+    g.fillStyle = '#1a1a1a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold 54px system-ui, sans-serif'; g.fillText('CAUTION', w / 2, 300);
+    g.fillRect(30, 342, w - 60, 6);
+    g.font = 'bold 40px system-ui, sans-serif'; g.fillText('WET', w / 2, 392); g.fillText('FLOOR', w / 2, 440);
+  }, false), roughness: 0.45 }),
+  cautionBody: std({ color: '#f0bd00', roughness: 0.5 }),
   red: std({ color: '#c42a22', roughness: 0.5 }),
   fireExit: glowSign(sign('FIRE EXIT  ←', { w: 512, h: 112, font: 'bold 60px system-ui, sans-serif' })),
   fireExt: glowSign(sign('FIRE EXTINGUISHER', { w: 512, h: 96, font: 'bold 44px system-ui, sans-serif' })),
@@ -691,7 +706,7 @@ export function buildHall(root) {
   for (const y of [0.05, 1.2, 2.33]) box(root, M.black, 0.06, 0.05, 0.9, X1 - 0.03, y, -1.2);
   box(root, M.chrome, 0.03, 0.4, 0.025, X1 - 0.09, 1.05, -0.88, { shadow: false });
   // gents toilet: laminate door with vision slot, chrome pull, projecting blade sign, fire ball, caution board
-  const tz = 2.6;
+  const tz = GENTS_Z; // suggestion 64: moved from z 2.6 to the spot the user pointed at (fire ball stays on its right)
   const tf = flatDoor(root, X1, tz, 1.0, 2.25, H.laminate, 1);
   box(root, H.slot, 0.012, 0.9, 0.12, tf, 1.45, tz - 0.05, { shadow: false }); // vision slot
   box(root, M.chrome, 0.03, 0.42, 0.03, tf - 0.05, 1.05, tz + 0.37, { shadow: false });
@@ -702,6 +717,15 @@ export function buildHall(root) {
   plane(blade, H.gents, 0.56, 0.12, 0, 0, 0.017, 0);
   plane(blade, H.gents, 0.56, 0.12, 0, 0, -0.017, Math.PI);
   box(blade, M.metalDark, 0.04, 0.05, 0.04, 0.3, 0.1, 0);
+  // yellow A-frame "wet floor" caution board standing in the corridor in front of the door (suggestion 65)
+  const cb = new THREE.Group(); cb.position.set(X1 - 1.0, 0, tz - 0.9); cb.scale.setScalar(0.95); root.add(cb);
+  for (const s of [-1, 1]) {
+    const pnl = new THREE.Group(); pnl.position.set(0, 0.32, s * 0.098); pnl.rotation.x = -s * 0.3; cb.add(pnl); // legs spread along z, tops meet
+    box(pnl, H.cautionBody, 0.36, 0.66, 0.025, 0, 0, 0, { shadow: false });
+    plane(pnl, H.caution, 0.32, 0.62, 0, 0, 0.0135, 0);
+    plane(pnl, H.caution, 0.32, 0.62, 0, 0, -0.0135, Math.PI);
+  }
+  box(cb, H.cautionBody, 0.38, 0.035, 0.05, 0, 0.635, 0, { shadow: false }); // hinge cap
   // automatic fire ball in a wire basket
   const fb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 14), H.orange);
   fb.position.set(X1 - 0.13, 1.78, tz + 1.4); fb.castShadow = true; root.add(fb);
