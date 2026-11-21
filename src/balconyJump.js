@@ -4,7 +4,10 @@ const VIDEO_SRC = 'media/balcony.mp4';
 // Lookout zone in front of the glass rail (rail collider stops the player at about x = -3.03).
 // Whole length of the terrace (z 0..25.2), next to the rail.
 const ZONE = { x1: -3.2, x2: -2.2, z1: 0.3, z2: 24.9 };
-const TURN_YAW = -0.95;   // head turns to the RIGHT by this much (radians), toward the person standing on your right
+// The head always ends up facing the same spot, whatever way you were looking: straight out over the rail is yaw PI/2 (-x),
+// and the person in the video stands on your right, so turn right by this much (radians) from there.
+const TURN_YAW = -0.95;
+const TARGET_YAW = Math.PI / 2 + TURN_YAW;
 const TILT_PITCH = -0.06; // tiny downward tilt
 const TILT_ROLL = 0.1;    // head tilt
 const TILT_TIME = 1.2;    // seconds to ease into the tilt
@@ -53,7 +56,7 @@ export function initBalconyJump({ camera, player, touch = false }) {
   document.body.appendChild(wrap);
 
   let playing = false, t = 0, cooldown = 0, videoShown = false, shown = false;
-  let startPitch = 0, startYaw = 0, startRoll = 0;
+  let startPitch = 0, startYaw = 0, startRoll = 0, yawDelta = 0;
   const dir = { x: 0, z: 0 };
 
   function inZone() {
@@ -69,15 +72,21 @@ export function initBalconyJump({ camera, player, touch = false }) {
 
   function start() {
     playing = true; t = 0; videoShown = false;
-    startPitch = camera.rotation.x; startYaw = camera.rotation.y; startRoll = camera.rotation.z;
+    startPitch = camera.rotation.x; startRoll = camera.rotation.z;
+    startYaw = camera.rotation.y; yawDelta = Math.atan2(Math.sin(TARGET_YAW - startYaw), Math.cos(TARGET_YAW - startYaw)); // shortest turn to the target angle
     player.state.paused = true;
     document.body.classList.add('cutscene');
     promptEl.classList.remove('show'); shown = false;
     wrap.style.display = 'block';
-    video.currentTime = 0;
-    video.muted = false;
+    if (video.currentTime > 0.05) video.currentTime = 0; // a seek on a cold video is slow: skip it when it is already at the start
+    video.muted = false; video.volume = 1;
     const pl = video.play();
-    if (pl && pl.catch) pl.catch(() => { video.muted = true; video.play().catch(finish); });
+    if (pl && pl.catch) pl.catch(() => {
+      // sound refused (no user gesture, e.g. a synthetic button): play silent now, and give the sound back at the next tap / key
+      video.muted = true; video.play().catch(finish);
+      const unmute = () => { video.muted = false; removeEventListener('pointerdown', unmute, true); removeEventListener('keydown', unmute, true); };
+      addEventListener('pointerdown', unmute, true); addEventListener('keydown', unmute, true);
+    });
   }
   function finish() {
     if (!playing) return;
@@ -85,11 +94,24 @@ export function initBalconyJump({ camera, player, touch = false }) {
     video.pause();
     setTimeout(() => { wrap.style.display = 'none'; }, 800);
     // restore view and controls
-    camera.rotation.set(startPitch, startYaw, startRoll, 'YXZ');
+    camera.rotation.set(startPitch, TARGET_YAW, startRoll, 'YXZ'); // keep looking toward that spot after the video (only pitch / roll go back)
     player.state.paused = false;
     document.body.classList.remove('cutscene');
     playing = false; cooldown = COOLDOWN;
   }
+  // Warm the video up on the first tap / key (a user gesture, so it may start): a silent play + pause loads the decoder and the
+  // first seconds, so the real start on Space is instant and its sound is allowed.
+  let primed = false;
+  function prime() {
+    if (primed || playing) return;
+    video.muted = true;
+    const p = video.play();
+    const back = () => { if (!playing) { video.pause(); video.currentTime = 0; } };
+    const ok = () => { primed = true; removeEventListener('pointerdown', prime, true); removeEventListener('keydown', prime, true); setTimeout(back, 150); };
+    if (p && p.then) p.then(ok).catch(() => {}); else ok(); // refused (e.g. Esc is no gesture): try again at the next tap / key
+  }
+  addEventListener('pointerdown', prime, true); addEventListener('keydown', prime, true);
+  video.load();
   video.addEventListener('ended', finish);
   video.addEventListener('error', finish);
 
@@ -114,12 +136,13 @@ export function initBalconyJump({ camera, player, touch = false }) {
     if (playing) {
       t += dt;
       const k = ease(Math.min(1, t / TILT_TIME));
-      camera.rotation.set(startPitch + (TILT_PITCH - startPitch) * k, startYaw + TURN_YAW * k, startRoll + (TILT_ROLL - startRoll) * k, 'YXZ');
-      if (!videoShown && t >= FADE_IN_AT) { videoShown = true; wrap.classList.add('show'); }
+      camera.rotation.set(startPitch + (TILT_PITCH - startPitch) * k, startYaw + yawDelta * k, startRoll + (TILT_ROLL - startRoll) * k, 'YXZ');
+      if (!videoShown && t >= FADE_IN_AT && (video.readyState >= 3 || t >= 3)) { videoShown = true; wrap.classList.add('show'); }
       return;
     }
     const want = ready() && inZone();
     if (want !== shown) { shown = want; promptEl.classList.toggle('show', want); }
   }
-  return { update, prompt: () => '', get active() { return playing; } };
+  // true while the video fully covers the screen: main.js then stops drawing the 3D scene, so the video gets all of the GPU / CPU
+  return { update, prompt: () => '', get active() { return playing; }, get covered() { return playing && videoShown && t >= FADE_IN_AT + 1; } };
 }

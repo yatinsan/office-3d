@@ -8,6 +8,7 @@ import { initDoors } from './doors.js';
 import { initUnlock } from './unlock.js';
 import { initLadies } from './ladies.js';
 import { initArcade } from './arcade.js';
+import { initGameGuide } from './gameguide.js';
 import { initTouch, isTouchDevice } from './touch.js';
 import { initModes } from './modes.js';
 import { initMenu } from './menu.js';
@@ -260,6 +261,8 @@ addEventListener('keydown', (e) => {
   online.toggleView();
 });
 
+const gameGuide = initGameGuide({ scene, player, inGameRoom: () => zone === 'Game Room' }); // first visit: a glowing marker at the Game Room door
+
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
@@ -276,6 +279,7 @@ renderer.setAnimationLoop(() => {
   modes.update(dt, overlay.classList.contains('hidden'));
   online.updateSelf(dt, unlock.reach()); // your own body; its right hand presses the fingerprint reader
   updateZone(dt);
+  gameGuide.update(dt);
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
     const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
@@ -286,9 +290,11 @@ renderer.setAnimationLoop(() => {
     }
     frames = 0; fpsT = 0;
   }
-  if (!games.camBegin()) online.camBegin(); // a hider who is a prop sees from behind; otherwise C = third person
-  renderer.render(scene, camera);
-  games.camEnd(); online.camEnd();
+  if (!balconyJump.covered) { // (not drawn while the balcony video covers the screen: it plays smoother)
+    if (!games.camBegin()) online.camBegin(); // a hider who is a prop sees from behind; otherwise C = third person
+    renderer.render(scene, camera);
+    games.camEnd(); online.camEnd();
+  }
 });
 
 // Handy for debugging from the console.
