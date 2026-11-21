@@ -110,10 +110,13 @@ if (touchUI) touchUI.onHit = () => combat.attack();
 
 // ---- Start / pause menu (GTA style): Play > Open World / Free Walk, Character, Settings; Esc in game > Resume / Character / Settings / Quit ----
 const controlsEl = document.querySelector('.m-controls');
+// Browsers refuse Pointer Lock for an Esc keypress (it is not a user gesture), so Esc on the pause menu only
+// arms the resume: the next click or non-Esc key takes the pointer back.
+let resumeArmed = false;
 const menu = initMenu({
   root: document.getElementById('menu'),
   active: () => !overlay.classList.contains('hidden'),
-  foot: () => (modes.running && modes.current.id === 'online' ? online.statusHtml() : ''),
+  foot: () => (resumeArmed ? 'Click or press any key to resume' : (modes.running && modes.current.id === 'online' ? online.statusHtml() : '')),
 });
 /** Pick a mode (or keep the current one) and start playing. Open World asks for a name + colour first. */
 function begin(id) {
@@ -126,7 +129,11 @@ function launch() {
   modes.play();
   startPlaying();
 }
-function resume() { startPlaying(); }
+function resume() { resumeArmed = false; startPlaying(); }
+function armResume() { resumeArmed = true; menu.refresh(); }
+// A real gesture (click or any key other than Esc) finishes an armed resume.
+addEventListener('pointerdown', () => { if (resumeArmed) resume(); });
+addEventListener('keydown', (e) => { if (resumeArmed && e.code !== 'Escape') resume(); });
 function quit() {
   modes.quit();
   started = false;
@@ -163,7 +170,7 @@ const mainPage = () => ({
 });
 const pausePage = () => ({
   title: 'Paused',
-  back: resume,
+  back: armResume,
   items: [
     { label: 'Resume', action: resume },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
@@ -173,6 +180,7 @@ const pausePage = () => ({
 });
 /** Show the menu: the start menu before playing and after Quit, the pause menu during a game. */
 function showMenu() {
+  resumeArmed = false;
   overlay.classList.remove('hidden');
   menu.open(started ? pausePage : mainPage);
 }
