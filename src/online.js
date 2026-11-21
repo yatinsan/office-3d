@@ -146,7 +146,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   charEl.id = 'ow-char';
   charEl.innerHTML = `
     <h3>Your character</h3><p>Pick a name and a dress colour</p>
-    <label for="ow-name">Name</label><input type="text" id="ow-name" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Type your name">
+    <label for="ow-name">Name</label><input type="text" id="ow-name" enterkeyhint="done" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Type your name">
     <label>Dress colour</label><div class="sw"></div>
     <div class="acts"><button type="button" class="back">Back</button><button type="button" class="done">Done</button></div>`;
   document.body.appendChild(charEl);
@@ -166,7 +166,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   charEl.addEventListener('click', (e) => e.stopPropagation());
   nameIn.addEventListener('keydown', (e) => {
     if (e.code !== 'Escape') e.stopPropagation();
-    if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); finishCreator(); }
+    if (e.key === 'Enter' || e.keyCode === 13 || e.code === 'NumpadEnter') { e.preventDefault(); if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 && !matchMedia('(hover: hover)').matches) nameIn.blur(); else finishCreator(); } // phone: the keyboard's Done tick just closes it
   });
   nameIn.addEventListener('keyup', (e) => e.stopPropagation());
   nameIn.addEventListener('input', () => { nameIn.classList.remove('need'); if (preview) preview.setLook(nameIn.value.trim() || 'Your name', null); });
