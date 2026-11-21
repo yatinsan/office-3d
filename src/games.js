@@ -50,6 +50,7 @@ const CSS = `
   #g-invite .gi-k { margin-top: 10px; font-weight: 400; font-size: 12px; color: #999; }
   #g-hud { position: fixed; z-index: 6; right: max(14px, env(safe-area-inset-right)); top: 12px; display: none; padding: 6px 12px; border-radius: 12px;
     background: rgba(14,14,18,.62); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); font: 600 12px system-ui, sans-serif; pointer-events: none; }
+  #g-hud { top: 58px; } /* clear of the people-online chip */
   body.ow-touch #g-hud { top: 58px; right: max(18px, env(safe-area-inset-right)); } /* clear of the full-screen button */
   body.ow-touch #g-invite { top: 12%; }
   #g-hud b { color: #ecc828; font-weight: 700; }

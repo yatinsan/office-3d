@@ -82,9 +82,15 @@ function enableDragMode() {
   overlay.classList.add('hidden');
   hud.dataset.mode = 'drag';
 }
-document.addEventListener('pointerlockerror', enableDragMode);
+let escTrying = false; // Esc-resume attempt in flight: a refusal arms click-to-resume instead of switching to drag mode
+document.addEventListener('pointerlockerror', () => { if (!escTrying) enableDragMode(); });
 addEventListener('keydown', (e) => { if (e.code === 'Escape' && player.state.dragMode && !suggest.isOpen()) { player.state.dragMode = false; showMenu(); } });
-player.controls.addEventListener('lock', () => overlay.classList.add('hidden'));
+player.controls.addEventListener('lock', () => { overlay.classList.add('hidden'); if (!touchUI) { player.state.dragMode = false; hud.dataset.mode = ''; } });
+// click-to-aim: after an Esc resume the game runs unlocked; the first click on the world locks the mouse for aiming
+player.controls.domElement.addEventListener('mousedown', () => {
+  if (touchUI || !player.state.dragMode || player.controls.isLocked) return;
+  try { const p = player.controls.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {}
+});
 player.controls.addEventListener('unlock', () => { if (!suggest.isOpen()) showMenu(); });
 
 // ---- Suggestions: aim + C to pin a suggestion (text + image), L for the list ----
@@ -133,6 +139,19 @@ function launch() {
 }
 function resume() { resumeArmed = false; startPlaying(); }
 function armResume() { resumeArmed = true; menu.refresh(); }
+/** Esc on the pause menu: resume straight away; if the browser refuses the pointer (Esc is no gesture there), fall back to click / any key. */
+function escResume() {
+  if (touchUI) { resume(); return; }
+  escTrying = true;
+  // browser said no (Esc is no gesture): resume anyway in click-to-aim mode; the first click grabs the mouse
+  const arm = () => { escTrying = false; if (!player.controls.isLocked && !player.state.dragMode) { resumeArmed = false; enableDragMode(); } };
+  try {
+    const p = player.controls.domElement.requestPointerLock();
+    resumeArmed = false;
+    if (p && p.catch) p.catch(arm);
+    setTimeout(arm, 400); // some browsers neither throw nor lock
+  } catch { arm(); }
+}
 // A real gesture (click or any key other than Esc) finishes an armed resume.
 addEventListener('pointerdown', () => { if (resumeArmed) resume(); });
 addEventListener('keydown', (e) => { if (resumeArmed && e.code !== 'Escape') resume(); });
@@ -172,7 +191,7 @@ const mainPage = () => ({
 });
 const pausePage = () => ({
   title: 'Paused',
-  back: armResume,
+  back: escResume,
   items: [
     { label: 'Resume', action: resume },
     { label: 'Games', hint: 'Create or join a game (press G in the world)', action: () => { resume(); games.open(); } },
