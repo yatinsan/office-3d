@@ -105,7 +105,7 @@ const hunt = initHunt({ scene, camera, player });
 // Open World: other players over WebRTC (Firebase only for the lobby + handshake), hold V to talk
 const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
-const games = initGames({ online, player }); // G: create / join / start games (Hide and Seek); everybody else can watch
+const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
 const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (local only)
 if (touchUI) touchUI.onHit = () => combat.attack();
@@ -253,7 +253,9 @@ renderer.setAnimationLoop(() => {
     }
     frames = 0; fpsT = 0;
   }
+  games.camBegin(); // a hider who is a prop sees from behind
   renderer.render(scene, camera);
+  games.camEnd();
 });
 
 // Handy for debugging from the console.

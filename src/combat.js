@@ -70,6 +70,7 @@ export function initCombat({ camera, player, online, pool = null, games = null }
     if (cooldown > 0 || !canFight()) return;
     cooldown = COOLDOWN;
     sfx.unlock();
+    if (games?.shoot()) return; // a seeker with a gun (Prop Hunt) shoots instead of punching
     const side = pickSide();
     const t = target();
     online.me.punch(side);
