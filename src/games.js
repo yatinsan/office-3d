@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import hideseek from './games/hideseek.js';
 import prophunt from './games/prophunt.js';
 import * as sfx from './sfx.js';
+import { achievements } from './achievements.js';
 import { blocked } from './colliders.js';
 
 /**
@@ -171,7 +172,7 @@ export function initGames({ online, player, scene, camera }) {
   function finish(g, result) {
     if (!games.delete(g.id)) return;
     const t = typeOf(g), mine = !!(me() && g.players[me()]);
-    if (mine) { stopEffects(); showResult(t.summary(result, g)); } else toast(`${t.name}: ${t.summary(result, g)}`, 3200);
+    if (mine) { stopEffects(); showResult(t.summary(result, g)); achievements.unlock('game'); if (Object.keys(g.players).length > 1) achievements.unlock('friends'); } else toast(`${t.name}: ${t.summary(result, g)}`, 3200);
   }
 
   /** apply one message (mine or someone's); `from` = who sent it */

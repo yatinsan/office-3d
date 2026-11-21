@@ -1,5 +1,6 @@
 // Balcony lookout: at the terrace rail, facing outward, a big "PRESS SPACE TO JUMP" prompt appears.
 // Space locks the player, tilts the head and plays a video full screen; when it ends everything is restored.
+import { achievements } from './achievements.js';
 const VIDEO_SRC = 'media/balcony.mp4';
 // Lookout zone in front of the glass rail (rail collider stops the player at about x = -3.03).
 // Whole length of the terrace (z 0..25.2), next to the rail.
@@ -98,6 +99,7 @@ export function initBalconyJump({ camera, player, touch = false }) {
     player.state.paused = false;
     document.body.classList.remove('cutscene');
     playing = false; cooldown = COOLDOWN;
+    setTimeout(() => achievements.unlock('balcony'), 900);   // once the video has faded
   }
   // Warm the video up on the first tap / key (a user gesture, so it may start): a silent play + pause loads the decoder and the
   // first seconds, so the real start on Space is instant and its sound is allowed.

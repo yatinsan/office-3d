@@ -67,6 +67,12 @@ export function join() {
   tone(c, t, { f0: 660, f1: 660, len: 0.18, vol: 0.12 });
   tone(c, t + 0.1, { f0: 990, f1: 990, len: 0.3, vol: 0.12 });
 }
+/** achievement earned: a rising three-note chime */
+export function achievementChime() {
+  const c = ctx(); if (!c) return;
+  const t = c.currentTime;
+  [660, 880, 1320].forEach((f, i) => tone(c, t + i * 0.12, { f0: f, f1: f, len: 0.35, vol: 0.12, type: 'triangle' }));
+}
 /** someone left: a softer two-note falling chime */
 export function leave() {
   const c = ctx(); if (!c) return;

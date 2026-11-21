@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { POOL, ballMats, cueBallMat } from './world/game.js';
+import { achievements } from './achievements.js';
 
 /**
  * Playable pool table in the game room (free play, no turns).
@@ -151,7 +152,10 @@ export function initPool({ scene, camera, player, touch = false }) {
     moving = false;
     const scratched = !alive[0], mine = shooterLocal;
     let left = 0; for (let j = 1; j < N; j++) if (alive[j]) left++;
-    if (left === 0) setTimeout(() => announce('TABLE CLEARED!', 'win', `Cleared in ${shots} shot${shots === 1 ? '' : 's'}`, true), 1300);
+    if (left === 0) {
+      setTimeout(() => announce('TABLE CLEARED!', 'win', `Cleared in ${shots} shot${shots === 1 ? '' : 's'}`, true), 1300);
+      if (mine) setTimeout(() => { achievements.unlock('pool'); achievements.unlock('game'); }, 3200);   // after the table-cleared banner
+    }
     else if (shotPots === 0 && !scratched) setTimeout(() => (firstHit < 0 ? announce('AIR SHOT!', 'bad', 'No ball touched') : announce('MISS!', 'bad')), 500);
     if (mine) {
       if (shotPots > 0) { streak++; misses = 0; } else { streak = 0; misses++; }

@@ -23,6 +23,7 @@ import { initGames } from './games.js';
 import { initMinimap } from './minimap.js';
 import { initLifts } from './lifts.js';
 import { lvl } from './colliders.js';
+import { achievements } from './achievements.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -183,6 +184,11 @@ const settingsPage = () => ({
     { label: 'Back', action: () => menu.back() },
   ],
 });
+const achievementsPage = () => ({
+  title: 'Achievements',
+  extra: (() => { const t = achievements.tiles(); achievements.markSeen(); return t; })(),   // new ones pulse once; the corner badge clears
+  items: [{ label: 'Back', action: () => menu.back() }],
+});
 const playPage = () => ({
   title: 'Play',
   items: [
@@ -195,6 +201,7 @@ const mainPage = () => ({
   items: [
     { label: 'Play', hint: 'Pick your character, then walk the office with other people', action: () => (modes.list.length === 1 ? begin(modes.list[0].id) : menu.push(playPage)) },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
+    { label: 'Achievements', hint: 'Everything you can unlock in the office', action: () => menu.push(achievementsPage) },
     { label: 'Settings', hint: 'Mic and controls', action: () => menu.push(settingsPage) },
   ],
 });
@@ -205,6 +212,7 @@ const pausePage = () => ({
     { label: 'Resume', action: resume },
     { label: 'Games', hint: 'Create or join a game (press G in the world)', action: () => { resume(); games.open(); } },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
+    { label: 'Achievements', hint: 'Everything you can unlock in the office', action: () => menu.push(achievementsPage) },
     { label: 'Settings', hint: 'Mic and controls', action: () => menu.push(settingsPage) },
     { label: 'Quit', hint: 'Back to the start screen', action: quit },
   ],
@@ -270,10 +278,15 @@ const zoneEl = document.getElementById('zone');
 const hud = document.getElementById('hud');
 const promptEl = document.getElementById('prompt');
 let zone = '', zoneTimer = 0, fpsT = 0, frames = 0;
+const EXPLORE = ['Reception', 'Workspace', 'Meeting Room', 'Game Room', 'Terrace', 'Window Lounge', 'Cabin Corridor'];   // areas to visit for "Office Explorer"
+let visited = new Set();
+try { visited = new Set(JSON.parse(localStorage.getItem('pixbit-visited') || '[]')); } catch {}
+setInterval(() => { try { localStorage.setItem('pixbit-visited', JSON.stringify([...visited])); } catch {} }, 5000);
 function updateZone(dt) {
   const z = lifts.riding() ? 'Lift' : zoneAt(player.pos.x, player.pos.z);
   if (z !== zone) {
     zone = z; zoneEl.textContent = z; zoneEl.classList.add('show'); zoneTimer = 2.2;
+    if (started && z !== 'Lift') { visited.add(z); if (EXPLORE.every((a) => visited.has(a))) achievements.unlock('explorer'); }
   }
   // only truly inside the room (just past its entrance door, on the 4th floor, not in a lift): the lifts next to it don't count
   const p = player.pos;

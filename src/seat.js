@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SEATS } from './props.js';
+import { achievements } from './achievements.js';
 
 /**
  * Sit at a desk: walk up to a work chair and press E. The camera settles in front of the monitor and its screen
@@ -307,6 +308,7 @@ export function initSeat({ scene, camera, player, online, overlay, touch = false
       document.body.append(frame, bar);
     }
     browsing = true;
+    achievements.unlock('pixbit');
     if (document.pointerLockElement) document.exitPointerLock();   // the mouse is needed for the page
   }
   function hideBrowser() { browsing = false; if (frame) { frame.style.display = 'none'; bar.style.display = 'none'; } }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TV } from './world/game.js';
+import { achievements } from './achievements.js';
 
 /**
  * Game room TV arcade (suggestion 18). Walk up to the TV and press E:
@@ -77,7 +78,9 @@ export function initArcade({ scene, player }) {
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
     if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS || snake.some((s) => s.x === head.x && s.y === head.y)) {
-      over = true; best = Math.max(best, score); return;
+      over = true; best = Math.max(best, score);
+      achievements.unlock('game'); if (score >= 10) achievements.unlock('snake10');
+      return;
     }
     snake.unshift(head);
     if (head.x === food.x && head.y === food.y) { score++; step = Math.max(0.06, step - 0.003); placeFood(); }
