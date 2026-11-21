@@ -74,3 +74,22 @@ export function leave() {
   tone(c, t, { f0: 740, f1: 740, len: 0.18, vol: 0.1 });
   tone(c, t + 0.1, { f0: 494, f1: 494, len: 0.3, vol: 0.1 });
 }
+/** lift doors: real metro door recordings (cut from one clip); falls back to a synthesized hiss if the file can't play */
+const doorAudio = {};
+function door(name, vol, fallback) {
+  try {
+    const a = (doorAudio[name] ||= new Audio(`sounds/${name}.mp3`));
+    a.volume = vol; a.currentTime = 0;
+    const p = a.play();
+    if (p && p.catch) p.catch(fallback);
+  } catch { fallback(); }
+}
+function synthDoor() {
+  const c = ctx(); if (!c) return;
+  const t = c.currentTime;
+  burst(c, t, { f0: 6000, f1: 3500, len: 0.45, vol: 0.22, type: 'highpass', q: 0.5 });
+  burst(c, t + 0.15, { f0: 180, f1: 320, len: 1.0, vol: 0.2, type: 'lowpass', q: 0.7 });
+  tone(c, t + 1.1, { f0: 120, f1: 50, len: 0.2, vol: 0.4 });
+}
+export function liftOpen() { door('lift-open', 0.8, synthDoor); }
+export function liftClose() { door('lift-close', 0.8, synthDoor); }

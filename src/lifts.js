@@ -1,6 +1,6 @@
 import { LIFTS, GROUND_LIFTS, GROUND_LIGHTS, CABINS, GROUND_Y, LIFT_DEPTH as DEPTH, setLiftDisplay } from './world/hall.js';
 import { colliders, lvl } from './colliders.js';
-import { thud, join, whoosh } from './sfx.js';
+import { thud, join, liftOpen, liftClose } from './sfx.js';
 
 /**
  * Working lifts (suggestion 54).
@@ -10,8 +10,10 @@ import { thud, join, whoosh } from './sfx.js';
  * slides down / up the shaft; anyone inside is carried with it (player.state.baseY).
  */
 const OW = 1.16;               // door opening
-const DOOR_SPEED = 1.1;        // 1 / s
-const FRONT = [0.1, 2.4];      // "in front of the doors" reach (m)
+const OPEN_TIME = 3.5;         // s: matches the recorded door-open sound (slide, then the thunk at the end)
+const CLOSE_TIME = 2.6;        // s: matches the recorded door-close sound (slide, then the slam)
+const AUTO_CLOSE = 8;          // s an open door waits before closing by itself
+const FRONT =[0.1, 2.4];      // "in front of the doors" reach (m)
 const TRAVEL_TIME = 8;         // seconds the cabin takes from 4th to G (it passes 3, 2, 1 on the way: 2 s a floor)
 const FLOORS = ['4', '3', '2', '1', 'G'];
 
@@ -40,8 +42,8 @@ export function initLifts({ scene, camera, player }) {
   };
 
   function setOpen(L, open) {
+    if (!!L.ground === onGround() && !!open !== !!L.target) (open ? liftOpen : liftClose)();
     L.target = open ? 1 : 0;
-    if (open) { const i = colliders.indexOf(L.block); if (i >= 0) colliders.splice(i, 1); }
   }
 
   // ---- one shared cabin per lift number: it is on ONE floor at a time and really travels between them ----
@@ -63,6 +65,22 @@ export function initLifts({ scene, camera, player }) {
     return true;
   }
 
+  // ---- lifts stay locked for a new player until they have found the Game Room ----
+  const LOCK_KEY = 'pixbit-lifts-unlocked';
+  let unlocked = false;
+  try { unlocked = localStorage.getItem(LOCK_KEY) === '1'; } catch {}
+  const card = document.createElement('div');
+  card.style.cssText = 'position:fixed;z-index:20;left:50%;top:16%;transform:translate(-50%,-10px);max-width:min(92vw,380px);padding:14px 20px;border-radius:14px;'
+    + 'background:rgba(18,22,34,.92);color:#fff;font:14px/1.45 system-ui,sans-serif;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.45);'
+    + 'border:1px solid rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;';
+  document.body.appendChild(card);
+  let cardT = 0;
+  function showCard(icon, title, text, color, ms) {
+    card.innerHTML = `<div style="font-size:26px">${icon}</div><div style="font-weight:700;font-size:16px;color:${color};margin:2px 0 4px">${title}</div><div style="opacity:.9">${text}</div>`;
+    card.style.opacity = '1'; card.style.transform = 'translate(-50%,0)';
+    clearTimeout(cardT); cardT = setTimeout(() => { card.style.opacity = '0'; card.style.transform = 'translate(-50%,-10px)'; }, ms);
+  }
+
   const free = () => !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden');
   addEventListener('keydown', (e) => {
     if (e.repeat || !free() || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
@@ -75,7 +93,8 @@ export function initLifts({ scene, camera, player }) {
       if (s.at !== floorOf(L)) { go(L.n, floorOf(L)); return; }            // the cabin is elsewhere: call it
       if (L.target) { if (inDoorway(L)) return; setOpen(L, false); } else setOpen(L, true);
       emit({ t: 'lift', op: 'door', n: L.n, floor: floorOf(L), open: L.target });
-    } else if (e.code === 'KeyE' && inCabin(L) && s.at === floorOf(L) && s.phase === 'idle' && L.target === 1 && L.t === 1) {
+    } else if (e.code === 'KeyE' && inCabin(L) && s.at === floorOf(L) && s.phase === 'idle') {   // works with the doors open or shut
+      if (!unlocked) { showCard('🔒', 'Lift locked', 'Take a look around Pixbit first and visit the Game Room. The lift unlocks as soon as you get there.', '#ffd34a', 5000); return; }
       go(L.n, 1 - s.at);
     }
   });
@@ -115,7 +134,7 @@ export function initLifts({ scene, camera, player }) {
         if (s.carried || onGround() === !!s.at) join();                   // ding for anyone on that floor
       }
     } else if (s.phase === 'arrive') {
-      if (s.t > 0.5) { setOpen(cabinAt(s.n, s.at), true); s.phase = 'opening'; s.t = 0; if (onGround() === !!s.at) whoosh(0.4); }
+      if (s.t > 0.5) { setOpen(cabinAt(s.n, s.at), true); s.phase = 'opening'; s.t = 0; }
     } else if (s.phase === 'opening') {
       if (cabinAt(s.n, s.at).t === 1) { s.phase = 'idle'; if (s.carried) { player.state.paused = false; s.carried = false; } }
     }
@@ -124,7 +143,8 @@ export function initLifts({ scene, camera, player }) {
   function update(dt) {
     for (const L of all) {
       if (L.t !== L.target) {
-        L.t = L.target > L.t ? Math.min(1, L.t + dt * DOOR_SPEED) : Math.max(0, L.t - dt * DOOR_SPEED);
+        L.t = L.target > L.t ? Math.min(1, L.t + dt / OPEN_TIME) : Math.max(0, L.t - dt / CLOSE_TIME);
+        if (L.target && L.t > 0.5) { const i = colliders.indexOf(L.block); if (i >= 0) colliders.splice(i, 1); }   // walkable once half open
         const e = L.t * L.t * (3 - 2 * L.t);
         // each leaf folds away into its own jamb: it narrows toward the outer edge instead of sliding over the wall
         const sc = Math.max(0.001, 1 - e * 0.97);
@@ -133,10 +153,38 @@ export function initLifts({ scene, camera, player }) {
       }
     }
     for (const n in S) if (S[n].phase !== 'idle') step(S[n], dt);
+    // open doors shut by themselves after a while (not while someone stands in the doorway)
+    for (const L of all) {
+      if (L.target === 1 && L.t === 1 && S[L.n].phase === 'idle') {
+        L.openFor = (L.openFor || 0) + dt;
+        if (L.openFor > AUTO_CLOSE && !(!!L.ground === onGround() && inDoorway(L))) { L.openFor = 0; setOpen(L, false); }
+      } else L.openFor = 0;
+    }
   }
+
+  /** put lift n's cabin straight on floor `at` (0 upper, 1 ground): position, display and doors, no animation */
+  function park(n, at) {
+    const s = S[n];
+    if (!s || s.at === at && s.parked) return;
+    s.at = at; s.parked = true;
+    setLiftDisplay(n, '', FLOORS[at ? 4 : 0]);
+    if (cabins[n]) cabins[n].position.y = at ? GROUND_Y : 0;
+    const a = cabinAt(n, at), b = cabinAt(n, 1 - at);
+    if (b) { b.target = 0; if (b.t === 0 && !colliders.includes(b.block)) colliders.push(b.block); }
+    if (a) a.target = 0;                                  // doors start shut
+  }
+  // by default every lift starts on the ground floor (a player joining an existing game is synced by the snapshot)
+  for (const n in S) park(+n, 1);
 
   return {
     update,
+    /** called when the player reaches the Game Room: unlocks the lifts (once, remembered) and shows a card */
+    unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      try { localStorage.setItem(LOCK_KEY, '1'); } catch {}
+      showCard('🔓', 'Lift unlocked!', 'You found the Game Room. You can now ride the lifts between the floors.', '#6ee7a0', 5000);
+    },
     onChange: (f) => listeners.push(f),
     /** true while I am being carried (doors shut, cabin travelling) */
     riding: () => Object.values(S).some((s) => s.carried && s.phase !== 'idle'),
@@ -145,7 +193,7 @@ export function initLifts({ scene, camera, player }) {
       if (m.op === 'go') go(m.n, m.to, true);
       else if (m.op === 'door') { const s = S[m.n], L = s && cabinAt(m.n, m.floor); if (L && s.phase === 'idle' && s.at === m.floor) setOpen(L, !!m.open); }
       else if (m.op === 'snap' && Array.isArray(m.s)) {
-        for (const n of m.s) { const s = S[n]; if (s && s.phase === 'idle' && s.at === 0) { s.at = 1; setLiftDisplay(n, '', 'G'); if (cabins[n]) cabins[n].position.y = GROUND_Y; setOpen(cabinAt(n, 0), false); setOpen(cabinAt(n, 1), true); } }
+        for (const n in S) if (S[n].phase === 'idle') park(+n, m.s.includes(+n) || m.s.includes(n) ? 1 : 0);
       }
     },
     /** lifts parked on the ground floor, for someone who just joined */
@@ -157,7 +205,7 @@ export function initLifts({ scene, camera, player }) {
       if (s.carried) return '';
       if (s.phase !== 'idle') return `Lift ${L.n} is on its way`;
       if (s.at !== floorOf(L)) return `F call lift ${L.n}`;
-      if (inCabin(L) && L.target && L.t === 1) return `E ${onGround() ? 'go up' : 'go to the ground floor'}`;
+      if (inCabin(L)) return `E ${onGround() ? 'go up' : 'go to the ground floor'}`;
       if (L.target) return inDoorway(L) ? '' : `F close lift ${L.n}`;
       return `F open lift ${L.n}`;
     },

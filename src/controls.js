@@ -39,7 +39,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   addEventListener('keydown', (e) => {
     keys[e.code] = true;
     if (e.code === 'Space') { crouch = 0; jump(); }
-    if (e.code === 'KeyM' && !e.repeat && !state.paused && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+    if (e.code === 'KeyM' && !e.repeat && !state.paused && document.body.classList.contains('dev') &&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
       state.god = !state.god;
       if (!state.god) { vy = 0; feetY = Math.max(0, feetY); vel.set(0, 0, 0); } // drop back down and walk again
       const t = document.createElement('div');

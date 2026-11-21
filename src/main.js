@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildWorld, zoneAt, SPAWN, setHallDevSigns } from './world/index.js';
+import { MEET_Z1 as GR_Z0, GAME_X1 as GR_X1, GAME_Z1 as GR_Z1 } from './world/helpers.js';
 import { createPlayer } from './controls.js';
 import { mergeStatic } from './merge.js';
 import { initSuggestions } from './suggestions.js';
@@ -178,7 +179,6 @@ const settingsPage = () => ({
   title: 'Settings',
   items: [
     { label: micLabel, hint: 'Push to talk (hold V) or always-on mic. Press T in game to switch.', action() { online.setMicMode(online.micMode === 'ptt' ? 'open' : 'ptt'); menu.refresh(); } },
-    ...(DEV_BUILD ? [{ label: () => 'Dev mode: ' + (dev ? 'On' : 'Off'), hint: 'Suggestions tools (C / X / L). Press P in game to switch.', action() { setDev(!dev); menu.refresh(); } }] : []),
     { label: 'Controls', hint: 'Keys and mouse', action: () => menu.push({ title: 'Controls', extra: controlsEl, items: [{ label: 'Back', action: () => menu.back() }] }) },
     { label: 'Back', action: () => menu.back() },
   ],
@@ -195,7 +195,7 @@ const mainPage = () => ({
   items: [
     { label: 'Play', hint: 'Pick your character, then walk the office with other people', action: () => (modes.list.length === 1 ? begin(modes.list[0].id) : menu.push(playPage)) },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
-    { label: 'Settings', hint: 'Mic, dev mode and controls', action: () => menu.push(settingsPage) },
+    { label: 'Settings', hint: 'Mic and controls', action: () => menu.push(settingsPage) },
   ],
 });
 const pausePage = () => ({
@@ -205,7 +205,7 @@ const pausePage = () => ({
     { label: 'Resume', action: resume },
     { label: 'Games', hint: 'Create or join a game (press G in the world)', action: () => { resume(); games.open(); } },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
-    { label: 'Settings', hint: 'Mic, dev mode and controls', action: () => menu.push(settingsPage) },
+    { label: 'Settings', hint: 'Mic and controls', action: () => menu.push(settingsPage) },
     { label: 'Quit', hint: 'Back to the start screen', action: quit },
   ],
 });
@@ -224,15 +224,36 @@ document.body.classList.toggle('dev-build', DEV_BUILD);
 let dev = false;
 try { dev = DEV_BUILD && localStorage.getItem('pixbit-devmode') === '1'; } catch {}
 function setDev(on) {
-  on = DEV_BUILD && on;
   dev = on;
   document.body.classList.toggle('dev', on);
+  if (!on) player.state.god = false; // god mode is a dev-only tool
   suggest.setEnabled(on);
   setHallDevSigns(on);
   try { localStorage.setItem('pixbit-devmode', on ? '1' : '0'); } catch {}
 }
 addEventListener('keydown', (e) => { if (DEV_BUILD && e.code === 'KeyP' && e.shiftKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !suggest.isOpen()) setDev(!dev); });
 setDev(dev);
+
+// Cheat code: type it anywhere in game (not in a text box) to toggle dev mode, also on production builds.
+// Only its SHA-256 is stored, so reading the source doesn't reveal it. Obscurity, not security: everything here runs client-side.
+const CHEAT_HASH = '8fc93e277e46cb1c0ed372a16e72fa9d79f91862dd67cb9ce5e520180552b591';
+const CHEAT_LEN = 8;
+let cheatBuf = '';
+addEventListener('keydown', async (e) => {
+  if (e.repeat || !/^Key[A-Z]$/.test(e.code) || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  cheatBuf = (cheatBuf + e.code.slice(3).toLowerCase()).slice(-CHEAT_LEN);
+  if (cheatBuf.length < CHEAT_LEN || !crypto.subtle) return;
+  const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(cheatBuf)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  if (h === CHEAT_HASH) {
+    cheatBuf = ''; setDev(!dev);
+    const t = document.createElement('div'); // its own plain banner, not the "X joined" feed
+    t.textContent = dev ? 'Dev mode activated' : 'Dev mode deactivated';
+    t.style.cssText = 'position:fixed;top:56px;right:0;z-index:8;padding:12px 24px;background:rgba(0,0,0,.6);color:#fff;font:600 15px sans-serif;border-radius:8px 0 0 8px;pointer-events:none;opacity:0;transform:translateX(30px);transition:opacity .25s,transform .25s';
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'none'; });
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+  }
+});
 
 // ---- Quality toggle ----
 let high = true;
@@ -254,6 +275,9 @@ function updateZone(dt) {
   if (z !== zone) {
     zone = z; zoneEl.textContent = z; zoneEl.classList.add('show'); zoneTimer = 2.2;
   }
+  // only truly inside the room (just past its entrance door, on the 4th floor, not in a lift): the lifts next to it don't count
+  const p = player.pos;
+  if (zone === 'Game Room' && !lifts.riding() && lvl.cur === 0 && p.x > 0.4 && p.x < GR_X1 && p.z > GR_Z0 + 0.5 && p.z < GR_Z1) lifts.unlock();
   if (zoneTimer > 0 && (zoneTimer -= dt) <= 0) zoneEl.classList.remove('show');
 }
 

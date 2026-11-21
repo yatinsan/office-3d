@@ -52,8 +52,8 @@ export function buildLobby(root) {
   addBox(8.3, LOBBY_S - 0.08, LOBBY_E, LOBBY_S + 0.08);
 
   // ---- East: glass wall + entrance door ----
-  // One glass wall with the entrance door in it; the leaf opens with F (suggestion 23, src/doors.js). Hinge on the cabin side (z 7.6), swings into reception.
-  glassWall(root, { x0: LOBBY_E, z0: CAB_FRONT, x1: LOBBY_E, z1: LOBBY_S, h: LOBBY_CEIL, panel: 0.9, door: [7.6, 8.65], transom: 2.4, swing: -1, name: 'entrance door' });
+  // One glass wall with the entrance door in it; the leaf opens with F (suggestion 23, src/doors.js). Hinge on the south side (z 8.65), swings into reception.
+  glassWall(root, { x0: LOBBY_E, z0: CAB_FRONT, x1: LOBBY_E, z1: LOBBY_S, h: LOBBY_CEIL, panel: 0.9, door: [8.65, 7.6], transom: 2.4, swing: -1, name: 'entrance door' });
   box(root, M.metalDark, 0.06, 0.05, 0.4, LOBBY_E - 0.06, 2.3, 8.4, { shadow: false }); // door closer
   box(root, M.wall, 0.15, H - LOBBY_CEIL, LOBBY_S - CAB_FRONT, LOBBY_E, LOBBY_CEIL + (H - LOBBY_CEIL) / 2, (CAB_FRONT + LOBBY_S) / 2, { shadow: false });
   box(root, M.blackMatte, 0.6, 0.01, 1.0, LOBBY_E - 0.45, 0.005, 8.12, { shadow: false }); // doormat (inside)
