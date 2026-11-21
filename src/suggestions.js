@@ -406,8 +406,12 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
   armDelete($('.del'), async () => { if (editing?.id) { const s = editing; closeForm(); await deleteSuggestion(s); } });
   panel.querySelector('.close').onclick = () => togglePanel(false);
   function togglePanel(show = panel.classList.contains('sg-hidden')) {
+    const wasOpen = !panel.classList.contains('sg-hidden');
     panel.classList.toggle('sg-hidden', !show);
     if (show) { renderList(); if (document.pointerLockElement) document.exitPointerLock(); }
+    else if (wasOpen && !isOpen() && !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden')) {   // closing the panel gives the game its mouse back
+      try { const p = renderer.domElement.requestPointerLock(); if (p?.catch) p.catch(() => {}); } catch {}
+    }
   }
   function goTo(s) {
     if (s.view) {
@@ -494,8 +498,10 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
     if (e.code === 'Escape' && corner) { corner = null; clearDraft(); toast('Area cancelled'); }
     if (e.code === 'KeyC') suggestHere();
     if (e.code === 'KeyX') markCorner();
-    if (e.code === 'KeyL') togglePanel();
+    if (e.code === 'KeyL' && !e.repeat) lTimer = setTimeout(togglePanel, 350);   // delayed: typing "lift" (test cheat) must not drop the mouse lock
   });
+  let lTimer = 0;
+  addEventListener('keydown', e => { if (e.code !== 'KeyL' && lTimer) { clearTimeout(lTimer); lTimer = 0; } }, true);
 
   load();
   return {

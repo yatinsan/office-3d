@@ -83,6 +83,45 @@ export function initLifts({ scene, camera, player, navigate }) {
     clearTimeout(cardT); cardT = setTimeout(() => { asking = false; card.style.opacity = '0'; card.style.transform = 'translate(-50%,-10px)'; }, ms);
   }
 
+  // ---- achievement popup ----
+  // full-screen "mission passed" style popup: dark vignette, big gold title zooming in, fades out after a few seconds
+  const ach = document.createElement('div');
+  ach.style.cssText = 'position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;'
+    + 'background:radial-gradient(ellipse at center,rgba(0,0,0,.55) 0%,rgba(0,0,0,.85) 100%);color:#fff;font-family:system-ui,sans-serif;'
+    + 'opacity:0;pointer-events:none;transition:opacity .6s;';
+  document.body.appendChild(ach);
+  let achT = 0;
+  function achievement(icon, head, title, text) {
+    ach.innerHTML = `<div id="ach-i" style="font-size:min(18vw,110px);filter:drop-shadow(0 0 24px #ffd34a);transition:transform .9s cubic-bezier(.2,1.4,.4,1);transform:scale(.2) rotate(-25deg)">${icon}</div>`
+      + `<div style="margin-top:10px;font-size:min(3.4vw,15px);letter-spacing:.5em;text-transform:uppercase;color:#ffd34a;opacity:.9">${head}</div>`
+      + `<div id="ach-t" style="margin:6px 0 10px;font-weight:900;font-size:min(11vw,84px);letter-spacing:.06em;text-transform:uppercase;color:#ffd34a;text-shadow:0 0 30px rgba(255,211,74,.6),0 4px 0 #8a6a00;transition:transform 1.2s cubic-bezier(.1,.9,.2,1),letter-spacing 1.2s;transform:scale(1.6)">${title}</div>`
+      + `<div style="max-width:min(90vw,520px);font-size:min(4vw,18px);opacity:.85;line-height:1.5">${text}</div>`;
+    ach.style.opacity = '1';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const i = ach.querySelector('#ach-i'), t = ach.querySelector('#ach-t');
+      if (i) i.style.transform = 'scale(1) rotate(0)'; if (t) t.style.transform = 'scale(1)';
+    }));
+    clearTimeout(achT); achT = setTimeout(() => { ach.style.opacity = '0'; }, 5000);
+    try {   // little rising chime
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      [660, 880, 1320].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * 0.12;
+        o.type = 'triangle'; o.frequency.value = f; o.connect(g); g.connect(ac.destination);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        o.start(t); o.stop(t + 0.4);
+      });
+      setTimeout(() => ac.close(), 1500);
+    } catch {}
+  }
+
+  // typing "lift" replays the achievement toast (for testing)
+  let typed = '';
+  addEventListener('keydown', (e) => {
+    if (e.repeat || !/^Key[A-Z]$/.test(e.code)) return;   // no dev/input checks: "L" opens the dev suggestion box, which would swallow "ift"
+    typed = (typed + e.code.slice(3).toLowerCase()).slice(-4);
+    if (typed === 'lift') { typed = ''; achievement('🏆', 'Achievement unlocked', 'Lifts unlocked', 'You found the Game Room. You can now ride the lifts between floors.'); }
+  });
+
   const free = () => !player.state.paused && document.getElementById('overlay')?.classList.contains('hidden');
   addEventListener('keydown', (e) => {
     if (e.repeat || !free() || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
@@ -191,7 +230,7 @@ export function initLifts({ scene, camera, player, navigate }) {
       if (unlocked) return;
       unlocked = true; navigate?.(false);
       try { localStorage.setItem(LOCK_KEY, '1'); } catch {}
-      showCard('🔓', 'Lift unlocked!', 'You found the Game Room. You can now ride the lifts between the floors.', '#6ee7a0', 5000);
+      achievement('🏆', 'Achievement unlocked', 'Lifts unlocked', 'You found the Game Room. You can now ride the lifts between floors.');
     },
     onChange: (f) => listeners.push(f),
     /** true while I am being carried (doors shut, cabin travelling) */
