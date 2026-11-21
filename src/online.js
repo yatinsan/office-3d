@@ -390,7 +390,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       return;
     }
     camera.getWorldDirection(meDir);
-    me.target(player.pos.x, selfSeated ? 0 : Math.max(0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false, false, Math.asin(Math.max(-1, Math.min(1, meDir.y))));
+    me.target(player.pos.x, selfSeated ? 0 : Math.max(player.state.baseY || 0, camera.position.y - EYE), player.pos.z, yawOv ?? Math.atan2(-meDir.x, -meDir.z), false, false, Math.asin(Math.max(-1, Math.min(1, meDir.y))));
     me.setSeated(selfSeated);
     me.setCrouch(player.state.crouch);
     me.setReach(reach?.aim, reach?.k || 0);
@@ -718,7 +718,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     if (creating) return;
     camera.getWorldDirection(dir);
     const yaw = yawOv ?? Math.atan2(-dir.x, -dir.z);
-    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0, +Math.asin(Math.max(-1, Math.min(1, dir.y))).toFixed(2), player.state.crouch > 0.5 ? 1 : 0]);
+    const msg = JSON.stringify([+player.pos.x.toFixed(2), selfSeated ? 0 : +Math.max(player.state.baseY || 0, camera.position.y - EYE).toFixed(2), +player.pos.z.toFixed(2), +yaw.toFixed(1), talking ? 1 : 0, lastMuted ? 1 : 0, selfKo ? 1 : 0, selfSeated ? 1 : 0, +Math.asin(Math.max(-1, Math.min(1, dir.y))).toFixed(2), player.state.crouch > 0.5 ? 1 : 0]);
     if (!force && msg === lastSent && heartbeat < (selfSeated ? 3 : 1)) return;
     lastSent = msg; heartbeat = 0;
     for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') { try { p.dc.send(msg); } catch {} }
@@ -756,7 +756,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   return {
     id: 'online', name: 'Open World',
     /** world positions + colours of the other players (for the minimap) */
-    peerDots() { const r = []; for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') r.push({ x: p.avatar.group.position.x, z: p.avatar.group.position.z, color: p.color }); return r; },
+    peerDots() { const r = []; for (const p of peers.values()) if (p.dc && p.dc.readyState === 'open') r.push({ x: p.avatar.group.position.x, z: p.avatar.group.position.z, y: p.avatar.group.position.y, color: p.color }); return r; },
     desc: 'Explore with other people online and talk: push to talk or always-on mic.',
     start() {
       on = true; box.classList.add('show'); showHud(true); if (touch) pttBtn.classList.add('show');

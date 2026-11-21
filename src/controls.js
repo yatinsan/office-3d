@@ -21,7 +21,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
   camera.rotation.set(0, yaw, 0, 'YXZ');
 
   // Fallback for embedded browsers that block Pointer Lock: click-and-drag to look.
-  const state = { dragMode: false, paused: false, stunned: false, crouch: 0 }; // paused: a form is open, ignore movement keys; stunned: knocked out
+  const state = { dragMode: false, paused: false, stunned: false, crouch: 0, baseY: 0 }; // paused: a form is open, ignore movement keys; stunned: knocked out
   let dragging = false, lastX = 0, lastY = 0;
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
   domElement.addEventListener('mousedown', (e) => { if (state.dragMode) { dragging = true; lastX = e.clientX; lastY = e.clientY; } });
@@ -84,7 +84,7 @@ export function createPlayer(camera, domElement, { spawn, yaw = 0 }) {
     // looking down: the head leans a little forward (same eye height), like a person bending their neck
     const dn = Math.min(1, Math.max(0, -camera.rotation.x) / 0.8);
     const fw = dn * 0.12;
-    camera.position.set(pos.x - Math.sin(camera.rotation.y) * fw, EYE - 0.6 * crouch + feetY + bob, pos.z - Math.cos(camera.rotation.y) * fw);
+    camera.position.set(pos.x - Math.sin(camera.rotation.y) * fw, EYE - 0.6 * crouch + feetY + bob + state.baseY, pos.z - Math.cos(camera.rotation.y) * fw);
   }
 
   return { controls, update, pos, state, touch, jump };

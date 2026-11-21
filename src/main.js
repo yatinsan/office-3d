@@ -21,6 +21,7 @@ import { initSeat } from './seat.js';
 import { initGames } from './games.js';
 import { initMinimap } from './minimap.js';
 import { initLifts } from './lifts.js';
+import { lvl } from './colliders.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -248,7 +249,7 @@ const hud = document.getElementById('hud');
 const promptEl = document.getElementById('prompt');
 let zone = '', zoneTimer = 0, fpsT = 0, frames = 0;
 function updateZone(dt) {
-  const z = zoneAt(player.pos.x, player.pos.z);
+  const z = lifts.riding() ? 'Lift' : zoneAt(player.pos.x, player.pos.z);
   if (z !== zone) {
     zone = z; zoneEl.textContent = z; zoneEl.classList.add('show'); zoneTimer = 2.2;
   }
@@ -300,7 +301,7 @@ renderer.setAnimationLoop(() => {
   }
   frames++; fpsT += dt;
   if (fpsT > 0.5) {
-    const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt() || lifts.prompt();
+    const near = lvl.cur ? lifts.prompt() : arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt() || lifts.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
       if (promptEl.dataset.t !== (near || '')) { // "F open door" -> [F] | Open door, like the lock box
@@ -321,4 +322,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer, doors, pool } });
+Object.assign(window, { __office: { scene, camera, player, renderer, doors, pool, lifts } });

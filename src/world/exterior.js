@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { M } from '../materials.js';
+import { X0, X1, LNZ0, LNZ1, CEIL, GROUND_Y, LIFTS, LIFT_DEPTH } from './hall.js';
 import { buildLandscape } from './landscape.js';
 import { box } from '../props.js';
 import { buildTerrace, TX } from './terrace.js';
@@ -45,7 +46,22 @@ export function buildExterior(root) {
 
   // ---- Building body below the floor ----
   const BW = 20 - TX;
-  box(root, M.wallWarm, BW, FLOOR_DROP, GAME_Z1 + 1.2, TX + BW / 2, -FLOOR_DROP / 2 - 0.01, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
+  // The ground floor (src/world/hall.js) is built inside this body, right under the 4th floor, so the body is cut around it:
+  // solid below the ground floor's slab and above its ceiling, and in between only where the corridors are not.
+  const zA = -0.5, zB = GAME_Z1 + 0.7, gy = GROUND_Y - 0.02, gt = GROUND_Y + CEIL + 0.05; // body z range, floor level, top of the ground ceiling
+  const part = (xa, xb, za, zb, ya, yb) => { if (xb > xa + 0.01 && zb > za + 0.01) box(root, M.wallWarm, xb - xa, yb - ya, zb - za, (xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2, { shadow: false }); };
+  part(TX, 20, zA, zB, -FLOOR_DROP, gy);        // under the ground floor
+  part(TX, 20, zA, zB, gt, 0);                  // between its ceiling and the 4th floor
+  // the middle band: west of the hall, east of the hall (up to the side corridor), minus the lift shafts the cabins stop in
+  let band = [[TX, X0 - 0.1, zA, zB], [X1 + 0.02, 20, zA, Math.min(zB, LNZ0)], [X1 + 0.02, 20, Math.max(zA, LNZ1), zB]];
+  for (const L of LIFTS) {
+    const xs = [L.x - L.out * 0.1, L.x - L.out * (0.1 + LIFT_DEPTH + 0.06)], hole = [Math.min(...xs), Math.max(...xs), L.z - L.cw / 2 - 0.06, L.z + L.cw / 2 + 0.06];
+    band = band.flatMap(([xa, xb, za, zb]) => {
+      if (hole[1] <= xa || hole[0] >= xb || hole[3] <= za || hole[2] >= zb) return [[xa, xb, za, zb]];
+      return [[xa, hole[0], za, zb], [hole[1], xb, za, zb], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), za, hole[2]], [Math.max(xa, hole[0]), Math.min(xb, hole[1]), hole[3], zb]];
+    });
+  }
+  for (const [xa, xb, za, zb] of band) part(xa, xb, za, zb, gy, gt);
   for (let i = 1; i < 12; i++) box(root, M.blackMatte, 0.05, 0.25, GAME_Z1 + 1.3, TX - 0.01, -i * 3.4, (GAME_Z1 - 1) / 2 + 0.1, { shadow: false });
   void LOBBY_E; void W;
 

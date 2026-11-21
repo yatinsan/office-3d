@@ -1968,8 +1968,8 @@
   },
   {
     "point": [
-      216,
-      1.42,
+      16,
+      -2.78,
       29.89
     ],
     "normal": [
@@ -1980,7 +1980,7 @@
     "zone": "Ground Floor",
     "target": "",
     "view": {
-      "x": 213.24,
+      "x": 13.24,
       "z": 29.95,
       "yaw": -1.55,
       "pitch": -0.08
@@ -1995,5 +1995,65 @@
     "folder": "055-like-4-th-flor-add-a",
     "files": [],
     "reply": "Extended the Ground Floor corridor off the east wall to three times its first length: now 15 m (the upstairs lounge is 11 m), at the same spot as the upstairs lounge (z 26.4–32.8). Solid walls both sides and at the end, no sofa, no window, with its own ceiling light. The east wall has an opening there with a header over it."
+  },
+  {
+    "point": [
+      12.65,
+      -2.8,
+      27.4
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "zone": "Ground Floor",
+    "target": "",
+    "view": {
+      "x": 12.92,
+      "z": 29.81,
+      "yaw": 0.11,
+      "pitch": -0.1
+    },
+    "text": "fix this issue, like a wall glich",
+    "section": "Ground Floor",
+    "status": "done",
+    "updated": 1795284572275,
+    "id": "smwqq0mky",
+    "n": 56,
+    "created": 1795284464727,
+    "folder": "056-fix-this-issue-like-a-wall",
+    "files": [],
+    "reply": "The big white wall across the ground-floor corridor was the solid body of the building (the block under the office floor) running through the ground floor. I cut the block around the ground floor: solid below its floor and above its ceiling, open where the corridors are, so the whole corridor is clear now."
+  },
+  {
+    "point": [
+      10.25,
+      -2.89,
+      27.79
+    ],
+    "normal": [
+      1,
+      0,
+      0
+    ],
+    "zone": "Ground Floor",
+    "target": "",
+    "view": {
+      "x": 12.73,
+      "z": 28.62,
+      "yaw": 1.25,
+      "pitch": -0.13
+    },
+    "text": "there is some object u crated un wanted , so remove that with just like matching 4 th floor outer build and think like that remove other thing in groudn flor like",
+    "section": "Ground Floor",
+    "status": "done",
+    "updated": 1795284981912,
+    "id": "smwqq5878",
+    "n": 57,
+    "created": 1795284679371,
+    "folder": "057-there-is-some-object-u-crated",
+    "files": [],
+    "reply": "Fixed the glitch after the lift opens on the ground floor: a beige slab of the building body was standing inside the cabin and in the doorway, because the body block ends partway through lifts 3 and 4. I cut each lift's shaft (and the doorway) out of the body, so the opened door now shows the clear corridor. I also checked the rest of the ground floor: it only has the corridor, lifts, signs, and lights, nothing else extra."
   }
 ]

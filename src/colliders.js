@@ -2,9 +2,11 @@ import * as THREE from 'three';
 
 // Axis-aligned boxes on the floor plan (x/z). Everything solid is a box.
 export const colliders = [];
+/** Floor levels share the same x/z (the ground floor is built right under the 4th): build = level new boxes belong to, cur = level the player is on. */
+export const lvl = { build: 0, cur: 0 };
 
 export function addBox(minX, minZ, maxX, maxZ) {
-  colliders.push({ minX: Math.min(minX, maxX), maxX: Math.max(minX, maxX), minZ: Math.min(minZ, maxZ), maxZ: Math.max(minZ, maxZ) });
+  colliders.push({ minX: Math.min(minX, maxX), maxX: Math.max(minX, maxX), minZ: Math.min(minZ, maxZ), maxZ: Math.max(minZ, maxZ), lv: lvl.build });
 }
 
 const _box = new THREE.Box3();
@@ -21,6 +23,7 @@ export function blocked(x, z, r) { return !!hits(x, z, r); }
 
 function hits(x, z, r) {
   for (const c of colliders) {
+    if ((c.lv || 0) !== lvl.cur) continue;
     if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return c;
   }
   return null;

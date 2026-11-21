@@ -440,7 +440,7 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
       if (p.x < 0.35) return `Window ${label.toLowerCase()}`;
       if (p.x > 9.8 && p.z > 9.5) return 'East wall';
       if (p.z > 18.4) return 'Back wall';
-      return `${label} (${zoneAt(p.x, p.z)})`;
+      return `${label} (${zoneAt(p.x, p.z, p.y)})`;
     }
     if (label) return label;
     if (n.y > 0.7 && p.y < 0.1) return 'Floor';
@@ -459,7 +459,7 @@ export function initSuggestions({ scene, camera, player, world, zoneAt, renderer
     openForm({
       point: [r2(p.x), r2(p.y), r2(p.z)],
       normal: [r2(a.normal.x), r2(a.normal.y), r2(a.normal.z)],
-      zone: zoneAt(p.x, p.z), near: a.target || nearItem(p.x, p.z), target: a.target, view: view(),
+      zone: zoneAt(p.x, p.z, p.y), near: a.target || nearItem(p.x, p.z), target: a.target, view: view(),
     });
   }
   function markCorner() {

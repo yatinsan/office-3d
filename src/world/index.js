@@ -7,7 +7,9 @@ import { buildWorkspace } from './workspace.js';
 import { buildExterior } from './exterior.js';
 import { buildMeetingRoom } from './meeting.js';
 import { buildGameRoom } from './game.js';
-import { buildHall, buildGroundFloor, GROUND_DX, setHallDevSigns } from './hall.js';
+import * as THREE from 'three';
+import { lvl } from '../colliders.js';
+import { buildHall, buildGroundFloor, GROUND_Y, setHallDevSigns } from './hall.js';
 export { setHallDevSigns };
 
 // Start in reception, facing the logo wall (west).
@@ -22,7 +24,9 @@ export function buildWorld(root) {
   buildCeilings(root);
   buildLobby(root);
   buildHall(root);
-  buildGroundFloor(root);
+  // ground floor: directly under the 4th floor (same x/z), its own collision level
+  const gg = new THREE.Group(); gg.position.y = GROUND_Y; root.add(gg);
+  lvl.build = 1; buildGroundFloor(gg); lvl.build = 0;
   buildCorridor(root);
   buildWorkspace(root);
   buildExterior(root);
@@ -31,8 +35,8 @@ export function buildWorld(root) {
 }
 
 /** Named areas for the on-screen zone label. */
-export function zoneAt(x, z) {
-  if (x > GROUND_DX - 50) return 'Ground Floor';
+export function zoneAt(x, z, y) {
+  if (y !== undefined ? y < -2 : lvl.cur === 1) return 'Ground Floor'; // y: a pinned point's height; without it, the floor I am on
   if (x > LOBBY_E) return 'Building Hall';
   if (x < 0) return 'Terrace';
   if (z > MEET_Z1) return 'Game Room';
