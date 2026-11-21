@@ -16,7 +16,7 @@ function lockTexture(open) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d');
-  const col = open ? '#3ddc84' : '#ff5a4f';
+  const col = open ? '#3ddc84' : '#ff3b30';
   g.fillStyle = 'rgba(12,14,18,.85)'; g.strokeStyle = col; g.lineWidth = 7;
   g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill(); g.stroke();
   g.lineWidth = 9; g.lineCap = 'round';
@@ -34,16 +34,17 @@ function lockTexture(open) {
 }
 
 const CSS = `
-#unlockbox { position: fixed; top: 16px; right: 16px; z-index: 7; display: flex; align-items: center; gap: 12px;
-  background: rgba(0,0,0,.86); color: #fff; padding: 10px 16px 10px 10px; border-radius: 6px; pointer-events: none;
-  font: 600 14px/1.25 system-ui, sans-serif; letter-spacing: .2px; box-shadow: 0 4px 18px rgba(0,0,0,.35);
+#unlockbox { position: fixed; top: 16px; right: 16px; z-index: 7; display: flex; align-items: stretch; gap: 0; min-width: 270px;
+  background: rgba(24,24,26,.92); color: #fff; padding: 0; border-radius: 2px; pointer-events: none; overflow: hidden;
+  font: 700 22px/1.2 system-ui, sans-serif; box-shadow: 0 4px 18px rgba(0,0,0,.35), inset 0 -3px 0 var(--uc, #ff3b30);
   opacity: 0; transform: translateY(-6px); transition: opacity .18s, transform .18s; }
 #unlockbox.show { opacity: 1; transform: none; }
-#unlockbox svg { width: 44px; height: 44px; flex: none; }
+#unlockbox svg { width: 60px; height: 60px; flex: none; margin: 0; padding: 8px; box-sizing: border-box; background: var(--uc, #ff3b30); }
 #unlockbox .ring { transform: rotate(-90deg); transform-origin: 22px 22px; }
-#unlockbox small { display: block; font-weight: 400; font-size: 12px; color: rgba(255,255,255,.65); margin-top: 2px; }
+#unlockbox .txt { padding: 10px 22px 12px 16px; margin: 8px 0; border-left: 1px solid rgba(255,255,255,.3); }
+#unlockbox small { display: block; font-weight: 400; font-size: 15px; color: rgba(255,255,255,.75); margin-top: 2px; }
 #unlockbox kbd { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid rgba(255,255,255,.7); border-radius: 3px;
-  font: 700 12px/18px system-ui, sans-serif; text-align: center; }
+  font: 700 13px/19px system-ui, sans-serif; text-align: center; }
 `;
 
 export function initUnlock({ scene, player, camera, doors, touch = false }) {
@@ -57,20 +58,20 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
   icon.scale.set(0.13, 0.13, 1);
   icon.position.set(READER.x + 0.06, READER.y + 0.24, READER.z);
   icon.renderOrder = 20;
-  scene.add(icon);
+  icon.visible = false; // (the lock now lives in the wall panel only)
   const ledMat = new THREE.MeshStandardMaterial({ color: '#ff3b30', emissive: '#ff3b30', emissiveIntensity: 1.6 });
   const led = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.012, 0.03), ledMat);
   led.position.set(READER.x + 0.018, READER.y + 0.055, READER.z);
   scene.add(led);
 
   // ---- small black box beside the lock icon (same text as the top-right box), only shown when you are near ----
-  const lc = document.createElement('canvas'); lc.width = 512; lc.height = 150;
+  const lc = document.createElement('canvas'); lc.width = 896; lc.height = 192;
   const lg = lc.getContext('2d');
   const labelTex = new THREE.CanvasTexture(lc); labelTex.colorSpace = THREE.SRGBColorSpace;
-  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true }));
-  label.scale.set(0.4, 0.4 * 150 / 512, 1);
-  label.center.set(0, 0.5); // grows from its left edge: sits just right of the icon (towards the door) seen from the hall
-  label.position.set(READER.x + 0.06, READER.y + 0.24, READER.z - 0.09);
+  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false, depthWrite: false }));
+  label.scale.set(0.62, 0.62 * 192 / 896, 1);
+  label.center.set(0.5, 0.5);
+  label.position.set(READER.x + 0.12, READER.y + 0.4, READER.z);
   label.renderOrder = 20;
   scene.add(label);
   let labelKey = '';
@@ -78,15 +79,28 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
     const key = `${title}|${sub}|${Math.round(frac * 40)}|${color}`;
     if (key === labelKey) return;
     labelKey = key;
-    lg.clearRect(0, 0, 512, 150);
-    lg.fillStyle = 'rgba(0,0,0,.86)';
-    lg.beginPath(); lg.roundRect(4, 4, 504, 142, 16); lg.fill();
-    lg.fillStyle = '#fff'; lg.font = '600 46px system-ui, sans-serif'; lg.textBaseline = 'alphabetic';
-    lg.fillText(title, 30, 66);
-    lg.fillStyle = 'rgba(255,255,255,.65)'; lg.font = '400 30px system-ui, sans-serif';
-    lg.fillText(sub, 30, 108);
-    lg.fillStyle = 'rgba(255,255,255,.18)'; lg.fillRect(30, 124, 452, 8);
-    lg.fillStyle = color; lg.fillRect(30, 124, 452 * Math.max(0, Math.min(1, frac)), 8);
+    const unlocking = color === '#fff';
+    const c = unlocking ? '#ff3b30' : color;                 // main accent: red locked, green open
+    const glyph = c === '#ff3b30' ? '#ff6a5c' : c;
+    const W = 896, H = 192;
+    lg.clearRect(0, 0, W, H);
+    lg.fillStyle = 'rgba(28,28,30,.96)'; lg.fillRect(190, 0, W - 190, H - 6);   // text panel
+    lg.fillStyle = c; lg.fillRect(190, H - 6, W - 190, 6);                      // bottom line
+    if (unlocking) { lg.fillStyle = '#ecc828'; lg.fillRect(190, H - 6, (W - 190) * Math.max(0, Math.min(1, frac)), 6); }
+    else if (frac < 1) { lg.fillStyle = 'rgba(28,28,30,.96)'; lg.fillRect(190 + (W - 190) * Math.max(0, frac), H - 6, W, 6); } // countdown shrinks the line
+    // icon tile: dark square, coloured outline, glowing padlock
+    lg.fillStyle = 'rgba(28,28,30,.98)'; lg.fillRect(4, 4, 184, 184);
+    lg.shadowColor = c; lg.shadowBlur = 14; lg.strokeStyle = c; lg.lineWidth = 7; lg.strokeRect(5, 5, 182, 182); lg.shadowBlur = 0;
+    lg.strokeStyle = glyph; lg.fillStyle = glyph; lg.lineWidth = 15; lg.lineCap = 'butt';
+    lg.beginPath(); lg.moveTo(70, 98); lg.lineTo(70, 78); lg.arc(96, 78, 26, Math.PI, 0); lg.lineTo(122, 98); lg.stroke();
+    lg.beginPath(); lg.roundRect(56, 92, 80, 66, 12); lg.fill();
+    lg.fillStyle = 'rgba(28,28,30,1)'; lg.beginPath(); lg.arc(96, 117, 9, 0, Math.PI * 2); lg.fill(); lg.fillRect(92, 120, 8, 20);
+    // divider + text
+    lg.fillStyle = c; lg.fillRect(222, 46, 4, 100);
+    lg.fillStyle = '#fff'; lg.font = '700 64px system-ui, sans-serif'; lg.textBaseline = 'alphabetic';
+    lg.fillText(title, 256, 98);
+    lg.fillStyle = 'rgba(255,255,255,.8)'; lg.font = '400 40px system-ui, sans-serif';
+    lg.fillText(sub, 256, 152);
     labelTex.needsUpdate = true;
   };
 
@@ -108,11 +122,13 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
   const ring = box.querySelector('.ring'), keyText = box.querySelector('text'), txt = box.querySelector('.txt');
   let shownHtml = '';
   const setBox = (show, html, frac, color, key) => {
+    return; // top-right box removed: the single panel above the reader says it all
     box.classList.toggle('show', show);
     if (!show) return;
+    box.style.setProperty('--uc', color === '#fff' ? '#ecc828' : color); // red locked, yellow unlocking, green open
     if (html !== shownHtml) { txt.innerHTML = html; shownHtml = html; }
     ring.setAttribute('stroke-dashoffset', String(C * (1 - frac)));
-    ring.setAttribute('stroke', color);
+    ring.setAttribute('stroke', '#fff');
     keyText.textContent = key;
   };
 
@@ -178,28 +194,28 @@ export function initUnlock({ scene, player, camera, doors, touch = false }) {
     // lock icon + its black box: only when you are near the reader or the door (from the hall)
     const dReader = Math.hypot(player.pos.x - READER.x, player.pos.z - READER.z);
     const close = outside() && (dReader < 1.8 || atDoor());
-    icon.visible = label.visible = close;
+    label.visible = close;
     if (close) {
-      if (state === 'open') { const s = Math.max(0, Math.ceil(timer)); drawLabel('Door unlocked', timer > 0 ? `Locks again in ${s}s` : 'Clear the doorway to lock', Math.max(0, timer) / OPEN_FOR, '#34d058'); }
-      else if (state === 'closing') drawLabel('Locking…', 'Door closing', 0, '#ff5a4f');
-      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : touch ? 'Hold the button' : 'Hold F to unlock', progress > 0 ? (touch ? 'Keep holding' : 'Keep holding F') : 'Place your finger', progress, '#fff');
-      else drawLabel('Locked', 'Use fingerprint to unlock', 1, '#ff5a4f');
+      if (state === 'open') { const s = Math.max(0, Math.ceil(timer)); drawLabel('Door Unlocked', timer > 0 ? `Locks again in ${s}s` : 'Clear the doorway to lock', Math.max(0, timer) / OPEN_FOR, '#34d058'); }
+      else if (state === 'closing') drawLabel('Locking…', 'Door closing', 0, '#ff3b30');
+      else if (near) drawLabel(progress > 0 ? 'Unlocking…' : 'Door Locked', progress > 0 ? (touch ? 'Keep holding' : 'Keep holding F') : touch ? 'Hold the button to unlock' : 'Place your finger to unlock', progress, '#fff');
+      else drawLabel('Door Locked', 'Place your finger to unlock', 1, '#ff3b30');
     }
 
     // top-right box
     const hasBox = near || (state !== 'locked' && Math.hypot(player.pos.x - LOBBY_E, player.pos.z - DOOR_Z) < 5);
     if (state === 'locked') {
-      if (!near && atDoor()) setBox(true, 'Use fingerprint to unlock<small>Reader on the wall beside the door</small>', 1, '#ff5a4f', '🔒');
-      else setBox(near, progress > 0 ? `Unlocking…<small>Keep holding ${touch ? 'the button' : '<kbd>F</kbd>'}</small>` : touch ? 'Hold the button to unlock<small>Pixbit entrance</small>' : 'Press and hold <kbd>F</kbd> to unlock<small>Pixbit entrance</small>', progress, '#fff', KEY);
+      if (!near && atDoor()) setBox(true, 'Door Locked<small>Place your finger to unlock</small>', 1, '#ff3b30', '🔒');
+      else setBox(near, progress > 0 ? `Unlocking…<small>Keep holding ${touch ? 'the button' : '<kbd>F</kbd>'}</small>` : touch ? 'Door Locked<small>Hold the button to unlock</small>' : 'Door Locked<small>Hold <kbd>F</kbd> to unlock</small>', progress, '#fff', KEY);
     } else if (state === 'open') {
       const s = Math.max(0, Math.ceil(timer));
       setBox(hasBox, timer > 0 ? `Door unlocked<small>Locks again in ${s}s</small>` : 'Door unlocked<small>Clear the doorway to lock</small>', Math.max(0, timer) / OPEN_FOR, '#34d058', String(s));
-    } else setBox(hasBox, 'Locking…<small>Door closing</small>', 0, '#ff5a4f', '🔒');
+    } else setBox(hasBox, 'Locking…<small>Door closing</small>', 0, '#ff3b30', '🔒');
   }
 
   /** HUD / touch-button hint. */
   function prompt() {
-    return state === 'locked' && inZone() ? 'F hold to unlock door' : '';
+    return state === 'locked' && inZone() ? 'F open door' : '';
   }
 
   /** Where your own right hand should be: k 0 = down at your side, 1 = on the reader. */

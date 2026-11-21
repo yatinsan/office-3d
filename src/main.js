@@ -285,7 +285,12 @@ renderer.setAnimationLoop(() => {
     const near = arcade.prompt() || pool.prompt() || seat.prompt() || (modes.current === hunt && hunt.prompt()) || doors.prompt() || unlock.prompt() || ladies.prompt();
     if (touchUI) { touchUI.setAction(near); hud.textContent = ''; promptEl.textContent = ''; }
     else {
-      promptEl.textContent = near || '';
+      if (promptEl.dataset.t !== (near || '')) { // "F open door" -> [F] | Open door, like the lock box
+        promptEl.dataset.t = near || '';
+        const m = /^(F \/ click|F|E|V|R|C) (.+)$/.exec(near || '');
+        if (m) promptEl.innerHTML = `<span class="pk${m[1].length > 1 ? ' wide' : ''}">${m[1]}</span><span class="pt">${m[2].replace(/\w/g, (c) => c.toUpperCase())}</span>`;
+        else promptEl.innerHTML = near ? `<span class="pt">${near}</span>` : '';
+      }
       hud.textContent = `${Math.round(frames / fpsT)} fps · ${high ? 'high' : 'low'} (Q)${dev ? ' · DEV · C suggest · X area · L list' : ''}${player.state.dragMode ? ' · drag to look' : ''}`;
     }
     frames = 0; fpsT = 0;
