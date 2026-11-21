@@ -52,6 +52,8 @@ function findRoute(sx, sz, tx, tz) {
   return pts.reverse().filter((_, i, a) => i % 3 === 0 || i === a.length - 1);
 }
 
+import { alarmState } from './alarm.js';
+
 export function initMinimap({ camera, player, online }) {
   // the way from the lift: the fingerprint door -> the lounge balcony door -> the balcony -> along the terrace -> the meeting room -> the game room door
   const WP = [[11.3, 8.1], [9.0, 8.1], [1.6, 5.7], [-2.8, 5.7], [-1.6, 20.8], [0.9, 20.8], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 - 0.6], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 + 0.9]];
@@ -75,6 +77,11 @@ export function initMinimap({ camera, player, online }) {
     const W = cv.width, H = cv.height, yaw = camera.rotation.y, px = player.pos.x, pz = player.pos.z;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    if (alarmState.on) {                         // red glow over the whole map, rising and fading
+      const p = 0.5 + 0.5 * Math.sin(performance.now() / 1000 * Math.PI * 2 * 1.1), g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2);
+      g.addColorStop(0, `rgba(255,30,20,${0.12 + 0.3 * p})`); g.addColorStop(1, `rgba(255,30,20,${0.3 + 0.5 * p})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
     ctx.translate(W / 2, H / 2); ctx.rotate(yaw); ctx.scale(k, k); ctx.translate(-px, -pz);
     ctx.fillStyle = '#e4e8ee'; ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 5; // soft dark glow keeps the walls readable on any background
     const m = RANGE * 2;
@@ -90,6 +97,15 @@ export function initMinimap({ camera, player, online }) {
     if (routeOn && route && route.length > 1 && !lvl.cur) {   // the way to the Game Room: a dashed yellow line
       ctx.save(); ctx.shadowBlur = 0; ctx.strokeStyle = '#ecc828'; ctx.lineWidth = 0.28; ctx.setLineDash([0.6, 0.45]); ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(px, pz); for (const p of route) ctx.lineTo(p.x, p.z); ctx.stroke(); ctx.restore();
+    }
+    const pulse = alarmState.on ? 0.5 + 0.5 * Math.sin(performance.now() / 1000 * Math.PI * 2 * 1.1) : 0;   // fire alarm pulled: slow red pulse that fades in and out (GTA wanted-level style)
+    if (alarmState.on && !lvl.cur) {
+      ctx.save(); ctx.shadowBlur = 0;
+      for (const p of alarmState.pts) {
+        ctx.globalAlpha = 0.35 + 0.65 * pulse; ctx.fillStyle = '#ff2a1a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.22;
+        ctx.beginPath(); ctx.arc(p.x, p.z, 0.9, 0, 7); ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
     }
     // you: yellow arrow in the middle, always pointing up
     ctx.setTransform(1, 0, 0, 1, 0, 0);

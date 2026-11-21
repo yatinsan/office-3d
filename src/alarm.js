@@ -7,6 +7,8 @@ import { LIFTS } from './world/hall.js';
  * (suggestion 62)
  */
 const DURATION = 10;
+/** read by the minimap: while `on`, it flashes red/white and marks the pulled station */
+export const alarmState = { on: false, t: 0, pts: [] };
 let ac = null, siren = null;
 function startSiren() {
   try {
@@ -32,6 +34,7 @@ export function initAlarm({ scene, player, camera }) {
   });
   if (!stations.length) return { update() {}, prompt: () => '' };
 
+  alarmState.pts = stations.map((s) => ({ x: s.x, z: s.z }));
   const HOLD = 1.2, C = 2 * Math.PI * 18;
   const style = document.createElement('style');
   style.textContent = `#alarmkey{position:fixed;left:50%;bottom:120px;width:56px;height:56px;margin-left:-28px;z-index:6;pointer-events:none;opacity:0;transform:scale(.7);transition:opacity .15s,transform .15s}
@@ -66,12 +69,12 @@ export function initAlarm({ scene, player, camera }) {
     return fwd.dot(v.divideScalar(d)) > 0.9;
   });
   const pull = () => {
-    on = true; t = DURATION; progress = 0; holding = false;
+    on = true; alarmState.on = true; t = DURATION; progress = 0; holding = false;
     for (const { lever } of lights) lever.position.y = 1.24;
     startSiren();
   };
   const stop = () => {
-    on = false; stopSiren();
+    on = false; alarmState.on = false; stopSiren();
     for (const { l, lever } of lights) { l.intensity = 0; lever.position.y = 1.3; }
   };
   addEventListener('keydown', (e) => { if (e.code === 'KeyE' && !e.repeat && !typing(e)) holding = true; });
@@ -84,7 +87,7 @@ export function initAlarm({ scene, player, camera }) {
     el.classList.toggle('show', show || on);
     el.classList.toggle('on', on);
     if (on) {
-      t -= dt;
+      t -= dt; alarmState.t = t;
       if (t <= 0) { stop(); el.classList.remove('show'); return; }
       ring.setAttribute('stroke-dashoffset', String(C * (1 - t / DURATION)));
       const flash = Math.floor(t * 4) % 2 ? 14 : 2;
