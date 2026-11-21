@@ -833,8 +833,24 @@ export function buildGroundFloor(root) {
   // solid walls the whole way along (white, black granite around each lift door)
   const bays = (out) => LIFTS.filter((L) => L.out === out).map((L) => L.z);
   wallWithBays(root, x0, Z0, Z1, 1, bays(1), { h: CEIL });
-  wallWithBays(root, x1 - 0.1, Z0, Z1, -1, bays(-1), { h: CEIL });
+  // east wall with an opening at the lounge's z (suggestion 55): lift 5 sits north of it, lift 6 south of it
+  wallWithBays(root, x1 - 0.1, Z0, LNZ0, -1, bays(-1).filter((z) => z < LNZ0), { h: CEIL });
+  wallWithBays(root, x1 - 0.1, LNZ1, Z1, -1, bays(-1).filter((z) => z > LNZ1), { h: CEIL });
+  box(root, H.wall, 0.1, CEIL - BULK, LNZ1 - LNZ0, x1 - 0.05, (BULK + CEIL) / 2, (LNZ0 + LNZ1) / 2, { shadow: false }); // header over the opening
   for (const L of LIFTS) liftFront(root, L.x + D, L.z, L.n, L.out, { ground: true, cw: L.cw });
+  // short corridor off the east wall (suggestion 55): walls both sides and at the end, no sofa, no window
+  const EXT = 15.0, zmL = (LNZ0 + LNZ1) / 2, xe = x1 + EXT;
+  slab(root, H.floor, x1 - 0.1, LNZ0, xe, LNZ1, 0.001, { tile: 1.6 });
+  slab(root, H.grid, x1 - 0.1, LNZ0, xe, LNZ1, CEIL, { down: true, tile: 1.2 });
+  for (const z of [LNZ0, LNZ1]) {
+    const dir = z === LNZ0 ? -1 : 1;
+    box(root, H.wall, xe - x1 + 0.1, CEIL, 0.1, (x1 + xe) / 2 - 0.05, CEIL / 2, z + dir * 0.05);
+    addBox(x1 - 0.1, z - 0.1, xe, z + 0.1);
+  }
+  box(root, H.wall, 0.1, CEIL, LNZ1 - LNZ0, xe + 0.05, CEIL / 2, zmL);
+  addBox(xe - 0.1, LNZ0, xe + 0.1, LNZ1);
+  box(root, M.lightStrip, EXT - 0.6, 0.02, 0.5, (x1 + xe) / 2, CEIL - 0.03, zmL, { shadow: false });
+  const cl = new THREE.PointLight('#fff1dc', 5, 14, 1.4); cl.position.set((x1 + xe) / 2, CEIL - 0.3, zmL); GROUND_LIGHTS.push(cl);
   // end walls with a daylight window, "GROUND FLOOR" signs in front of the lifts
   endWindow(root, Z0 - 0.12, 1, x0, x1, x0 + 0.9, x1 - 0.9);
   endWindow(root, Z1 + 0.12, -1, x0, x1, x0 + 0.9, x1 - 0.9);
