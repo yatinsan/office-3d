@@ -10,6 +10,7 @@ export function initMinimap({ camera, player, online }) {
   const wrap = document.createElement('div');
   wrap.id = 'minimap';
   wrap.style.cssText = `position:fixed;left:14px;bottom:46px;opacity:.72;width:${MW}px;height:${MH}px;box-sizing:border-box;z-index:5;pointer-events:none;display:none;` +
+    'background:radial-gradient(circle closest-side,rgba(90,95,104,.85) 0%,rgba(90,95,104,.65) 55%,rgba(105,110,118,0) 100%);' + // light gray behind the walls, fading out to the scene at the end
     '-webkit-mask-image:radial-gradient(circle,#000 20%,rgba(0,0,0,.6) 50%,rgba(0,0,0,.2) 75%,transparent 100%);mask-image:radial-gradient(circle,#000 20%,rgba(0,0,0,.6) 50%,rgba(0,0,0,.2) 75%,transparent 100%);'; // no background disc, no edge: just the walls fading into the scene
   const cv = document.createElement('canvas');
   const dpr = Math.min(devicePixelRatio || 1, 2);
