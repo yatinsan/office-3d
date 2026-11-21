@@ -183,7 +183,7 @@ const playPage = () => ({
   ],
 });
 const mainPage = () => ({
-  title: 'Pixbit Office',
+  title: 'Pixbee',
   items: [
     { label: 'Play', hint: 'Pick your character, then walk the office with other people', action: () => (modes.list.length === 1 ? begin(modes.list[0].id) : menu.push(playPage)) },
     { label: 'Character', hint: 'Your name and dress colour', action: () => online.edit() },
