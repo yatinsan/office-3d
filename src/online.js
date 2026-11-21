@@ -175,10 +175,10 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
 
   // ---------- "X joined" / "X left" notices ----------
   const feed = document.createElement('div'); feed.id = 'ow-feed'; document.body.appendChild(feed);
-  function joinToast(text, color, left = false) {
+  function joinToast(text, color, left = false, quiet = false) {
     const el = document.createElement('div');
     el.className = 'ow-note' + (left ? ' left' : '');
-    try { (left ? leaveSfx : joinSfx)(); } catch {}
+    if (!quiet) try { (left ? leaveSfx : joinSfx)(); } catch {}
     const dot = document.createElement('span'); dot.className = 'd'; if (!left && /^#[0-9a-f]{6}$/i.test(color || '')) el.style.setProperty('--c', color);
     const t = document.createElement('span'); t.textContent = text;
     el.append(dot, t); feed.appendChild(el);
@@ -560,7 +560,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     dd.onmessage = (e) => {
       try {
         const m = JSON.parse(e.data);
-        if (m.t === 'pool') { pool?.applyRemote(m); return; }
+        if (m.t === 'pool') { pool?.applyRemote(m, { name: p.name, color: p.color }); return; }
         if (m.t === 'game') { gameHook.msg(p.id, m); return; }
         if (m.t === 'hit') { // someone threw a punch: show it; if it was aimed at me, I take the hit
           p.avatar.punch(m.side === 'R' ? 'R' : 'L');
@@ -579,6 +579,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
     const msg = JSON.stringify({ t: 'door', id, open: open ? 1 : 0 });
     for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(msg); } catch {} }
   });
+  pool?.onNotify((text, color) => joinToast(text, color, false, true));   // "Rahul potted a ball" in the same feed as "joined"
   pool?.onChange((msg) => {
     const s = JSON.stringify(msg);
     for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(s); } catch {} }

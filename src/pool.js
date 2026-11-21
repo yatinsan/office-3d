@@ -34,6 +34,13 @@ const CSS = `
 #pool-hud .rst { width: min(320px, 70vw); height: 4px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; opacity: 0; transition: opacity .15s; }
 #pool-hud .rst.on { opacity: 1; }
 #pool-hud .rst i { display: block; height: 100%; width: 0; background: #ecc828; }
+#pool-pop { position: fixed; left: 50%; top: 32%; z-index: 9; pointer-events: none; font: 900 clamp(44px, 9vw, 110px) system-ui, -apple-system, sans-serif; letter-spacing: .04em; color: #ecc828; -webkit-text-stroke: 2px #000; text-shadow: 0 6px 24px rgba(0,0,0,.7); opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+#pool-pop { text-align: center; white-space: nowrap; line-height: 1.05; }
+#pool-pop .s { font-size: .26em; font-weight: 700; letter-spacing: .06em; -webkit-text-stroke: 1px #000; margin-top: 6px; }
+#pool-pop.bad { color: #ff5a4a; }
+#pool-pop.win { color: #5ee08a; }
+#pool-pop.show { animation: poolpop 1.6s ease-out forwards; }
+@keyframes poolpop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 30% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
 #pool-touch { position: fixed; inset: 0; z-index: 7; display: none; touch-action: none; }
 #pool-touch.on { display: block; }
 #pool-touch button { position: absolute; border: 0; border-radius: 50%; color: #fff; font: 700 14px system-ui, sans-serif; background: rgba(14,14,18,.5); border: 2px solid rgba(255,255,255,.35); touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -96,9 +103,9 @@ export function initPool({ scene, camera, player, touch = false }) {
     }
     for (let i = 0; i < N; i++) {                      // pockets
       if (!alive[i]) continue;
-      for (const [qx, qz] of POCKETS) {
-        const dx = bx[i] - qx, dz = bz[i] - qz;
-        if (dx * dx + dz * dz < POCKET_R2) { alive[i] = false; vx[i] = vz[i] = 0; break; }
+      for (let q = 0; q < POCKETS.length; q++) {
+        const dx = bx[i] - POCKETS[q][0], dz = bz[i] - POCKETS[q][1];
+        if (dx * dx + dz * dz < POCKET_R2) { alive[i] = false; vx[i] = vz[i] = 0; onPot(i, q); break; }
       }
     }
     for (let i = 0; i < N; i++) {                      // cushions
@@ -114,6 +121,7 @@ export function initPool({ scene, camera, player, touch = false }) {
         if (!alive[j]) continue;
         const dx = bx[j] - bx[i], dz = bz[j] - bz[i], d2 = dx * dx + dz * dz;
         if (d2 >= D2 || d2 === 0) continue;
+        if (firstHit < 0 && (i === 0 || j === 0)) firstHit = i === 0 ? j : i;      // the first ball the cue ball touches
         const d = Math.sqrt(d2), nx = dx / d, nz = dz / d, push = (2 * r - d) / 2;
         bx[i] -= nx * push; bz[i] -= nz * push; bx[j] += nx * push; bz[j] += nz * push;
         const vn = (vx[j] - vx[i]) * nx + (vz[j] - vz[i]) * nz;
@@ -126,9 +134,36 @@ export function initPool({ scene, camera, player, touch = false }) {
     for (let i = 0; i < N; i++) if (alive[i] && (vx[i] !== 0 || vz[i] !== 0)) { any = true; break; }
     return any;
   }
+  // ---------- shot bookkeeping + big messages ----------
+  let firstHit = -1, shotPots = 0, shots = 0, streak = 0, misses = 0, shooterWho = null;   // shooterWho: {name,color} of a remote shooter, null = me
+  const notifyCbs = [];
+  const notify = (text, color) => { for (const cb of notifyCbs) cb(text, color); };
+  function onPot(i, q) {
+    if (i === 0) { announce('SCRATCH!', 'bad', 'Cue ball potted'); return; }
+    shotPots++;
+    let left = 0; for (let j = 1; j < N; j++) if (alive[j]) left++;
+    const where = q % 3 === 1 ? 'Side pocket' : 'Corner pocket';
+    if (left === 0) announce('FINAL BALL!', 'gold', where, true);
+    else if (shotPots === 1) announce(i === firstHit ? 'NICE SHOT!' : 'POTTED!', 'gold', where);
+    else announce(shotPots === 2 ? 'DOUBLE POT!' : shotPots === 3 ? 'TRIPLE POT!' : 'MEGA POT!', 'gold', shotPots + ' balls in one shot', shotPots >= 3);
+  }
   function finishRoll() {
     moving = false;
-    if (!alive[0]) {                                   // scratch: cue ball back on the head spot
+    const scratched = !alive[0], mine = shooterLocal;
+    let left = 0; for (let j = 1; j < N; j++) if (alive[j]) left++;
+    if (left === 0) setTimeout(() => announce('TABLE CLEARED!', 'win', `Cleared in ${shots} shot${shots === 1 ? '' : 's'}`, true), 1300);
+    else if (shotPots === 0 && !scratched) setTimeout(() => (firstHit < 0 ? announce('AIR SHOT!', 'bad', 'No ball touched') : announce('MISS!', 'bad')), 500);
+    if (mine) {
+      if (shotPots > 0) { streak++; misses = 0; } else { streak = 0; misses++; }
+      if (left > 0 && streak >= 3) setTimeout(() => announce('ON FIRE!  x' + streak, 'win', 'Keep it going', true), 1100);
+      else if (left > 0 && misses >= 3 && misses % 3 === 0) setTimeout(() => announce('KEEP TRYING!', 'bad', misses + ' misses in a row'), 1400);
+    } else if (shooterWho) {                                  // someone else's shot: a small notice like the "joined" ones
+      const n = shooterWho.name || 'Guest';
+      if (left === 0) notify(`${n} cleared the table!`, shooterWho.color);
+      else if (shotPots > 0) notify(`${n} potted ${shotPots === 1 ? 'a ball' : shotPots + ' balls'}`, shooterWho.color);
+      else if (scratched) notify(`${n} scratched`, shooterWho.color);
+    }
+    if (!alive[0]) {                                  // scratch: cue ball back on the head spot
       bx[0] = HEAD[0]; bz[0] = HEAD[1]; alive[0] = true;
       for (let t = 0; t < 12; t++) {
         let hit = false;
@@ -144,7 +179,12 @@ export function initPool({ scene, camera, player, touch = false }) {
   function launch(cueVx, cueVz) {
     vx[0] = cueVx; vz[0] = cueVz;
     moving = true; acc = 0; touched = true;
+    firstHit = -1; shotPots = 0; shots++;
+    const ratio = Math.sqrt(cueVx * cueVx + cueVz * cueVz) / VMAX;
+    if (ratio >= 0.88) announce('SMASH!', 'gold', 'Full power', true);
+    else if (ratio <= 0.11) announce('GENTLE TOUCH', 'gold');
   }
+  function newGame() { shots = 0; streak = 0; misses = 0; announce('NEW GAME!', 'win', 'Table re-racked'); }
 
   // ---------- local play ----------
   let active = false, a = 0, power = 0, charging = false, resetT = 0, resetArmed = true;
@@ -165,12 +205,12 @@ export function initPool({ scene, camera, player, touch = false }) {
     const v = VMAX * Math.max(0.06, power) ** 1.2;
     const cvx = Math.sin(a) * v, cvz = Math.cos(a) * v;
     const s = state();
-    power = 0; shooterLocal = true;
+    power = 0; shooterLocal = true; shooterWho = null;
     emit({ t: 'pool', k: 'shot', s, v: [cvx, cvz] });
     launch(cvx, cvz);
   }
   function doReset() {
-    rack(); moving = false; touched = false; shooterLocal = false;
+    rack(); moving = false; touched = false; shooterLocal = false; shooterWho = null; newGame();
     emit({ t: 'pool', k: 'reset' });
     aimAtNearest();
   }
@@ -207,13 +247,43 @@ export function initPool({ scene, camera, player, touch = false }) {
   line.visible = ghost.visible = cue.visible = false;
   scene.add(line, ghost, cue);
 
+  // big pop-up text when a ball drops in a pocket
+  const popEl = document.createElement('div');
+  popEl.id = 'pool-pop';
+  document.body.appendChild(popEl);
+  let actx = null;
+  function blip(kind) {                                          // short sound: rising for good, falling for bad
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+      const f = kind === 'bad' ? [330, 180] : kind === 'win' ? [520, 880] : [440, 660];
+      o.type = 'triangle'; o.frequency.setValueAtTime(f[0], t0); o.frequency.exponentialRampToValueAtTime(f[1], t0 + 0.18);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+      o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0 + 0.27);
+    } catch {}
+  }
+  function announce(text, kind = 'gold', sub = '', big = false) {
+    if (shooterWho) return;                                      // someone else's shot: only the shooter sees the big text (others get the small notice)
+    popEl.innerHTML = '';
+    const m = document.createElement('div'); m.textContent = text; popEl.appendChild(m);
+    if (sub) { const s = document.createElement('div'); s.className = 's'; s.textContent = sub; popEl.appendChild(s); }
+    popEl.classList.toggle('bad', kind === 'bad');
+    popEl.classList.toggle('win', kind === 'win');
+    popEl.classList.remove('show'); void popEl.offsetWidth; popEl.classList.add('show');
+    blip(kind);
+    if (big) {                                                   // little screen shake on the big moments
+      const cv = document.querySelector('canvas');
+      try { cv?.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-7px,4px)' }, { transform: 'translate(6px,-5px)' }, { transform: 'translate(-4px,3px)' }, { transform: 'translate(0,0)' }], { duration: 320 }); } catch {}
+    }
+  }
+
   // HUD
-  const hud = document.createElement('div');
+  const hud =document.createElement('div');
   hud.id = 'pool-hud';
   hud.innerHTML = `<div class="hint"></div><div class="bar"><i></i></div><div class="rst"><i></i></div>`;
   document.body.appendChild(hud);
   const hintEl = hud.querySelector('.hint'), barEl = hud.querySelector('.bar i'), rstEl = hud.querySelector('.rst'), rstFill = rstEl.querySelector('i');
-  hintEl.textContent = touch ? 'Drag to aim · hold SHOOT to charge · hold RESET to re-rack' : 'Mouse / A D aim (Shift = fine) · hold Space to charge · hold R to re-rack · E exit';
+  hintEl.textContent = touch ? 'Drag to aim · hold SHOOT to charge · hold RESET to re-rack' : 'Mouse / A D aim (Shift = fine) · click + drag back, release to strike (or hold Space) · hold R to re-rack · E exit';
 
   let layer = null;
   if (touch) {
@@ -251,7 +321,7 @@ export function initPool({ scene, camera, player, touch = false }) {
   }
   function exit() {
     if (!active) return;
-    active = false; charging = false; power = 0;
+    active = false; charging = false; mouseDrag = false; power = 0;
     player.state.paused = false;
     document.body.classList.remove('cutscene');
     hud.classList.remove('on'); layer?.classList.remove('on');
@@ -283,12 +353,18 @@ export function initPool({ scene, camera, player, touch = false }) {
     if (e.code === 'Space') shoot();
     if (e.code === 'KeyR') resetArmed = true;
   }, true);
-  addEventListener('mousedown', (e) => { if (active && e.button === 0 && !moving) charging = true; });
-  addEventListener('mouseup', (e) => { if (active && e.button === 0) shoot(); });
-  addEventListener('mousemove', (e) => { if (active) a -= e.movementX * (held.ShiftLeft || held.ShiftRight ? 0.0006 : 0.0025); });
+  // mouse: click, drag back (toward you) to pull the cue and set power, release to strike
+  let mouseDrag = false;
+  addEventListener('mousedown', (e) => { if (active && e.button === 0 && !moving) { charging = true; mouseDrag = true; power = 0; } });
+  addEventListener('mouseup', (e) => { if (active && e.button === 0) { mouseDrag = false; shoot(); } });
+  addEventListener('mousemove', (e) => {
+    if (!active) return;
+    if (mouseDrag) power = Math.min(1, Math.max(0, power + e.movementY * 0.004));
+    a -= e.movementX * (held.ShiftLeft || held.ShiftRight ? 0.0006 : 0.0025);
+  });
   addEventListener('keydown', (e) => { if (e.code.startsWith('Shift')) held[e.code] = true; });
   addEventListener('keyup', (e) => { if (e.code.startsWith('Shift')) held[e.code] = false; });
-  addEventListener('blur', () => { for (const k in held) held[k] = false; charging = false; power = 0; });
+  addEventListener('blur', () => { for (const k in held) held[k] = false; charging = false; mouseDrag = false; power = 0; });
 
   // camera
   const camPos = new THREE.Vector3();
@@ -328,7 +404,7 @@ export function initPool({ scene, camera, player, touch = false }) {
     if (held.KeyA || held.ArrowLeft) a += sp;
     if (held.KeyD || held.ArrowRight) a -= sp;
     // power
-    if (charging) power = Math.min(1, power + dt / 1.1);
+    if (charging && !mouseDrag) power = Math.min(1, power + dt / 1.1);
     barEl.style.width = (power * 100) + '%';
     // hold R / RESET to re-rack
     if ((held.KeyR || held.touchReset) && resetArmed) {
@@ -355,15 +431,15 @@ export function initPool({ scene, camera, player, touch = false }) {
   }
 
   // ---------- Open World sync (see online.js) ----------
-  function applyRemote(m) {
+  function applyRemote(m, who = null) {
     if (!m || m.t !== 'pool') return;
     if (m.k === 'shot' && Array.isArray(m.s) && m.s.length === N * 3 && Array.isArray(m.v)) {
-      setState(m.s); shooterLocal = false; charging = false; power = 0;
+      setState(m.s); shooterLocal = false; charging = false; power = 0; shooterWho = who;
       launch(+m.v[0] || 0, +m.v[1] || 0);
     } else if (m.k === 'rest' && Array.isArray(m.s) && m.s.length === N * 3) {
       setState(m.s); moving = false; touched = true; if (active) aimAtNearest();
     } else if (m.k === 'reset') {
-      rack(); moving = false; touched = false; shooterLocal = false; if (active) aimAtNearest();
+      rack(); moving = false; touched = false; shooterLocal = false; shooterWho = null; streak = 0; misses = 0; shots = 0; if (who) notify(`${who.name || 'Guest'} re-racked the table`, who.color); if (active) aimAtNearest();
     } else if (m.k === 'all' && Array.isArray(m.s) && m.s.length === N * 3 && !touched && !moving) {
       setState(m.s);
     }
@@ -374,6 +450,8 @@ export function initPool({ scene, camera, player, touch = false }) {
     prompt: () => (!active && near() && !player.state.paused ? 'E play pool' : ''),
     isActive: () => active,
     onChange: (cb) => cbs.push(cb),
+    /** small notices about other players' shots: cb(text, color) */
+    onNotify: (cb) => notifyCbs.push(cb),
     applyRemote,
     /** the table for someone who just joined (null while nothing has been played) */
     snapshot: () => (touched && !moving ? { t: 'pool', k: 'all', s: state() } : null),
