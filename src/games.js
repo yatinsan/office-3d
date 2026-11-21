@@ -36,6 +36,18 @@ const CSS = `
     background: rgba(14,14,18,.78); border: 1px solid rgba(236,200,40,.6); color: #fff; font: 700 15px system-ui, sans-serif; letter-spacing: .5px;
     pointer-events: none; opacity: 0; transition: opacity .25s; }
   #g-toast.show { opacity: 1; }
+  #g-invite { position: fixed; z-index: 9; left: 50%; top: 18%; transform: translateX(-50%); display: none; min-width: min(340px, 86vw); box-sizing: border-box;
+    padding: 18px 22px; text-align: center; color: #fff; font: 600 15px system-ui, sans-serif; background: rgba(20,20,22,.94);
+    border: 1px solid #ecc828; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  #g-invite.show { display: block; }
+  #g-invite .gi-t { font-size: 12px; letter-spacing: 1px; color: #ecc828; text-transform: uppercase; margin-bottom: 6px; }
+  #g-invite .gi-n { font-size: 20px; margin-bottom: 4px; }
+  #g-invite .gi-d { font-weight: 400; font-size: 13px; color: #bbb; margin-bottom: 14px; }
+  #g-invite .gi-b { display: flex; gap: 10px; justify-content: center; }
+  #g-invite button { border: 0; border-radius: 9px; padding: 9px 22px; font: 700 14px system-ui, sans-serif; cursor: pointer; }
+  #g-invite .gi-join { background: #ecc828; color: #1a1a1a; }
+  #g-invite .gi-close { background: rgba(255,255,255,.14); color: #fff; }
+  #g-invite .gi-k { margin-top: 10px; font-weight: 400; font-size: 12px; color: #999; }
   #g-hud { position: fixed; z-index: 6; right: max(14px, env(safe-area-inset-right)); top: 12px; display: none; padding: 6px 12px; border-radius: 12px;
     background: rgba(14,14,18,.62); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); font: 600 12px system-ui, sans-serif; pointer-events: none; }
   #g-hud b { color: #ecc828; font-weight: 700; }
@@ -55,8 +67,33 @@ export function initGames({ online, player, scene, camera }) {
   const hudEl = Object.assign(document.createElement('div'), { id: 'g-hud' });
   const blindEl = Object.assign(document.createElement('div'), { id: 'g-blind' });
   const resultEl = Object.assign(document.createElement('div'), { id: 'g-result' });
-  document.body.append(panel, toastEl, hudEl, blindEl, resultEl);
+  const inviteEl = Object.assign(document.createElement('div'), { id: 'g-invite' });
+  document.body.append(panel, toastEl, hudEl, blindEl, resultEl, inviteEl);
   panel.addEventListener('click', (e) => e.stopPropagation());
+  for (const ev of ['click', 'mousedown', 'pointerdown', 'touchstart']) inviteEl.addEventListener(ev, (e) => e.stopPropagation());
+
+  // ---------- invite dialog: when someone creates a game everyone else gets Join / Close ----------
+  const overlayEl = document.getElementById('overlay');
+  let inviteId = null, inviteT = 0;
+  const menuOpen = () => !!overlayEl && !overlayEl.classList.contains('hidden');
+  function hideInvite() { inviteId = null; clearTimeout(inviteT); inviteEl.classList.remove('show'); }
+  function showInvite(g) {
+    const t = typeOf(g);
+    inviteId = g.id;
+    inviteEl.innerHTML = `<div class="gi-t">Game invite</div><div class="gi-n">${esc(g.hostName)} created ${esc(t.name)}</div><div class="gi-d">${esc(t.blurb)}</div>
+      <div class="gi-b"><button type="button" class="gi-join">Join</button><button type="button" class="gi-close">Close</button></div>
+      <div class="gi-k">Enter = Join &nbsp;&middot;&nbsp; N = Close</div>`;
+    inviteEl.querySelector('.gi-join').addEventListener('click', joinInvite);
+    inviteEl.querySelector('.gi-close').addEventListener('click', hideInvite);
+    inviteEl.classList.add('show');
+    clearTimeout(inviteT); inviteT = setTimeout(hideInvite, 30000);
+  }
+  function joinInvite() {
+    const g = games.get(inviteId);
+    hideInvite();
+    if (g && g.phase === 'open' && !myGame() && Object.keys(g.players).length < typeOf(g).max) { act({ op: 'join', id: g.id, uid: me(), name: online.name || 'Guest' }); toast(`Joined ${typeOf(g).name}. Press G for the lobby`, 2800); }
+    else toast('That game is no longer open');
+  }
 
   const games = new Map();      // id -> { id, type, host, hostName, players{uid:name}, phase 'open'|'playing', seed, order[], seekers[], run{}, startMs }
   const me = () => online.uid();
@@ -142,7 +179,7 @@ export function initGames({ online, player, scene, camera }) {
       case 'create':
         if (m.g && m.g.host === from && !games.has(m.g.id) && TYPES.some((x) => x.id === m.g.type) && m.g.players && m.g.players[from]) {
           games.set(m.g.id, hydrate({ ...m.g, phase: 'open', seed: 0, order: [], seekers: [], disguise: {}, clones: [], el: null }));
-          if (from !== me()) toast(`${m.g.hostName} created ${typeOf(m.g).name}. Press G to join`, 3200);
+          if (from !== me()) { if (myGame() || open) toast(`${m.g.hostName} created ${typeOf(m.g).name}. Press G to see it`, 3200); else showInvite(games.get(m.g.id)); }
         }
         break;
       case 'join':
@@ -197,7 +234,7 @@ export function initGames({ online, player, scene, camera }) {
   online.hookGames({
     msg: (from, m) => apply(m, from),
     gone: (uid) => { for (const g of [...games.values()]) removePlayer(g, uid); changed(); }, // a player who dropped is out of every game
-    reset: () => { games.clear(); stopEffects(); close(); changed(); },
+    reset: () => { games.clear(); stopEffects(); close(); hideInvite(); changed(); },
     snap: () => [...games.values()].map(plain),
   });
 
@@ -228,6 +265,7 @@ export function initGames({ online, player, scene, camera }) {
     else avatar.setDisguise?.(t.makeProp(idx), t.props[idx].hit); // my own too: I see it from behind (camBegin)
   }
   function changed() {
+    if (inviteId) { const ig = games.get(inviteId); if (!ig || ig.phase !== 'open' || myGame()) hideInvite(); } // started, cancelled, or I joined another way
     for (const p of online.peers()) { const g = playingOf(p.id); p.avatar.setBadge?.(g ? typeOf(g).badge(g, p.id) : null); p.avatar.setGun?.(!!g && !!typeOf(g).gun && g.seekers.includes(p.id)); dress(p.avatar, g, p.id, false); }
     if (online.me) dress(online.me, playingOf(me()), me(), true);
     syncClones();
@@ -365,6 +403,11 @@ export function initGames({ online, player, scene, camera }) {
 
   addEventListener('keydown', (e) => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (inviteId && !open && !menuOpen() && !player.state.paused && !e.repeat && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'KeyN')) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (e.code === 'KeyN') hideInvite(); else joinInvite();
+      return;
+    }
     if (!open) { if (e.code === 'KeyG' && !e.repeat) openPanel(); else if (!e.repeat && !player.state.paused && keyQ.length < 8) keyQ.push(e.code); return; }
     const n = cur.items.length;
     if (e.code === 'KeyG' || e.code === 'Escape') close();
