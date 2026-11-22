@@ -3,6 +3,18 @@ import { blocked } from './colliders.js';
 import { FIREBASE_CONFIG, ROOM, isConfigured } from './firebase-config.js';
 import { spatial, impact as impactSfx, join as joinSfx, leave as leaveSfx } from './sfx.js';
 
+/** Push alert: subscribe to this topic in the ntfy app (https://ntfy.sh) to hear when someone joins. */
+const NTFY_TOPIC = 'yatin-office';
+function notifyJoin(name, online) {
+  try {
+    fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+      method: 'POST',
+      headers: { Title: 'Office 3D: someone is online' },
+      body: `${String(name || 'Guest').slice(0, 30)} joined · ${online} online`,
+    }).catch(() => {});
+  } catch {}
+}
+
 /**
  * Open World: walk the office with other people, and hold V to talk (proximity voice).
  *
@@ -442,6 +454,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
       let existing = new Set(); // already here when I connected: no "joined" toast for them
       try { const snap = await fb.get(players); const v = snap.val(); if (v) existing = new Set(Object.keys(v)); } catch {}
       if (!on) return;
+      notifyJoin(myName, existing.size);
       unsubs.push(fb.onChildAdded(players, (s) => {
         if (s.key !== uid) {
           meet(s.key, s.val());
