@@ -14,6 +14,7 @@ export const FIREBASE_CONFIG = {
   storageBucket: 'office-world-60ed1.firebasestorage.app',
   messagingSenderId: '607388062460',
   appId: '1:607388062460:web:4b68c0880c4d8822607d79',
+  measurementId: 'G-Z93G3CN494', // Google Analytics: Firebase console → Project settings → Your apps → Web app → measurementId (G-XXXXXXXXXX)
 };
 
 /** Everyone in the same room sees each other. */
