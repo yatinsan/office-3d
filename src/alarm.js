@@ -65,6 +65,32 @@ export function initAlarm({ scene, player, camera, onPull = () => {} }) {
   document.body.appendChild(el);
   const ring = el.querySelector('.ring');
 
+  // hint panel above each pull station, same style as the fingerprint-door panel (src/unlock.js): dark tile with icon + title / sub text + a progress line
+  const W = 896, H = 192, lc = document.createElement('canvas'); lc.width = W; lc.height = H;
+  const lg = lc.getContext('2d'), labelTex = new THREE.CanvasTexture(lc); labelTex.colorSpace = THREE.SRGBColorSpace;
+  let labelKey = '';
+  const drawLabel = (sub, frac) => {
+    const key = `${sub}|${Math.round(frac * 40)}`; if (key === labelKey) return; labelKey = key;
+    lg.clearRect(0, 0, W, H);
+    lg.fillStyle = 'rgba(28,28,30,.96)'; lg.fillRect(190, 0, W - 190, H - 6);
+    lg.fillStyle = '#ff3b30'; lg.fillRect(190, H - 6, W - 190, 6);
+    if (frac > 0) { lg.fillStyle = '#ecc828'; lg.fillRect(190, H - 6, (W - 190) * Math.min(1, frac), 6); }
+    lg.fillStyle = 'rgba(28,28,30,.98)'; lg.fillRect(4, 4, 184, 184);
+    lg.shadowColor = '#ff3b30'; lg.shadowBlur = 14; lg.strokeStyle = '#ff3b30'; lg.lineWidth = 7; lg.strokeRect(5, 5, 182, 182); lg.shadowBlur = 0;
+    lg.fillStyle = '#ff6a5c';   // bell
+    lg.beginPath(); lg.moveTo(52, 128); lg.quadraticCurveTo(62, 118, 62, 90); lg.arc(96, 90, 34, Math.PI, 0); lg.quadraticCurveTo(130, 118, 140, 128); lg.closePath(); lg.fill();
+    lg.beginPath(); lg.arc(96, 140, 11, 0, Math.PI * 2); lg.fill(); lg.fillRect(91, 46, 10, 14);
+    lg.fillStyle = '#ff3b30'; lg.fillRect(222, 46, 4, 100);
+    lg.fillStyle = '#fff'; lg.font = '700 64px system-ui, sans-serif'; lg.textBaseline = 'alphabetic'; lg.fillText('Emergency', 256, 98);
+    lg.fillStyle = 'rgba(255,255,255,.8)'; lg.font = '400 40px system-ui, sans-serif'; lg.fillText(sub, 256, 152);
+    labelTex.needsUpdate = true;
+  };
+  const labels = stations.map((s) => {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false, depthWrite: false }));
+    m.scale.set(0.62, 0.62 * H / W, 1); m.position.set(s.x + s.out * 0.15, s.y + 0.38, s.z); m.renderOrder = 20; m.visible = false; scene.add(m);
+    return m;
+  });
+
   // a flashing red light over each station + a red lever that drops when pulled
   const lights = stations.map((s) => {
     const l = new THREE.PointLight('#ff2a1a', 0, 9, 1.4);
@@ -130,6 +156,8 @@ export function initAlarm({ scene, player, camera, onPull = () => {} }) {
     const show = !player.state.paused && facing();
     el.classList.toggle('show', show || on);
     el.classList.toggle('on', on);
+    labels.forEach((m, i) => { const st = stations[i]; m.visible = !on && !player.state.paused && Math.hypot(player.pos.x - st.x, player.pos.z - st.z) < 6 && (player.pos.x - st.x) * st.out > 0; });
+    if (labels.some((m) => m.visible)) drawLabel(progress > 0 ? 'Keep holding E' : 'Hold E to pull the alarm', progress);
     if (on) {
       t -= dt; alarmState.t = t;
       if (bannerT > 0 && (bannerT -= dt) <= 0) banner.classList.remove('show');
