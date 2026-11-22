@@ -448,5 +448,5 @@ export function initGames({ online, player, scene, camera }) {
     if ((hudT += dt) > 0.25) { hudT = 0; drawHud(); }
   }
 
-  return { update, open: openPanel, close, canHit, onHit, onMiss, shoot, camBegin, camEnd, isProp: () => tppIdx() !== null, get isOpen() { return open; } };
+  return { update, open: openPanel, close, canHit, onHit, onMiss, shoot, camBegin, camEnd, isProp: () => tppIdx() !== null, isSeeker: () => { const g = playingOf(me()); return !!g && g.seekers.includes(me()); }, get isOpen() { return open; } };
 }

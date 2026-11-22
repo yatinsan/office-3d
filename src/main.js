@@ -127,7 +127,7 @@ const lifts = initLifts({ scene, camera, player, navigate: (on) => minimap.navig
 online.hookAlarm((name) => alarm.trigger(name)); // someone else pulled the fire alarm
 online.hookLifts({ msg: (m) => lifts.apply(m), snap: () => lifts.snapshot() }); // lift calls / rides are sent to the others only when they happen
 lifts.onChange((m) => online.broadcast(m));
-const minimap = initMinimap({ camera, player, online }); // GTA-style square map at the right edge
+const minimap = initMinimap({ camera, player, online, hidePeers: () => games.isSeeker() }); // GTA-style square map at the right edge
 const seat = initSeat({ scene, camera, player, online, overlay, touch: !!touchUI }); // desk chairs: E to sit, use the little Mac (others see its screen; a taken seat can't be used)
 online.hookScreens(seat.hooks);
 if (touchUI) touchUI.onHit = () => combat.attack();

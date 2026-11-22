@@ -54,7 +54,7 @@ function findRoute(sx, sz, tx, tz) {
 
 import { alarmState } from './alarm.js';
 
-export function initMinimap({ camera, player, online }) {
+export function initMinimap({ camera, player, online, hidePeers }) {
   // the way from the lift: the fingerprint door -> the lounge balcony door -> the balcony -> along the terrace -> the meeting room -> the game room door
   const WP = [[11.3, 8.1], [9.0, 8.1], [1.6, 5.7], [-2.8, 5.7], [-1.6, 20.8], [0.9, 20.8], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 - 0.6], [(GAME_DOOR[0] + GAME_DOOR[1]) / 2, MEET_Z1 + 0.9]];
   let route = null, routeOn = false, routeT = 0, wpi = 0;
@@ -89,7 +89,7 @@ export function initMinimap({ camera, player, online }) {
       if (c.maxX < px - m || c.minX > px + m || c.maxZ < pz - m || c.minZ > pz + m) continue;
       ctx.fillRect(c.minX, c.minZ, c.maxX - c.minX, c.maxZ - c.minZ);
     }
-    for (const d of online?.peerDots?.() || []) {
+    for (const d of hidePeers?.() ? [] : online?.peerDots?.() || []) {   // a seeker in a running game must not see the others
       if ((d.y < -2) !== (lvl.cur === 1)) continue; // only people on my floor
       if (d.yaw !== undefined) {                       // where they are looking: the same little yellow V as mine
         const a = Math.atan2(-Math.cos(d.yaw), -Math.sin(d.yaw)), g = ctx.createRadialGradient(d.x, d.z, 0.4, d.x, d.z, 3.6);
