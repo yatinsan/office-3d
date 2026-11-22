@@ -22,6 +22,7 @@ import { initPool } from './pool.js';
 import { initCombat } from './combat.js';
 import { initSeat } from './seat.js';
 import { initGames } from './games.js';
+import { setListener as sfxSetListener } from './sfx.js';
 import { initMinimap } from './minimap.js';
 import { initLifts } from './lifts.js';
 import { lvl } from './colliders.js';
@@ -122,6 +123,7 @@ const hunt = initHunt({ scene, camera, player });
 const online = initOnline({ scene, camera, player, panel: overlay, doors, pool, touch: !!touchUI, start: () => launch() });
 modes.register(online);
 const games = initGames({ online, player, scene, camera }); // G: create / join / start games (Hide and Seek); everybody else can watch
+sfxSetListener(camera); // sounds from other players are positional (distance fade + left / right)
 const combat = initCombat({ camera, player, online, pool, games }); // left click: punch the player you face; get hit, black out, wake up
 const lifts = initLifts({ scene, camera, player, navigate: (on) => minimap.navigate(on) }); // E at any lift: ride to the ground floor and back (suggestion 54)
 online.hookAlarm((name) => alarm.trigger(name)); // someone else pulled the fire alarm

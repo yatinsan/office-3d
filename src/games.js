@@ -221,7 +221,7 @@ export function initGames({ online, player, scene, camera }) {
         if (g && g.phase === 'playing' && m.to === me() && g.players[me()] && g.seekers.includes(from)) t.onHit?.(g, ctx, from);
         break;
       case 'fire': // a seeker fired their gun: everybody sees the flash
-        if (g && g.phase === 'playing' && g.seekers.includes(from) && from !== me()) { for (const p of online.peers()) if (p.id === from) p.avatar.fireGun?.(); sfx.whoosh(); }
+        if (g && g.phase === 'playing' && g.seekers.includes(from) && from !== me()) { for (const p of online.peers()) if (p.id === from) { p.avatar.fireGun?.(); sfx.spatial(p.avatar.group.position, () => sfx.whoosh()); } }
         break;
       case 'end':
         if (g && g.phase === 'playing' && from === g.host) finish(g, m.result);

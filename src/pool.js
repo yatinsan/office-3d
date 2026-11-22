@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { POOL, ballMats, cueBallMat } from './world/game.js';
+import { clip as sfxClip } from './sfx.js';
 import { achievements } from './achievements.js';
 
 /**
@@ -92,6 +93,10 @@ export function initPool({ scene, camera, player, touch = false }) {
   let moving = false, acc = 0, shooterLocal = false;
 
   // ---------- physics (fixed step, only + - * / sqrt: identical on every client) ----------
+  // sound effects (clips cut from the reference short): cue strike, ball clack, pocket drop. Volume follows impact speed and distance from the table.
+  function playSnd(name, vol, rate = 1, at = { x: px, z: pz }) { sfxClip(`sounds/pool-${name}.mp3`, Math.min(1, vol), rate, at); }   // positional: fades and pans from the table
+  let lastClack = 0;
+  const clack = (speed, rate = 1) => { const n = performance.now(); if (n - lastClack < 35) return; lastClack = n; playSnd('clack', 0.15 + speed / VMAX, rate * (0.92 + Math.random() * 0.16)); };
   function step() {
     let any = false;
     for (let i = 0; i < N; i++) {
@@ -106,15 +111,15 @@ export function initPool({ scene, camera, player, touch = false }) {
       if (!alive[i]) continue;
       for (let q = 0; q < POCKETS.length; q++) {
         const dx = bx[i] - POCKETS[q][0], dz = bz[i] - POCKETS[q][1];
-        if (dx * dx + dz * dz < POCKET_R2) { alive[i] = false; vx[i] = vz[i] = 0; onPot(i, q); break; }
+        if (dx * dx + dz * dz < POCKET_R2) { alive[i] = false; vx[i] = vz[i] = 0; playSnd('pocket', 0.8); onPot(i, q); break; }
       }
     }
     for (let i = 0; i < N; i++) {                      // cushions
       if (!alive[i]) continue;
-      if (bx[i] < XMIN) { bx[i] = XMIN; if (vx[i] < 0) vx[i] = -vx[i] * E_CUSH; }
-      else if (bx[i] > XMAX) { bx[i] = XMAX; if (vx[i] > 0) vx[i] = -vx[i] * E_CUSH; }
-      if (bz[i] < ZMIN) { bz[i] = ZMIN; if (vz[i] < 0) vz[i] = -vz[i] * E_CUSH; }
-      else if (bz[i] > ZMAX) { bz[i] = ZMAX; if (vz[i] > 0) vz[i] = -vz[i] * E_CUSH; }
+      if (bx[i] < XMIN) { bx[i] = XMIN; if (vx[i] < 0) { clack(-vx[i] * 0.7, 0.75); vx[i] = -vx[i] * E_CUSH; } }
+      else if (bx[i] > XMAX) { bx[i] = XMAX; if (vx[i] > 0) { clack(vx[i] * 0.7, 0.75); vx[i] = -vx[i] * E_CUSH; } }
+      if (bz[i] < ZMIN) { bz[i] = ZMIN; if (vz[i] < 0) { clack(-vz[i] * 0.7, 0.75); vz[i] = -vz[i] * E_CUSH; } }
+      else if (bz[i] > ZMAX) { bz[i] = ZMAX; if (vz[i] > 0) { clack(vz[i] * 0.7, 0.75); vz[i] = -vz[i] * E_CUSH; } }
     }
     for (let i = 0; i < N; i++) {                      // ball vs ball (equal mass)
       if (!alive[i]) continue;
@@ -127,6 +132,7 @@ export function initPool({ scene, camera, player, touch = false }) {
         bx[i] -= nx * push; bz[i] -= nz * push; bx[j] += nx * push; bz[j] += nz * push;
         const vn = (vx[j] - vx[i]) * nx + (vz[j] - vz[i]) * nz;
         if (vn < 0) {
+          clack(-vn);
           const jn = -(1 + E_BALL) * vn / 2;
           vx[i] -= jn * nx; vz[i] -= jn * nz; vx[j] += jn * nx; vz[j] += jn * nz;
         }
@@ -182,6 +188,7 @@ export function initPool({ scene, camera, player, touch = false }) {
   }
   function launch(cueVx, cueVz) {
     vx[0] = cueVx; vz[0] = cueVz;
+    playSnd('cue', 0.3 + Math.hypot(cueVx, cueVz) / VMAX);
     moving = true; acc = 0; touched = true;
     firstHit = -1; shotPots = 0; shots++;
     const ratio = Math.sqrt(cueVx * cueVx + cueVz * cueVz) / VMAX;

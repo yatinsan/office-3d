@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { blocked } from './colliders.js';
 import { FIREBASE_CONFIG, ROOM, isConfigured } from './firebase-config.js';
-import { impact as impactSfx, join as joinSfx, leave as leaveSfx } from './sfx.js';
+import { spatial, impact as impactSfx, join as joinSfx, leave as leaveSfx } from './sfx.js';
 
 /**
  * Open World: walk the office with other people, and hold V to talk (proximity voice).
@@ -602,7 +602,7 @@ export function initOnline({ scene, camera, player, panel, doors = null, pool = 
   let alarmHook = () => {}; // fire alarm pulled by someone (src/alarm.js)
   let screenHook = { msg() {}, gone() {}, reset() {}, snap: () => null }; // desk screens + who sits where (src/seat.js)
   let gameHook = { msg() {}, gone() {}, reset() {}, snap: () => null };
-  const soundNear = (av) => { if (av.group.position.distanceTo(camera.position) < 7) impactSfx(); };
+  const soundNear = (av) => spatial(av.group.position, () => impactSfx());   // heard from where they stand: fades and pans with distance
   function broadcast(msg) {
     const s = JSON.stringify(msg);
     for (const p of peers.values()) if (p.dd && p.dd.readyState === 'open') { try { p.dd.send(s); } catch {} }

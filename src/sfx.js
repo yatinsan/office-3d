@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 // Tiny WebAudio sound effects for the fight: no audio files. One shared AudioContext (made on the first click).
 let ac = null, noiseBuf = null;
 function ctx() {
@@ -8,6 +9,28 @@ function ctx() {
   return ac;
 }
 export function unlock() { ctx(); }
+
+// ---- spatial sound: sounds made by other players get quieter, duller and panned left / right by where they are relative to me ----
+let listenCam = null, dst = null;
+const fwd = new THREE.Vector3();
+export function setListener(camera) { listenCam = camera; }
+const REACH = 22;   // metres: beyond this you hear nothing
+/** run fn() with every sound it schedules coming from world position at {x,z}; returns false if too far to be heard (fn not run) */
+export function spatial(at, fn) {
+  const c = ctx(); if (!c || !listenCam || !at) { fn(); return true; }
+  const dx = at.x - listenCam.position.x, dz = at.z - listenCam.position.z, d = Math.hypot(dx, dz);
+  if (d > REACH) return false;
+  listenCam.getWorldDirection(fwd);
+  const rl = Math.hypot(fwd.x, fwd.z) || 1, side = d > 0.01 ? (dx * -fwd.z + dz * fwd.x) / (rl * d) : 0;   // -1 left .. 1 right
+  const g = c.createGain(), lp = c.createBiquadFilter(), pan = c.createStereoPanner ? c.createStereoPanner() : null;
+  g.gain.value = 1 / (1 + (d / 3) ** 2);                     // inverse-square-ish fade with distance
+  lp.type = 'lowpass'; lp.frequency.value = 400 + 15000 / (1 + d * 0.5);   // far sounds lose their treble
+  lp.connect(g);
+  if (pan) { pan.pan.value = Math.max(-1, Math.min(1, side * Math.min(1, d / 2) * 0.95)); g.connect(pan); pan.connect(c.destination); } else g.connect(c.destination);
+  dst = lp;
+  try { fn(); } finally { dst = null; }
+  return true;
+}
 
 function noise(c) {
   if (!noiseBuf) {
@@ -23,14 +46,14 @@ function burst(c, t0, { f0, f1, len, vol, type = 'bandpass', q = 1 }) {
   f.type = type; f.Q.value = q;
   f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t0 + len);
   g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + len * 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-  s.connect(f).connect(g).connect(c.destination);
+  s.connect(f).connect(g).connect(dst || c.destination);
   s.start(t0); s.stop(t0 + len + 0.05);
 }
 function tone(c, t0, { f0, f1, len, vol, type = 'sine' }) {
   const o = c.createOscillator(), g = c.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + len);
   g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-  o.connect(g).connect(c.destination);
+  o.connect(g).connect(dst || c.destination);
   o.start(t0); o.stop(t0 + len + 0.05);
 }
 
@@ -99,3 +122,18 @@ function synthDoor() {
 }
 export function liftOpen() { door('lift-open', 0.8, synthDoor); }
 export function liftClose() { door('lift-close', 0.8, synthDoor); }
+
+/** play a recorded clip (decoded once); `at` = world {x,z} makes it positional */
+const clips = {};
+export function clip(url, vol = 1, rate = 1, at = null) {
+  const c = ctx(); if (!c) return;
+  const run = (buf) => spatial(at, () => {
+    const s = c.createBufferSource(), g = c.createGain();
+    s.buffer = buf; s.playbackRate.value = rate; g.gain.value = vol;
+    s.connect(g).connect(dst || c.destination); s.start();
+  });
+  if (clips[url] instanceof AudioBuffer) return run(clips[url]);
+  if (clips[url]) return;                                 // still loading
+  clips[url] = 1;
+  fetch(url).then((r) => r.arrayBuffer()).then((b) => c.decodeAudioData(b)).then((buf) => { clips[url] = buf; }).catch(() => { delete clips[url]; });
+}
