@@ -371,4 +371,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // Handy for debugging from the console.
-Object.assign(window, { __office: { scene, camera, player, renderer, doors, pool, lifts } });
+Object.assign(window, { __office: { scene, world, camera, player, renderer, doors, pool, lifts } });

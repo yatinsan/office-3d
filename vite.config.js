@@ -131,9 +131,36 @@ function suggestionsApi() {
   };
 }
 
+/**
+ * Dev-server endpoint for src/exportUnreal.js: the browser POSTs the world (?file=office.glb), shared models
+ * (?file=<name>.glb) and their placements (?file=instances.json) into unreal/ for unreal/import_office.py.
+ */
+function exportApi() {
+  return {
+    name: 'export-api',
+    configureServer(server) {
+      server.middlewares.use('/api/export-glb', (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; return res.end(); }
+        const name = new URL(req.url, 'http://x').searchParams.get('file') || 'office.glb';
+        if (!/^[\w-]+\.(glb|json)$/.test(name)) { res.statusCode = 400; return res.end(); }
+        const chunks = [];
+        req.on('data', (c) => chunks.push(c));
+        req.on('end', () => {
+          const dir = path.resolve('unreal');
+          fs.mkdirSync(dir, { recursive: true });
+          const buf = Buffer.concat(chunks);
+          fs.writeFileSync(path.join(dir, name), buf);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ ok: true, bytes: buf.length }));
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
   build: { chunkSizeWarningLimit: 1000 },
-  plugins: [suggestionsApi()],
+  plugins: [suggestionsApi(), exportApi()],
   server: { watch: { ignored: ['**/suggestions/**'] } },
 });

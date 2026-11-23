@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, rand } from './materials.js';
 import { lockerDoors } from './world/helpers.js';
-import { monitorGeo, keyboardGeo, mouseGeo, bottleGeo, bladeGeo, planterGeo, flowerGeo, stemGeo } from './models.js';
+import { monitorGeo, keyboardGeo, mouseGeo, bottleGeo, bladeGeo, planterGeo, flowerGeo, stemGeo, loadModelOnce } from './models.js';
 
 // ---------- primitive helpers ----------
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -86,6 +86,32 @@ export function officeChair(parent, x, z, ry = 0, { exec = false } = {}) {
     box(g, M.black, 0.035, 0.22, 0.035, s * 0.26, 0.6, -0.02);
     box(g, M.black, 0.06, 0.025, 0.24, s * 0.26, 0.72, 0.02);
   }
+  return g;
+}
+
+/** The desk chair model (МГ-27 by MireyGroup, CC BY; see public/models/README.md). Meters, faces +z. */
+export const DESK_CHAIR_URL = 'models/office_chair_mg27/office_chair_mg27.glb';
+
+/**
+ * Black mesh desk chair from the downloaded model. Faces +z like officeChair.
+ * The world is merged right after it is built, so the model (which arrives a moment later) is attached
+ * straight to the top-level world group at the chair's world transform instead of to `parent`.
+ * userData.unreal marks it for src/exportUnreal.js: exported once as its own asset and placed per chair.
+ */
+export function deskChair(parent, x, z, ry = 0) {
+  const g = group(parent, x, 0, z, ry); g.userData.label = 'Chair';
+  g.userData.unreal = 'office_chair_mg27';
+  let root = parent; while (root.parent) root = root.parent;
+  g.updateWorldMatrix(true, false);
+  const world = g.matrixWorld.clone();
+  loadModelOnce(DESK_CHAIR_URL).then((scene) => {
+    g.add(scene.clone());
+    g.parent?.remove(g);
+    root.updateWorldMatrix(true, false);
+    g.matrix.copy(root.matrixWorld).invert().multiply(world);
+    g.matrix.decompose(g.position, g.quaternion, g.scale);
+    root.add(g);
+  });
   return g;
 }
 
@@ -175,7 +201,7 @@ export function benchDesk(parent, cx, z0, z1, { width = 1.5, seats = true, solid
       const sx = sides.length === 2 ? side * 0.22 : -side * (width / 2 - 0.2);
       const mon = workstation(g, sx, sz, side * Math.PI / 2, k++);
       const chairX = cx + side * (width / 2 + chairOff);
-      const chair = officeChair(parent, chairX, sz, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      const chair = deskChair(parent, chairX, sz, side > 0 ? -Math.PI / 2 : Math.PI / 2);
       registerSeat(chair, mon);
       if (solidFn) solidFn(chairX - 0.2, sz - 0.2, chairX + 0.2, sz + 0.2);
     }

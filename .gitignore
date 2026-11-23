@@ -1,3 +1,7 @@
 node_modules
 dist
 .DS_Store
+
+unreal/office.glb
+unreal/*.glb
+unreal/instances.json

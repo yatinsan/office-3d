@@ -222,3 +222,24 @@ export function placeModel(parent, url, { x = 0, y = 0, z = 0, ry = 0, scale = 1
   }, undefined, (err) => console.warn(`Model ${url} failed to load`, err));
   return g;
 }
+
+/**
+ * Loads a glTF once and resolves to its scene, ready to .clone() per placement (clones share geometry).
+ * Meshes with broken (NaN) positions are dropped; every mesh casts and receives shadows.
+ */
+const modelCache = new Map();
+export function loadModelOnce(url) {
+  if (!modelCache.has(url)) {
+    modelCache.set(url, gltfLoader.loadAsync(url).then((gltf) => {
+      const drop = [];
+      gltf.scene.traverse((o) => {
+        if (!o.isMesh) return;
+        if (Number.isNaN(o.geometry.attributes.position.array[0])) { drop.push(o); return; }
+        o.castShadow = true; o.receiveShadow = true;
+      });
+      for (const o of drop) o.parent.remove(o);
+      return gltf.scene;
+    }).catch((err) => { console.warn(`Model ${url} failed to load`, err); return new THREE.Group(); }));
+  }
+  return modelCache.get(url);
+}
